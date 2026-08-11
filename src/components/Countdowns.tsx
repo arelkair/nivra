@@ -10,7 +10,6 @@ type Props = {
 const DEFAULT_UNITS: Record<Unit, boolean> = {
   years: false,
   months: false,
-  weeks: false,
   days: true,
   hours: true,
   minutes: true,
@@ -45,10 +44,15 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
       {countdowns.length === 0 ? (
         <Empty>Sin cuentas atrás.</Empty>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {countdowns.map((c) => (
-            <Card key={c.id} item={c} now={now} onEdit={() => setEditingId(c.id)} />
-          ))}
+        <div className="flex flex-col gap-2">
+          <Card item={countdowns[0]} now={now} big onEdit={() => setEditingId(countdowns[0].id)} />
+          {countdowns.length > 1 && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {countdowns.slice(1).map((c) => (
+                <Card key={c.id} item={c} now={now} onEdit={() => setEditingId(c.id)} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -78,17 +82,27 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
   )
 }
 
-function Card({ item, now, onEdit }: { item: Countdown; now: Date; onEdit: () => void }) {
+function Card({
+  item,
+  now,
+  big,
+  onEdit,
+}: {
+  item: Countdown
+  now: Date
+  big?: boolean
+  onEdit: () => void
+}) {
   const target = new Date(item.target)
   const parts = countdown(now, target, item.units)
   const pct = progress(item.created, item.target, now)
   const acabado = target.getTime() <= now.getTime()
 
   return (
-    <div className={`shrink-0 rounded-xl border p-3 ${line}`}>
+    <div className={`shrink-0 rounded-xl border ${big ? 'p-4' : 'p-3'} ${line}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{item.title}</p>
+          <p className={`truncate font-medium ${big ? 'text-base' : 'text-sm'}`}>{item.title}</p>
           {item.subtitle && (
             <p className="truncate text-[0.7rem] text-neutral-400 dark:text-neutral-500">
               {item.subtitle}
@@ -106,12 +120,16 @@ function Card({ item, now, onEdit }: { item: Countdown; now: Date; onEdit: () =>
       </div>
 
       {acabado ? (
-        <p className="mt-1 font-mono text-lg font-medium">Se acabó</p>
+        <p className={`mt-1 font-mono font-medium ${big ? 'text-2xl' : 'text-lg'}`}>Se acabó</p>
       ) : (
-        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+        <div className={`mt-1.5 flex flex-wrap gap-y-1 ${big ? 'gap-x-5' : 'gap-x-3'}`}>
           {parts.map((p) => (
             <div key={p.unit} className="flex items-baseline gap-1">
-              <span className="font-mono text-lg font-medium tabular-nums">{p.value}</span>
+              <span
+                className={`font-mono font-medium tabular-nums ${big ? 'text-2xl sm:text-3xl' : 'text-lg'}`}
+              >
+                {p.value}
+              </span>
               <span className="text-[0.6rem] text-neutral-400 dark:text-neutral-500">{p.label}</span>
             </div>
           ))}

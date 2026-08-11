@@ -7,15 +7,15 @@ export type PageId =
   | 'tareas'
   | 'examenes'
   | 'notas'
+  | 'bloc'
   | 'banco'
   | 'deseos'
 
-export type Unit = 'years' | 'months' | 'weeks' | 'days' | 'hours' | 'minutes' | 'seconds'
+export type Unit = 'years' | 'months' | 'days' | 'hours' | 'minutes' | 'seconds'
 
 export const UNITS: { id: Unit; one: string; many: string }[] = [
   { id: 'years', one: 'año', many: 'años' },
   { id: 'months', one: 'mes', many: 'meses' },
-  { id: 'weeks', one: 'semana', many: 'semanas' },
   { id: 'days', one: 'día', many: 'días' },
   { id: 'hours', one: 'hora', many: 'horas' },
   { id: 'minutes', one: 'minuto', many: 'minutos' },
@@ -54,6 +54,26 @@ export type Grade = {
 
 export type Streak = { count: number; last: string }
 
+export type Notepad = { id: string; title: string; html: string }
+
+const HTML_PROHIBIDO = /^(script|style|iframe|object|embed|link|meta|form)$/i
+
+export function sanitize(html: string) {
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
+  for (const el of Array.from(doc.body.querySelectorAll('*'))) {
+    if (HTML_PROHIBIDO.test(el.tagName)) {
+      el.remove()
+      continue
+    }
+    for (const attr of Array.from(el.attributes)) {
+      const nombre = attr.name.toLowerCase()
+      const valor = attr.value.replace(/\s/g, '').toLowerCase()
+      if (nombre.startsWith('on') || valor.startsWith('javascript:')) el.removeAttribute(attr.name)
+    }
+  }
+  return doc.body.firstElementChild?.innerHTML ?? ''
+}
+
 export const ACCENTS: { id: string; label: string; swatch: string }[] = [
   { id: 'basico', label: 'Básico', swatch: '#9ca3af' },
   { id: 'rojo', label: 'Rojo', swatch: '#ef4444' },
@@ -68,7 +88,6 @@ export const ACCENTS: { id: string; label: string; swatch: string }[] = [
 ]
 
 const STEP_MS: Record<string, number> = {
-  weeks: 604800000,
   days: 86400000,
   hours: 3600000,
   minutes: 60000,
@@ -352,10 +371,19 @@ if (import.meta.env.DEV) {
   const todos = Object.fromEntries(UNITS.map((u) => [u.id, true])) as Record<Unit, boolean>
   const c = countdown(new Date(2026, 0, 1, 0, 0, 0), new Date(2027, 2, 10, 3, 4, 5), todos)
   console.assert(c[0].value === 1 && c[1].value === 2, 'un año y dos meses hasta el 10/03/2027')
-  console.assert(c[3].value === 9 && c[4].value === 3, 'y nueve días y tres horas')
+  console.assert(c[2].value === 9 && c[3].value === 3, 'y nueve días y tres horas')
   const sinAnios = countdown(new Date(2026, 0, 1), new Date(2027, 0, 1), {
     ...todos,
     years: false,
   })
   console.assert(sinAnios[0].value === 12, 'sin años, el año pasa a contar como 12 meses')
+
+  console.assert(
+    sanitize('<b>hola</b><script>alert(1)</script>') === '<b>hola</b>',
+    'el bloc de notas no guarda scripts',
+  )
+  console.assert(
+    sanitize('<a href="javascript:alert(1)" onclick="x()">v</a>') === '<a>v</a>',
+    'ni enlaces ni atributos ejecutables',
+  )
 }

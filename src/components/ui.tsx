@@ -330,6 +330,12 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   star: <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" />,
+  pencil: (
+    <>
+      <path d="M4 20h4L19.5 8.5a2.1 2.1 0 00-3-3L5 17v3z" />
+      <path d="M14.5 6.5l3 3" />
+    </>
+  ),
   settings: (
     <>
       <circle cx="12" cy="12" r="3.2" />

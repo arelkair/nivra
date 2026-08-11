@@ -76,9 +76,9 @@ export function Grades({ grades, setGrades }: Props) {
             ))}
           </select>
           <select name="term" defaultValue="1" aria-label="Trimestre" className={select}>
-            <option value="1">1er trimestre</option>
-            <option value="2">2º trimestre</option>
-            <option value="3">3er trimestre</option>
+            <option value="1">1º Trimestre</option>
+            <option value="2">2º Trimestre</option>
+            <option value="3">3º Trimestre</option>
           </select>
         </div>
         <input name="desc" maxLength={80} placeholder="¿De qué?" className={input} />
@@ -92,10 +92,10 @@ export function Grades({ grades, setGrades }: Props) {
           value={filtro}
           onChange={setFiltro}
           options={[
-            { id: 'todos', label: 'Todos' },
-            { id: '1', label: '1er tri.' },
-            { id: '2', label: '2º tri.' },
-            { id: '3', label: '3er tri.' },
+            { id: '1', label: '1º Trimestre' },
+            { id: '2', label: '2º Trimestre' },
+            { id: '3', label: '3º Trimestre' },
+            { id: 'todos', label: 'Final' },
           ]}
         />
       </div>
@@ -135,7 +135,7 @@ export function Grades({ grades, setGrades }: Props) {
                 <span className="min-w-0 flex-1 truncate">{g.desc || KINDS.find((k) => k.id === g.kind)?.label}</span>
                 <span className="shrink-0 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
                   {KINDS.find((k) => k.id === g.kind)?.label}
-                  {g.term ? ` · ${g.term}º tri.` : ''} · {shortDate(g.date)}
+                  {g.term ? ` · ${g.term}º Trim.` : ''} · {shortDate(g.date)}
                 </span>
                 <button
                   type="button"

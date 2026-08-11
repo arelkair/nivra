@@ -9,6 +9,7 @@ import { SetupScreen } from './pages/SetupScreen'
 import { Tasks } from './pages/Tasks'
 import { Grades } from './pages/Grades'
 import { Wishlist } from './pages/Wishlist'
+import { Notepads } from './pages/Notepads'
 import { Clock, Confetti, Icon, Label, Modal, Switch, input, line } from './components/ui'
 import {
   ACCENTS,
@@ -21,6 +22,7 @@ import {
   type Grade,
   type Movement,
   type NivraEvent,
+  type Notepad,
   type PageId,
   type Streak,
   type Task,
@@ -41,6 +43,7 @@ const GROUPS: { title: string; pages: Page[] }[] = [
       { id: 'dashboard', label: 'Dashboard', short: 'Inicio', icon: 'dashboard' },
       { id: 'calendario', label: 'Calendario', short: 'Calend.', icon: 'calendar' },
       { id: 'horario', label: 'Horario', short: 'Horario', icon: 'schedule' },
+      { id: 'bloc', label: 'Bloc de Notas', short: 'Bloc', icon: 'pencil' },
     ],
   },
   {
@@ -107,6 +110,7 @@ function App() {
   const [wishes, setWishes] = useStored<Wish[]>('nivra-wishes', [])
   const [grades, setGrades] = useStored<Grade[]>('nivra-grades', [])
   const [streak, setStreak] = useStored<Streak>('nivra-streak', { count: 0, last: '' })
+  const [notepads, setNotepads] = useStored<Notepad[]>('nivra-notepads', [])
   const [profiles, setProfiles] = useStored<Profile[]>('nivra-profiles', [
     { id: 'principal', name: 'Horario' },
   ])
@@ -229,7 +233,9 @@ function App() {
 
           <main
             key={page}
-            className="animate-[fade-in_0.35s_ease-out] flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-28 sm:px-8 sm:pt-8 md:pb-12"
+            className={`animate-[fade-in_0.35s_ease-out] flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-28 sm:px-8 sm:pt-8 md:pb-12 ${
+              page === 'dashboard' ? 'md:overflow-hidden' : ''
+            }`}
           >
             {page === 'dashboard' && (
               <Dashboard
@@ -269,6 +275,7 @@ function App() {
             {page === 'tareas' && <Tasks tasks={tasks} setTasks={setTasks} />}
             {page === 'examenes' && <Exams works={works} setWorks={setWorks} />}
             {page === 'notas' && <Grades grades={grades} setGrades={setGrades} />}
+            {page === 'bloc' && <Notepads notepads={notepads} setNotepads={setNotepads} />}
             {page === 'deseos' && <Wishlist wishes={wishes} setWishes={setWishes} />}
             {page === 'banco' && (
               <Bank

@@ -69,8 +69,8 @@ export function Dashboard({
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 sm:gap-8">
-      <header className="animate-[fade-in_0.4s_ease-out]">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 md:h-full md:min-h-0">
+      <header className="animate-[fade-in_0.4s_ease-out] shrink-0">
         <p className="text-sm text-neutral-400 first-letter:uppercase dark:text-neutral-500">
           {today.toLocaleDateString('es-ES', { weekday: 'long' })}
         </p>
@@ -79,7 +79,7 @@ export function Dashboard({
         </h2>
       </header>
 
-      <div className="animate-[fade-in_0.4s_ease-out_0.05s_both] grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <div className="animate-[fade-in_0.4s_ease-out_0.05s_both] grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {stats.map((s) => (
           <button
             key={s.label}
@@ -97,11 +97,11 @@ export function Dashboard({
         ))}
       </div>
 
-      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both]">
+      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] md:min-h-0 md:flex-[2] md:overflow-y-auto md:overscroll-contain">
         <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
       </div>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:min-h-0 md:flex-[3] md:overflow-y-auto md:overscroll-contain lg:grid-cols-2">
         <Panel title="Hoy" delay={0.1}>
           {todayItems.length === 0 ? (
             <Empty>Sin actividades.</Empty>
