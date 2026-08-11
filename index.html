@@ -11,6 +11,16 @@
       rel="stylesheet"
     />
     <title>Nivra</title>
+    <script>
+      try {
+        var stored = JSON.parse(localStorage.getItem('nivra-theme'))
+        var dark =
+          stored === 'dark' ||
+          (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.documentElement.classList.add('dark')
+        document.documentElement.style.backgroundColor = dark ? '#0b0b0c' : '#f6f5f2'
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

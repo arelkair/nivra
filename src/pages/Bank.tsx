@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { EXPENSE_CATS, INCOME_CATS, dateKey, eur, type Movement } from '../lib/store'
+import { EXPENSE_CATS, INCOME_CATS, dateKey, eur, weekIndex, type Movement } from '../lib/store'
 import { CatChart, Empty, Icon, Label, BarChart, Segmented, button, card, input, line, select } from '../components/ui'
 
 export type BankTab = 'dinero' | 'ingresos' | 'gastos'
@@ -62,18 +62,28 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
   const balance =
     initial + income.reduce((s, m) => s + m.amount, 0) - expense.reduce((s, m) => s + m.amount, 0)
 
-  const netByDay = (days: number) =>
-    Array.from({ length: days }, (_, i) => {
-      const d = new Date()
-      d.setDate(d.getDate() - (days - 1 - i))
-      const key = dateKey(d)
-      return {
-        label: `${key.slice(8)}/${key.slice(5, 7)}`,
-        value: movements
-          .filter((m) => m.date === key)
-          .reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0),
-      }
-    })
+  const today = new Date()
+  const periodDays =
+    period === 'semana'
+      ? Array.from(
+          { length: 7 },
+          (_, i) =>
+            new Date(today.getFullYear(), today.getMonth(), today.getDate() - weekIndex(today) + i),
+        )
+      : Array.from(
+          { length: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() },
+          (_, i) => new Date(today.getFullYear(), today.getMonth(), i + 1),
+        )
+
+  const netByDay = periodDays.map((d) => {
+    const key = dateKey(d)
+    return {
+      label: `${key.slice(8)}/${key.slice(5, 7)}`,
+      value: movements
+        .filter((m) => m.date === key)
+        .reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0),
+    }
+  })
 
   const byCategory = (list: Movement[], cats: string[]) =>
     cats
@@ -84,7 +94,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
       .filter((c) => c.value > 0)
       .sort((a, b) => b.value - a.value)
 
-  const data = netByDay(period === 'semana' ? 7 : 30)
+  const data = netByDay
   const periodNet = data.reduce((s, d) => s + d.value, 0)
 
   return (
@@ -126,7 +136,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
                     {periodNet >= 0 ? '+' : ''}
                     {eur(periodNet)}
                   </span>
-                  <span>esta{period === 'semana' ? ' semana' : ' · 30 días'}</span>
+                  <span>{period === 'semana' ? 'esta semana' : 'este mes'}</span>
                 </p>
               </div>
               <Segmented

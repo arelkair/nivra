@@ -59,35 +59,23 @@ export function BarChart({ data }: { data: { label: string; value: number }[] })
   const max = Math.max(1, ...data.map((d) => Math.abs(d.value)))
 
   return (
-    <div className="flex h-36 items-stretch gap-1">
-      {data.map((d, i) => {
-        const height = `${(Math.abs(d.value) / max) * 100}%`
-        return (
-          <div
-            key={i}
-            className="group flex flex-1 flex-col"
-            title={`${d.label}: ${d.value.toFixed(2)}`}
-          >
-            <div className="flex flex-1 items-end">
-              {d.value > 0 && (
-                <div
-                  className="w-full rounded-t-md bg-neutral-900 transition-opacity group-hover:opacity-70 dark:bg-white"
-                  style={{ height }}
-                />
-              )}
-            </div>
-            <div className={`h-px w-full ${'bg-black/[0.08] dark:bg-white/10'}`} />
-            <div className="flex flex-1 items-start">
-              {d.value < 0 && (
-                <div
-                  className="w-full rounded-b-md bg-red-500 transition-opacity group-hover:opacity-70"
-                  style={{ height }}
-                />
-              )}
-            </div>
-          </div>
-        )
-      })}
+    <div className="flex h-36 items-end gap-[3px]">
+      {data.map((d, i) => (
+        <div
+          key={i}
+          className="group flex h-full flex-1 items-end rounded-md bg-black/[0.035] dark:bg-white/[0.05]"
+          title={`${d.label}: ${d.value.toFixed(2)} €`}
+        >
+          {d.value !== 0 && (
+            <div
+              className={`w-full rounded-md transition-opacity group-hover:opacity-70 ${
+                d.value < 0 ? 'bg-red-500' : 'bg-neutral-900 dark:bg-white'
+              }`}
+              style={{ height: `${Math.max(4, (Math.abs(d.value) / max) * 100)}%` }}
+            />
+          )}
+        </div>
+      ))}
     </div>
   )
 }
