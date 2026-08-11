@@ -137,9 +137,9 @@ function App() {
     <>
       {introEnabled && !introDone && <Intro onDone={() => setIntroDone(true)} />}
 
-      <div className="flex min-h-svh text-neutral-900 dark:text-neutral-200">
+      <div className="flex h-svh overflow-hidden text-neutral-900 dark:text-neutral-200">
         <aside
-          className={`fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto border-r px-3 py-4 md:flex ${line}`}
+          className={`fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto overscroll-contain border-r px-3 py-4 md:flex ${line}`}
         >
           <span className="font-display mb-7 px-3 text-2xl font-semibold tracking-tight">Nivra</span>
 
@@ -191,9 +191,9 @@ function App() {
           </nav>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col md:ml-60">
+        <div className="flex h-full min-w-0 flex-1 flex-col md:ml-60">
           <header
-            className={`flex items-center justify-between gap-4 border-b px-5 py-3.5 sm:px-8 ${line}`}
+            className={`flex shrink-0 items-center justify-between gap-4 border-b px-5 py-3.5 sm:px-8 ${line}`}
           >
             <span className="font-display text-xl font-semibold tracking-tight md:hidden">Nivra</span>
             <p className="hidden min-w-0 items-center gap-2 text-sm md:flex">
@@ -224,7 +224,7 @@ function App() {
 
           <main
             key={page}
-            className="animate-[fade-in_0.35s_ease-out] flex-1 px-5 pt-7 pb-28 sm:px-8 sm:pt-8 md:pb-12"
+            className="animate-[fade-in_0.35s_ease-out] flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-28 sm:px-8 sm:pt-8 md:pb-12"
           >
             {page === 'dashboard' && (
               <Dashboard
