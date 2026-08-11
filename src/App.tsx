@@ -7,16 +7,25 @@ import { Intro } from './components/Intro'
 import { Schedule } from './pages/Schedule'
 import { SetupScreen } from './pages/SetupScreen'
 import { Tasks } from './pages/Tasks'
-import { Icon, Modal, Switch, line } from './components/ui'
+import { Grades } from './pages/Grades'
+import { Wishlist } from './pages/Wishlist'
+import { Clock, Confetti, Icon, Label, Modal, Switch, input, line } from './components/ui'
 import {
+  ACCENTS,
   calendarItems,
+  dateKey,
+  monthDay,
   useStored,
   type Anniversary,
   type Block,
+  type Grade,
   type Movement,
   type NivraEvent,
   type PageId,
+  type Streak,
   type Task,
+  type Timer,
+  type Wish,
   type Work,
 } from './lib/store'
 
@@ -38,11 +47,15 @@ const GROUPS: { title: string; pages: Page[] }[] = [
     pages: [
       { id: 'tareas', label: 'Tareas', short: 'Tareas', icon: 'tasks' },
       { id: 'examenes', label: 'Exámenes y Proyectos', short: 'Exám.', icon: 'exams' },
+      { id: 'notas', label: 'Notas', short: 'Notas', icon: 'grades' },
     ],
   },
   {
     title: 'Dinero',
-    pages: [{ id: 'banco', label: 'Banco', short: 'Banco', icon: 'bank' }],
+    pages: [
+      { id: 'banco', label: 'Banco', short: 'Banco', icon: 'bank' },
+      { id: 'deseos', label: 'Lista de Deseos', short: 'Deseos', icon: 'wish' },
+    ],
   },
 ]
 
@@ -64,6 +77,10 @@ function App() {
   const [bankTab, setBankTab] = useState<BankTab>('dinero')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [introEnabled, setIntroEnabled] = useStored('nivra-intro', true)
+  const [accent, setAccent] = useStored('nivra-accent', 'basico')
+  const [clockOn, setClockOn] = useStored('nivra-clock', false)
+  const [hour12, setHour12] = useStored('nivra-hour12', false)
+  const [birthday, setBirthday] = useStored('nivra-birthday', '')
 
   const [theme, setTheme] = useStored<'light' | 'dark'>(
     'nivra-theme',
@@ -72,6 +89,10 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+  useEffect(() => {
+    if (accent === 'basico') delete document.documentElement.dataset.accent
+    else document.documentElement.dataset.accent = accent
+  }, [accent])
 
   const [events, setEvents] = useStored<NivraEvent[]>('nivra-events', [])
   const [tasks, setTasks] = useStored<Task[]>('nivra-tasks', [])
@@ -81,6 +102,12 @@ function App() {
   const [anniversaries, setAnniversaries] = useStored<Anniversary[]>('nivra-anniversaries', [])
   const [bankInitial, setBankInitial] = useStored<number | null>('nivra-bank-initial', null)
   const [movements, setMovements] = useStored<Movement[]>('nivra-movements', [])
+  const [timers, setTimers] = useStored<Timer[]>('nivra-timers', [])
+  const [wishes, setWishes] = useStored<Wish[]>('nivra-wishes', [])
+  const [grades, setGrades] = useStored<Grade[]>('nivra-grades', [])
+  const [streak, setStreak] = useStored<Streak>('nivra-streak', { count: 0, last: '' })
+
+  const esCumple = birthday !== '' && monthDay(birthday) === monthDay(dateKey(new Date()))
 
   const items = calendarItems(events, tasks, works)
   const balance =
@@ -174,7 +201,8 @@ function App() {
               <Icon name="right" className="h-3 w-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
               <span className="truncate font-medium">{current.label}</span>
             </p>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 items-center gap-2">
+              {clockOn && <Clock hour12={hour12} />}
               <button
                 type="button"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -205,6 +233,10 @@ function App() {
                 blocks={blocks}
                 works={works}
                 balance={balance}
+                timers={timers}
+                setTimers={setTimers}
+                streak={streak}
+                setStreak={setStreak}
                 onGo={setPage}
               />
             )}
@@ -221,6 +253,8 @@ function App() {
             {page === 'horario' && <Schedule blocks={blocks} setBlocks={setBlocks} />}
             {page === 'tareas' && <Tasks tasks={tasks} setTasks={setTasks} />}
             {page === 'examenes' && <Exams works={works} setWorks={setWorks} />}
+            {page === 'notas' && <Grades grades={grades} setGrades={setGrades} />}
+            {page === 'deseos' && <Wishlist wishes={wishes} setWishes={setWishes} />}
             {page === 'banco' && (
               <Bank
                 initial={bankInitial}
@@ -254,6 +288,8 @@ function App() {
           ))}
         </nav>
 
+        {esCumple && <Confetti />}
+
         {settingsOpen && (
           <Modal title="Ajustes" onClose={() => setSettingsOpen(false)}>
             <div className={`divide-y ${line}`}>
@@ -263,6 +299,78 @@ function App() {
                 label="Animación de inicio"
                 hint="La presentación de Nivra al abrir o recargar la web."
               />
+              <Switch
+                checked={clockOn}
+                onChange={setClockOn}
+                label="Reloj"
+                hint="Muestra la hora junto al botón de tema."
+              />
+              {clockOn && (
+                <Switch
+                  checked={hour12}
+                  onChange={setHour12}
+                  label="Formato de 12 horas"
+                  hint={hour12 ? 'Ahora en formato de 12 horas.' : 'Ahora en formato de 24 horas.'}
+                />
+              )}
+            </div>
+
+            <div className="mt-6">
+              <Label>Color</Label>
+              <div className="grid grid-cols-5 gap-2">
+                {ACCENTS.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setAccent(a.id)}
+                    title={a.label}
+                    aria-label={a.label}
+                    aria-pressed={accent === a.id}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 transition-colors ${
+                      accent === a.id
+                        ? 'border-neutral-900 dark:border-white'
+                        : `${line} hover:border-neutral-400`
+                    }`}
+                  >
+                    <span
+                      className="h-5 w-5 rounded-full"
+                      style={{ background: a.swatch }}
+                      aria-hidden
+                    />
+                    <span className="w-full truncate text-center text-[0.55rem] text-neutral-500 dark:text-neutral-400">
+                      {a.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+                El color tiñe el fondo por encima del modo claro u oscuro.
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <Label>Cumpleaños</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={birthday}
+                  onChange={(e) => setBirthday(e.target.value)}
+                  aria-label="Fecha de cumpleaños"
+                  className={input}
+                />
+                {birthday && (
+                  <button
+                    type="button"
+                    onClick={() => setBirthday('')}
+                    className="shrink-0 text-xs text-neutral-400 transition-colors hover:text-red-500"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+                Ese día, todos los años, cae confeti.
+              </p>
             </div>
           </Modal>
         )}

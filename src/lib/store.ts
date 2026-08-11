@@ -1,6 +1,115 @@
 import { useEffect, useState } from 'react'
 
-export type PageId = 'dashboard' | 'calendario' | 'horario' | 'tareas' | 'examenes' | 'banco'
+export type PageId =
+  | 'dashboard'
+  | 'calendario'
+  | 'horario'
+  | 'tareas'
+  | 'examenes'
+  | 'notas'
+  | 'banco'
+  | 'deseos'
+
+export type Unit = 'years' | 'months' | 'weeks' | 'days' | 'hours' | 'minutes' | 'seconds'
+
+export const UNITS: { id: Unit; one: string; many: string }[] = [
+  { id: 'years', one: 'año', many: 'años' },
+  { id: 'months', one: 'mes', many: 'meses' },
+  { id: 'weeks', one: 'semana', many: 'semanas' },
+  { id: 'days', one: 'día', many: 'días' },
+  { id: 'hours', one: 'hora', many: 'horas' },
+  { id: 'minutes', one: 'minuto', many: 'minutos' },
+  { id: 'seconds', one: 'segundo', many: 'segundos' },
+]
+
+export type Timer = {
+  id: string
+  title: string
+  subtitle?: string
+  target: string
+  created: string
+  units: Record<Unit, boolean>
+}
+
+export type Wish = {
+  id: string
+  title: string
+  desc?: string
+  price?: number
+  url?: string
+}
+
+export type Grade = {
+  id: string
+  value: number
+  desc?: string
+  kind: 'examen' | 'trabajo' | 'otro'
+  date: string
+}
+
+export type Streak = { count: number; last: string }
+
+export const ACCENTS: { id: string; label: string; swatch: string }[] = [
+  { id: 'basico', label: 'Básico', swatch: '#9ca3af' },
+  { id: 'rojo', label: 'Rojo', swatch: '#ef4444' },
+  { id: 'naranja', label: 'Naranja', swatch: '#f97316' },
+  { id: 'amarillo', label: 'Amarillo', swatch: '#eab308' },
+  { id: 'verde', label: 'Verde', swatch: '#22c55e' },
+  { id: 'cielo', label: 'Azul cielo', swatch: '#38bdf8' },
+  { id: 'marino', label: 'Azul marino', swatch: '#1e40af' },
+  { id: 'purpura', label: 'Púrpura', swatch: '#a855f7' },
+  { id: 'rosa', label: 'Rosa', swatch: '#ec4899' },
+  { id: 'beige', label: 'Beige', swatch: '#d6c3a5' },
+]
+
+const STEP_MS: Record<string, number> = {
+  weeks: 604800000,
+  days: 86400000,
+  hours: 3600000,
+  minutes: 60000,
+  seconds: 1000,
+}
+
+const addUnit = (d: Date, unit: 'years' | 'months', n: number) =>
+  new Date(
+    d.getFullYear() + (unit === 'years' ? n : 0),
+    d.getMonth() + (unit === 'months' ? n : 0),
+    d.getDate(),
+    d.getHours(),
+    d.getMinutes(),
+    d.getSeconds(),
+  )
+
+export function countdown(from: Date, to: Date, enabled: Record<Unit, boolean>) {
+  const out: { unit: Unit; value: number; label: string }[] = []
+  if (to.getTime() <= from.getTime()) {
+    return UNITS.filter((u) => enabled[u.id]).map((u) => ({ unit: u.id, value: 0, label: u.many }))
+  }
+  let cursor = from
+  for (const u of UNITS) {
+    if (!enabled[u.id]) continue
+    let value = 0
+    if (u.id === 'years' || u.id === 'months') {
+      while (addUnit(cursor, u.id, 1) <= to) {
+        cursor = addUnit(cursor, u.id, 1)
+        value++
+      }
+    } else {
+      const size = STEP_MS[u.id]
+      value = Math.floor((to.getTime() - cursor.getTime()) / size)
+      cursor = new Date(cursor.getTime() + value * size)
+    }
+    out.push({ unit: u.id, value, label: value === 1 ? u.one : u.many })
+  }
+  return out
+}
+
+export function progress(created: string, target: string, now: Date) {
+  const start = new Date(created).getTime()
+  const end = new Date(target).getTime()
+  if (end <= start) return 1
+  return Math.min(1, Math.max(0, (now.getTime() - start) / (end - start)))
+}
 
 export type ItemType = 'festividad' | 'tarea' | 'examen' | 'proyecto'
 
@@ -225,4 +334,14 @@ if (import.meta.env.DEV) {
   console.assert(isOfficialHoliday('2026-04-03'), 'Viernes Santo 2026 = 3 de abril')
   console.assert(isOfficialHoliday('2026-07-25'), 'Santiago Apóstol es festivo en Galicia')
   console.assert(!isOfficialHoliday('2026-08-11'), '11 de agosto de 2026 es laborable')
+
+  const todos = Object.fromEntries(UNITS.map((u) => [u.id, true])) as Record<Unit, boolean>
+  const c = countdown(new Date(2026, 0, 1, 0, 0, 0), new Date(2027, 2, 10, 3, 4, 5), todos)
+  console.assert(c[0].value === 1 && c[1].value === 2, 'un año y dos meses hasta el 10/03/2027')
+  console.assert(c[3].value === 9 && c[4].value === 3, 'y nueve días y tres horas')
+  const sinAnios = countdown(new Date(2026, 0, 1), new Date(2027, 0, 1), {
+    ...todos,
+    years: false,
+  })
+  console.assert(sinAnios[0].value === 12, 'sin años, el año pasa a contar como 12 meses')
 }

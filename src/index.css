@@ -1,11 +1,114 @@
 @import "tailwindcss";
 
-/* El tema lo controla la clase .dark en <html>, no el sistema. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+:root {
+  --paper: #f6f5f2;
+  --surface: #ffffff;
+  --sunken: #faf9f7;
+}
+
+:root[data-accent='rojo'] {
+  --paper: #f9efee;
+  --surface: #fefafa;
+  --sunken: #f6eae9;
+}
+:root[data-accent='naranja'] {
+  --paper: #faf1e8;
+  --surface: #fffbf7;
+  --sunken: #f7ece1;
+}
+:root[data-accent='amarillo'] {
+  --paper: #f9f5e4;
+  --surface: #fffdf5;
+  --sunken: #f5f0dc;
+}
+:root[data-accent='verde'] {
+  --paper: #eef5ee;
+  --surface: #f9fdf9;
+  --sunken: #e8f1e8;
+}
+:root[data-accent='cielo'] {
+  --paper: #ecf3f8;
+  --surface: #f8fcff;
+  --sunken: #e5eef5;
+}
+:root[data-accent='marino'] {
+  --paper: #eceff7;
+  --surface: #f8fafe;
+  --sunken: #e4e9f4;
+}
+:root[data-accent='purpura'] {
+  --paper: #f2eef7;
+  --surface: #fbf9fe;
+  --sunken: #ece6f4;
+}
+:root[data-accent='rosa'] {
+  --paper: #f9eef4;
+  --surface: #fef9fc;
+  --sunken: #f5e7ef;
+}
+:root[data-accent='beige'] {
+  --paper: #f5f0e8;
+  --surface: #fdfaf5;
+  --sunken: #efe8dd;
+}
+
+.dark {
+  --paper: #0b0b0c;
+  --surface: #141416;
+  --sunken: #0f0f11;
+}
+
+.dark[data-accent='rojo'] {
+  --paper: #100a0a;
+  --surface: #1a1212;
+  --sunken: #140d0d;
+}
+.dark[data-accent='naranja'] {
+  --paper: #100c07;
+  --surface: #1a1410;
+  --sunken: #14100a;
+}
+.dark[data-accent='amarillo'] {
+  --paper: #0f0e07;
+  --surface: #17160f;
+  --sunken: #131109;
+}
+.dark[data-accent='verde'] {
+  --paper: #080f0a;
+  --surface: #101a13;
+  --sunken: #0c140e;
+}
+.dark[data-accent='cielo'] {
+  --paper: #070e12;
+  --surface: #10181e;
+  --sunken: #0b1318;
+}
+.dark[data-accent='marino'] {
+  --paper: #080b14;
+  --surface: #10141f;
+  --sunken: #0b0f18;
+}
+.dark[data-accent='purpura'] {
+  --paper: #0d0812;
+  --surface: #16101f;
+  --sunken: #110c18;
+}
+.dark[data-accent='rosa'] {
+  --paper: #100810;
+  --surface: #1a111a;
+  --sunken: #140c14;
+}
+.dark[data-accent='beige'] {
+  --paper: #0f0d0a;
+  --surface: #191612;
+  --sunken: #13110d;
 }
 
 html,
@@ -16,7 +119,7 @@ body,
 
 body {
   margin: 0;
-  background: #f6f5f2;
+  background: var(--paper);
   color: #1a1a1a;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -24,7 +127,6 @@ body {
 }
 
 .dark body {
-  background: #0b0b0c;
   color: #e4e4e7;
 }
 
@@ -70,6 +172,17 @@ body {
 @keyframes drift {
   to {
     translate: 0 18px;
+  }
+}
+
+@keyframes confetti-fall {
+  from {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0.4;
   }
 }
 

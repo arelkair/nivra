@@ -8,9 +8,13 @@ import {
   type Block,
   type CalItem,
   type PageId,
+  type Streak,
   type Task,
+  type Timer,
   type Work,
 } from '../lib/store'
+import { Flame } from '../components/Flame'
+import { Timers } from '../components/Timers'
 import { Empty, Label, card, line } from '../components/ui'
 
 type Props = {
@@ -19,10 +23,25 @@ type Props = {
   blocks: Block[]
   works: Work[]
   balance: number | null
+  timers: Timer[]
+  setTimers: (update: (prev: Timer[]) => Timer[]) => void
+  streak: Streak
+  setStreak: (update: (prev: Streak) => Streak) => void
   onGo: (page: PageId) => void
 }
 
-export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props) {
+export function Dashboard({
+  items,
+  tasks,
+  blocks,
+  works,
+  balance,
+  timers,
+  setTimers,
+  streak,
+  setStreak,
+  onGo,
+}: Props) {
   const today = new Date()
   const todayKey = dateKey(today)
   const todayItems = items.filter((e) => e.date === todayKey)
@@ -73,6 +92,10 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
             </p>
           </button>
         ))}
+      </div>
+
+      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both]">
+        <Timers timers={timers} setTimers={setTimers} />
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
@@ -164,6 +187,8 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
             </ul>
           )}
         </Panel>
+
+        <Flame streak={streak} setStreak={setStreak} />
       </div>
     </div>
   )

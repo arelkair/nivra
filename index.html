@@ -19,6 +19,8 @@
           (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
         if (dark) document.documentElement.classList.add('dark')
         document.documentElement.style.backgroundColor = dark ? '#0b0b0c' : '#f6f5f2'
+        var accent = JSON.parse(localStorage.getItem('nivra-accent'))
+        if (accent && accent !== 'basico') document.documentElement.dataset.accent = accent
       } catch (e) {}
     </script>
   </head>

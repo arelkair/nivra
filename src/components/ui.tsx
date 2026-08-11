@@ -1,11 +1,11 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 export const line = 'border-black/[0.07] dark:border-white/[0.08]'
 
-export const card = `rounded-2xl border bg-white ${line} dark:bg-[#141416]`
+export const card = `rounded-2xl border bg-[var(--surface)] ${line}`
 
 export const input =
-  'w-full rounded-xl border border-black/[0.07] bg-[#faf9f7] px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-400 sm:px-4 sm:py-3 dark:border-white/[0.08] dark:bg-[#0f0f11] dark:focus:border-neutral-600'
+  'w-full rounded-xl border border-black/[0.07] bg-[var(--sunken)] px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-400 sm:px-4 sm:py-3 dark:border-white/[0.08] dark:focus:border-neutral-600'
 
 export const select = `${input} appearance-none`
 
@@ -36,7 +36,7 @@ export function Segmented<T extends string>({
   onChange: (id: T) => void
 }) {
   return (
-    <div className={`flex gap-1 rounded-full border bg-[#faf9f7] p-1 ${line} dark:bg-[#0f0f11]`}>
+    <div className={`flex gap-1 rounded-full border bg-[var(--sunken)] p-1 ${line}`}>
       {options.map((o) => (
         <button
           key={o.id}
@@ -44,7 +44,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.id)}
           className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
             value === o.id
-              ? 'bg-white text-neutral-900 shadow-sm dark:bg-[#26262a] dark:text-white'
+              ? 'bg-[var(--surface)] text-neutral-900 shadow-sm dark:text-white'
               : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
           }`}
         >
@@ -99,11 +99,7 @@ export function BarChart({
             <div
               key={i}
               title={`${d.label} · entra ${d.income.toFixed(2)} € · sale ${d.expense.toFixed(2)} €`}
-              className={`flex h-full flex-1 items-end gap-px rounded-lg p-px ${
-                i === todayIndex
-                  ? 'bg-black/[0.06] ring-1 ring-black/10 dark:bg-white/[0.08] dark:ring-white/15'
-                  : ''
-              }`}
+              className="flex h-full flex-1 items-end gap-px"
             >
               {quieto ? (
                 <span className="h-1 w-full rounded-md bg-black/[0.08] dark:bg-white/[0.12]" />
@@ -122,9 +118,13 @@ export function BarChart({
           {data.map((_, i) => (
             <span
               key={i}
-              className="flex-1 text-center font-mono text-[0.5rem] leading-none text-neutral-400 dark:text-neutral-500"
+              className={`flex-1 text-center font-mono text-[0.5rem] leading-none ${
+                i === todayIndex
+                  ? 'font-bold text-neutral-900 dark:text-white'
+                  : 'text-neutral-400 dark:text-neutral-500'
+              }`}
             >
-              {i === todayIndex ? 'hoy' : ''}
+              {i === todayIndex ? 'HOY' : ''}
             </span>
           ))}
         </div>
@@ -190,6 +190,56 @@ export function CatChart({ data, tone }: { data: { label: string; value: number 
         </li>
       ))}
     </ul>
+  )
+}
+
+export function Clock({ hour12 }: { hour12: boolean }) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <span
+      className={`hidden h-10 items-center rounded-xl border px-3 font-mono text-sm tabular-nums text-neutral-500 sm:flex ${line} dark:text-neutral-400`}
+    >
+      {now.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12,
+      })}
+    </span>
+  )
+}
+
+const CONFETTI = Array.from({ length: 60 }, (_, i) => ({
+  left: (i * 37) % 100,
+  delay: ((i * 13) % 40) / 10,
+  duration: 3 + ((i * 7) % 25) / 10,
+  size: 6 + ((i * 5) % 7),
+  color: ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'][i % 6],
+  round: i % 3 === 0,
+}))
+
+export function Confetti() {
+  return (
+    <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden" aria-hidden>
+      {CONFETTI.map((c, i) => (
+        <span
+          key={i}
+          className={`animate-[confetti-fall_linear_infinite] absolute top-0 block ${c.round ? 'rounded-full' : 'rounded-[1px]'}`}
+          style={{
+            left: `${c.left}%`,
+            width: c.size,
+            height: c.size,
+            background: c.color,
+            animationDelay: `${c.delay}s`,
+            animationDuration: `${c.duration}s`,
+          }}
+        />
+      ))}
+    </div>
   )
 }
 
@@ -292,6 +342,28 @@ const PATHS: Record<string, ReactNode> = {
   right: <path d="M9.5 5l6.5 7-6.5 7" />,
   trash: <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" />,
   up: <path d="M12 19V5M6 11l6-6 6 6" />,
+  wish: <path d="M12 20s-7-4.4-7-9.3A3.9 3.9 0 0112 8.4a3.9 3.9 0 017 2.3c0 4.9-7 9.3-7 9.3z" />,
+  grades: (
+    <>
+      <path d="M12 4L3 8.5 12 13l9-4.5z" />
+      <path d="M7 11v4.5c0 1 2.2 2.5 5 2.5s5-1.5 5-2.5V11" />
+    </>
+  ),
+  flame: (
+    <path d="M12 21c3.3 0 6-2.5 6-5.7 0-4.3-4.4-5.6-3.4-10.3-2.6.6-4 2.6-4 4.9 0 1.4.6 2.3.6 3.2 0 .8-.6 1.5-1.4 1.5s-1.4-.8-1.3-1.9C7.2 13.6 6 14.9 6 16.4 6 19 8.4 21 12 21z" />
+  ),
+  link: (
+    <>
+      <path d="M10.5 13.5a4 4 0 005.7 0l2.8-2.8a4 4 0 10-5.7-5.7l-1.2 1.2" />
+      <path d="M13.5 10.5a4 4 0 00-5.7 0L5 13.3a4 4 0 105.7 5.7l1.2-1.2" />
+    </>
+  ),
+  timer: (
+    <>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l2.5 2M9 2h6" />
+    </>
+  ),
 }
 
 export function Icon({ name, className = 'h-[1.15em] w-[1.15em]' }: { name: string; className?: string }) {
