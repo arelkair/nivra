@@ -160,7 +160,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           <div className="grid gap-4 lg:grid-cols-2">
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.1s_both] p-5 sm:p-6`}>
               <Label>Dónde gastas</Label>
-              <CatChart data={byCategory(expense, EXPENSE_CATS)} tone="bg-neutral-900 dark:bg-white" />
+              <CatChart data={byCategory(expense, EXPENSE_CATS)} tone="bg-red-500" />
             </section>
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.15s_both] p-5 sm:p-6`}>
               <Label>De dónde viene</Label>
