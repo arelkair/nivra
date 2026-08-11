@@ -24,7 +24,8 @@ import {
   type PageId,
   type Streak,
   type Task,
-  type Timer,
+  type Countdown,
+  type Profile,
   type Wish,
   type Work,
 } from './lib/store'
@@ -102,10 +103,14 @@ function App() {
   const [anniversaries, setAnniversaries] = useStored<Anniversary[]>('nivra-anniversaries', [])
   const [bankInitial, setBankInitial] = useStored<number | null>('nivra-bank-initial', null)
   const [movements, setMovements] = useStored<Movement[]>('nivra-movements', [])
-  const [timers, setTimers] = useStored<Timer[]>('nivra-timers', [])
+  const [countdowns, setCountdowns] = useStored<Countdown[]>('nivra-timers', [])
   const [wishes, setWishes] = useStored<Wish[]>('nivra-wishes', [])
   const [grades, setGrades] = useStored<Grade[]>('nivra-grades', [])
   const [streak, setStreak] = useStored<Streak>('nivra-streak', { count: 0, last: '' })
+  const [profiles, setProfiles] = useStored<Profile[]>('nivra-profiles', [
+    { id: 'principal', name: 'Horario' },
+  ])
+  const [profile, setProfile] = useStored('nivra-profile', 'principal')
 
   const esCumple = birthday !== '' && monthDay(birthday) === monthDay(dateKey(new Date()))
 
@@ -233,10 +238,11 @@ function App() {
                 blocks={blocks}
                 works={works}
                 balance={balance}
-                timers={timers}
-                setTimers={setTimers}
+                countdowns={countdowns}
+                setCountdowns={setCountdowns}
                 streak={streak}
                 setStreak={setStreak}
+                profile={profile}
                 onGo={setPage}
               />
             )}
@@ -250,7 +256,16 @@ function App() {
                 setAnniversaries={setAnniversaries}
               />
             )}
-            {page === 'horario' && <Schedule blocks={blocks} setBlocks={setBlocks} />}
+            {page === 'horario' && (
+              <Schedule
+                blocks={blocks}
+                setBlocks={setBlocks}
+                profiles={profiles}
+                setProfiles={setProfiles}
+                active={profile}
+                setActive={setProfile}
+              />
+            )}
             {page === 'tareas' && <Tasks tasks={tasks} setTasks={setTasks} />}
             {page === 'examenes' && <Exams works={works} setWorks={setWorks} />}
             {page === 'notas' && <Grades grades={grades} setGrades={setGrades} />}
@@ -292,7 +307,7 @@ function App() {
 
         {settingsOpen && (
           <Modal title="Ajustes" onClose={() => setSettingsOpen(false)}>
-            <div className={`divide-y ${line}`}>
+            <div className="flex flex-col gap-1">
               <Switch
                 checked={introEnabled}
                 onChange={setIntroEnabled}

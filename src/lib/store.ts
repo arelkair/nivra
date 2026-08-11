@@ -22,7 +22,7 @@ export const UNITS: { id: Unit; one: string; many: string }[] = [
   { id: 'seconds', one: 'segundo', many: 'segundos' },
 ]
 
-export type Timer = {
+export type Countdown = {
   id: string
   title: string
   subtitle?: string
@@ -30,6 +30,10 @@ export type Timer = {
   created: string
   units: Record<Unit, boolean>
 }
+
+export type Profile = { id: string; name: string }
+
+export const DEFAULT_PROFILE = 'principal'
 
 export type Wish = {
   id: string
@@ -45,6 +49,7 @@ export type Grade = {
   desc?: string
   kind: 'examen' | 'trabajo' | 'otro'
   date: string
+  term?: 1 | 2 | 3
 }
 
 export type Streak = { count: number; last: string }
@@ -151,7 +156,16 @@ export type Movement = {
 
 export type Anniversary = { id: string; md: string; name: string }
 
-export type Block = { id: string; day: number; start: string; end: string; title: string }
+export type Block = {
+  id: string
+  day: number
+  start: string
+  end: string
+  title: string
+  profile?: string
+}
+
+export const blockProfile = (b: Block) => b.profile ?? DEFAULT_PROFILE
 
 export const TYPES: Record<ItemType, { label: string; dot: string; chip: string }> = {
   festividad: {

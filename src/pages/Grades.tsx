@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { dateKey, shortDate, type Grade } from '../lib/store'
-import { Empty, Icon, Label, button, card, input, select } from '../components/ui'
+import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
 
 type Props = {
   grades: Grade[]
@@ -20,10 +21,13 @@ const tono = (v: number) =>
       : 'text-red-500'
 
 export function Grades({ grades, setGrades }: Props) {
-  const media = grades.length
-    ? grades.reduce((s, g) => s + g.value, 0) / grades.length
+  const [filtro, setFiltro] = useState<'todos' | '1' | '2' | '3'>('todos')
+  const visibles =
+    filtro === 'todos' ? grades : grades.filter((g) => String(g.term ?? '') === filtro)
+  const media = visibles.length
+    ? visibles.reduce((s, g) => s + g.value, 0) / visibles.length
     : null
-  const ordenadas = [...grades].sort((a, b) => b.value - a.value)
+  const ordenadas = [...visibles].sort((a, b) => b.value - a.value)
   const mejores = ordenadas.slice(0, 3)
   const peores = ordenadas.slice(Math.max(3, ordenadas.length - 3)).reverse()
 
@@ -43,6 +47,7 @@ export function Grades({ grades, setGrades }: Props) {
               desc: String(data.get('desc') ?? '').trim() || undefined,
               kind: String(data.get('kind')) as Grade['kind'],
               date: dateKey(new Date()),
+              term: Number(data.get('term')) as Grade['term'],
             },
             ...prev,
           ])
@@ -70,6 +75,11 @@ export function Grades({ grades, setGrades }: Props) {
               </option>
             ))}
           </select>
+          <select name="term" defaultValue="1" aria-label="Trimestre" className={select}>
+            <option value="1">1er trimestre</option>
+            <option value="2">2º trimestre</option>
+            <option value="3">3er trimestre</option>
+          </select>
         </div>
         <input name="desc" maxLength={80} placeholder="¿De qué?" className={input} />
         <button type="submit" className={button}>
@@ -77,16 +87,31 @@ export function Grades({ grades, setGrades }: Props) {
         </button>
       </form>
 
+      <div className="flex justify-center">
+        <Segmented
+          value={filtro}
+          onChange={setFiltro}
+          options={[
+            { id: 'todos', label: 'Todos' },
+            { id: '1', label: '1er tri.' },
+            { id: '2', label: '2º tri.' },
+            { id: '3', label: '3er tri.' },
+          ]}
+        />
+      </div>
+
       {media !== null && (
         <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
-          <Label>Media · {grades.length} notas</Label>
+          <Label>
+            Media · {visibles.length} {visibles.length === 1 ? 'nota' : 'notas'}
+          </Label>
           <p className={`font-mono text-4xl font-medium tabular-nums ${tono(media)}`}>
             {media.toFixed(2)}
           </p>
         </section>
       )}
 
-      {grades.length > 0 && (
+      {visibles.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
           <Top title="Mejores" items={mejores} />
           {peores.length > 0 && <Top title="Peores" items={peores} />}
@@ -95,11 +120,11 @@ export function Grades({ grades, setGrades }: Props) {
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out_0.05s_both] p-5 sm:p-6`}>
         <Label>Todas</Label>
-        {grades.length === 0 ? (
+        {visibles.length === 0 ? (
           <Empty>Sin notas.</Empty>
         ) : (
           <ul className="flex flex-col">
-            {grades.map((g) => (
+            {visibles.map((g) => (
               <li
                 key={g.id}
                 className="flex items-center gap-3 border-b border-black/[0.06] py-3 text-sm last:border-0 dark:border-white/[0.08]"
@@ -109,7 +134,8 @@ export function Grades({ grades, setGrades }: Props) {
                 </span>
                 <span className="min-w-0 flex-1 truncate">{g.desc || KINDS.find((k) => k.id === g.kind)?.label}</span>
                 <span className="shrink-0 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-                  {KINDS.find((k) => k.id === g.kind)?.label} · {shortDate(g.date)}
+                  {KINDS.find((k) => k.id === g.kind)?.label}
+                  {g.term ? ` · ${g.term}º tri.` : ''} · {shortDate(g.date)}
                 </span>
                 <button
                   type="button"

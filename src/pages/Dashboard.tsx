@@ -1,20 +1,21 @@
 import {
   MONTHS,
   TYPES,
+  blockProfile,
   dateKey,
   eur,
   shortDate,
   weekIndex,
   type Block,
   type CalItem,
+  type Countdown,
   type PageId,
   type Streak,
   type Task,
-  type Timer,
   type Work,
 } from '../lib/store'
+import { Countdowns } from '../components/Countdowns'
 import { Flame } from '../components/Flame'
-import { Timers } from '../components/Timers'
 import { Empty, Label, card, line } from '../components/ui'
 
 type Props = {
@@ -23,10 +24,11 @@ type Props = {
   blocks: Block[]
   works: Work[]
   balance: number | null
-  timers: Timer[]
-  setTimers: (update: (prev: Timer[]) => Timer[]) => void
+  countdowns: Countdown[]
+  setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
   streak: Streak
   setStreak: (update: (prev: Streak) => Streak) => void
+  profile: string
   onGo: (page: PageId) => void
 }
 
@@ -36,10 +38,11 @@ export function Dashboard({
   blocks,
   works,
   balance,
-  timers,
-  setTimers,
+  countdowns,
+  setCountdowns,
   streak,
   setStreak,
+  profile,
   onGo,
 }: Props) {
   const today = new Date()
@@ -51,7 +54,7 @@ export function Dashboard({
     .slice(0, 5)
   const pending = tasks.filter((t) => !t.done)
   const todayBlocks = blocks
-    .filter((b) => b.day === weekIndex(today))
+    .filter((b) => b.day === weekIndex(today) && blockProfile(b) === profile)
     .sort((a, b) => a.start.localeCompare(b.start))
   const nextWorks = works
     .filter((w) => w.date && w.date >= todayKey)
@@ -95,7 +98,7 @@ export function Dashboard({
       </div>
 
       <div className="animate-[fade-in_0.4s_ease-out_0.08s_both]">
-        <Timers timers={timers} setTimers={setTimers} />
+        <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">

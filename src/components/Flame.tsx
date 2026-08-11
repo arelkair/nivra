@@ -23,10 +23,7 @@ export function Flame({
         type="button"
         disabled={yaHoy}
         onClick={() =>
-          setStreak((prev) => ({
-            count: prev.last === ayer ? prev.count + 1 : 1,
-            last: hoy,
-          }))
+          setStreak((prev) => ({ count: prev.last === ayer ? prev.count + 1 : 1, last: hoy }))
         }
         aria-label={yaHoy ? 'Racha ya marcada hoy' : 'Marcar día'}
         title={yaHoy ? 'Ya has marcado hoy' : 'Marca tu día'}
