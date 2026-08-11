@@ -1,34 +1,49 @@
-import { MONTHS, dateKey, weekIndex, type Block, type NivraEvent, type Task } from './store'
-import { Empty, Icon, Label, card } from './ui'
-
-// ponytail: las claves YYYY-MM-DD ordenan cronológicamente como texto, no hace falta parsear
-const byDate = (a: NivraEvent, b: NivraEvent) =>
-  `${a.date}${a.time ?? '99:99'}`.localeCompare(`${b.date}${b.time ?? '99:99'}`)
+import {
+  MONTHS,
+  TYPES,
+  dateKey,
+  eur,
+  weekIndex,
+  type Block,
+  type CalItem,
+  type PageId,
+  type Task,
+  type Work,
+} from './store'
+import { shortDate } from './Tasks'
+import { Empty, Label, card } from './ui'
 
 type Props = {
-  events: NivraEvent[]
+  items: CalItem[]
   tasks: Task[]
   blocks: Block[]
-  onGo: (page: 'calendario' | 'horario' | 'tareas') => void
+  works: Work[]
+  balance: number | null
+  onGo: (page: PageId) => void
 }
 
-export function Dashboard({ events, tasks, blocks, onGo }: Props) {
+export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props) {
   const today = new Date()
   const todayKey = dateKey(today)
-  const todayEvents = events.filter((e) => e.date === todayKey).sort(byDate)
-  const upcoming = events
+  const todayItems = items.filter((e) => e.date === todayKey)
+  const upcoming = items
     .filter((e) => e.date > todayKey)
-    .sort(byDate)
+    .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5)
   const pending = tasks.filter((t) => !t.done)
   const todayBlocks = blocks
     .filter((b) => b.day === weekIndex(today))
     .sort((a, b) => a.start.localeCompare(b.start))
+  const nextWorks = works
+    .filter((w) => w.date && w.date >= todayKey)
+    .sort((a, b) => a.date!.localeCompare(b.date!))
+    .slice(0, 5)
 
   const stats = [
-    { n: todayEvents.length, label: 'eventos hoy', page: 'calendario' as const },
-    { n: pending.length, label: 'tareas abiertas', page: 'tareas' as const },
-    { n: todayBlocks.length, label: 'bloques hoy', page: 'horario' as const },
+    { value: balance === null ? '—' : eur(balance), label: 'dinero', page: 'banco' as PageId },
+    { value: todayItems.length, label: 'hoy', page: 'calendario' as PageId },
+    { value: pending.length, label: 'tareas', page: 'tareas' as PageId },
+    { value: nextWorks.length, label: 'por venir', page: 'examenes' as PageId },
   ]
 
   return (
@@ -42,15 +57,15 @@ export function Dashboard({ events, tasks, blocks, onGo }: Props) {
         </h2>
       </header>
 
-      <div className="animate-[fade-in_0.4s_ease-out_0.05s_both] grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="animate-[fade-in_0.4s_ease-out_0.05s_both] grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {stats.map((s) => (
           <button
             key={s.label}
             type="button"
             onClick={() => onGo(s.page)}
-            className={`${card} px-3 py-4 text-left transition-colors hover:border-neutral-300 sm:px-5 sm:py-6 dark:hover:border-neutral-700`}
+            className={`${card} px-4 py-4 text-left transition-colors hover:border-neutral-300 sm:px-5 sm:py-6 dark:hover:border-neutral-700`}
           >
-            <p className="text-2xl font-semibold tabular-nums sm:text-4xl">{s.n}</p>
+            <p className="truncate text-xl font-semibold tabular-nums sm:text-3xl">{s.value}</p>
             <p className="mt-1 text-[0.7rem] text-neutral-400 sm:text-xs dark:text-neutral-500">
               {s.label}
             </p>
@@ -59,26 +74,22 @@ export function Dashboard({ events, tasks, blocks, onGo }: Props) {
       </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <section className={`${card} animate-[fade-in_0.4s_ease-out_0.1s_both] p-5 sm:p-6`}>
-          <Label>Hoy</Label>
-          {todayEvents.length === 0 ? (
-            <Empty>Sin eventos.</Empty>
+        <Panel title="Hoy" delay={0.1}>
+          {todayItems.length === 0 ? (
+            <Empty>Sin actividades.</Empty>
           ) : (
             <ul className="flex flex-col gap-3">
-              {todayEvents.map((e) => (
-                <li key={e.id} className="flex items-baseline gap-3 text-sm">
-                  <span className="w-11 shrink-0 tabular-nums text-neutral-400 dark:text-neutral-500">
-                    {e.time ?? '—'}
-                  </span>
+              {todayItems.map((e) => (
+                <li key={e.id} className="flex items-center gap-3 text-sm">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
                   <span className="min-w-0 flex-1 truncate">{e.title}</span>
                 </li>
               ))}
             </ul>
           )}
-        </section>
+        </Panel>
 
-        <section className={`${card} animate-[fade-in_0.4s_ease-out_0.15s_both] p-5 sm:p-6`}>
-          <Label>Horario</Label>
+        <Panel title="Horario" delay={0.15}>
           {todayBlocks.length === 0 ? (
             <Empty>Sin bloques.</Empty>
           ) : (
@@ -93,31 +104,45 @@ export function Dashboard({ events, tasks, blocks, onGo }: Props) {
               ))}
             </ul>
           )}
-        </section>
+        </Panel>
 
-        <section className={`${card} animate-[fade-in_0.4s_ease-out_0.2s_both] p-5 sm:p-6`}>
-          <Label>Próximo</Label>
-          {upcoming.length === 0 ? (
-            <Empty>Sin eventos.</Empty>
+        <Panel title="Exámenes y proyectos" delay={0.2}>
+          {nextWorks.length === 0 ? (
+            <Empty>Nada por venir.</Empty>
           ) : (
             <ul className="flex flex-col gap-3">
-              {upcoming.map((e) => {
-                const [, m, d] = e.date.split('-').map(Number)
-                return (
-                  <li key={e.id} className="flex items-baseline gap-3 text-sm">
-                    <span className="w-11 shrink-0 tabular-nums text-neutral-400 dark:text-neutral-500">
-                      {d} {MONTHS[m - 1].slice(0, 3)}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                  </li>
-                )
-              })}
+              {nextWorks.map((w) => (
+                <li key={w.id} className="flex items-center gap-3 text-sm">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[w.kind].dot}`} />
+                  <span className="min-w-0 flex-1 truncate">{w.title}</span>
+                  <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                    {shortDate(w.date!)}
+                  </span>
+                </li>
+              ))}
             </ul>
           )}
-        </section>
+        </Panel>
 
-        <section className={`${card} animate-[fade-in_0.4s_ease-out_0.25s_both] p-5 sm:p-6`}>
-          <Label>Pendiente</Label>
+        <Panel title="Próximo" delay={0.25}>
+          {upcoming.length === 0 ? (
+            <Empty>Sin actividades.</Empty>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {upcoming.map((e) => (
+                <li key={e.id} className="flex items-center gap-3 text-sm">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
+                  <span className="min-w-0 flex-1 truncate">{e.title}</span>
+                  <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                    {shortDate(e.date)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title="Pendiente" delay={0.3}>
           {pending.length === 0 ? (
             <Empty>Sin tareas.</Empty>
           ) : (
@@ -130,17 +155,28 @@ export function Dashboard({ events, tasks, blocks, onGo }: Props) {
               ))}
             </ul>
           )}
-          {pending.length > 5 && (
-            <button
-              type="button"
-              onClick={() => onGo('tareas')}
-              className="mt-4 flex items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              {pending.length - 5} más <Icon name="right" className="h-3 w-3" />
-            </button>
-          )}
-        </section>
+        </Panel>
       </div>
     </div>
+  )
+}
+
+function Panel({
+  title,
+  delay,
+  children,
+}: {
+  title: string
+  delay: number
+  children: React.ReactNode
+}) {
+  return (
+    <section
+      style={{ animationDelay: `${delay}s` }}
+      className={`${card} animate-[fade-in_0.4s_ease-out_both] p-5 sm:p-6`}
+    >
+      <Label>{title}</Label>
+      {children}
+    </section>
   )
 }
