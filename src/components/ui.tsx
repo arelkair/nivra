@@ -55,43 +55,80 @@ export function Segmented<T extends string>({
   )
 }
 
-const compact = (v: number) => {
-  const n = Math.abs(v)
-  const s = n >= 10 ? String(Math.round(n)) : n.toFixed(1).replace('.', ',')
-  return `${v > 0 ? '+' : '−'}${s}`
+const compact = (n: number) =>
+  n >= 10 ? String(Math.round(n)) : n.toFixed(1).replace('.0', '').replace('.', ',')
+
+function Half({ value, height, up }: { value: number; height: string; up: boolean }) {
+  if (value === 0) return <span className="flex-1" />
+  return (
+    <span className="flex h-full flex-1 flex-col justify-end gap-1">
+      <span
+        className={`text-center font-mono text-[0.5rem] leading-none tabular-nums ${
+          up ? 'text-green-600 dark:text-green-500' : 'text-red-500'
+        }`}
+      >
+        {up ? '+' : '−'}
+        {compact(value)}
+      </span>
+      <span
+        className={`w-full rounded-md transition-opacity hover:opacity-70 ${
+          up ? 'bg-green-500' : 'bg-red-500'
+        }`}
+        style={{ height }}
+      />
+    </span>
+  )
 }
 
-export function BarChart({ data }: { data: { label: string; value: number }[] }) {
-  const max = Math.max(1, ...data.map((d) => Math.abs(d.value)))
+export function BarChart({
+  data,
+  todayIndex = -1,
+}: {
+  data: { label: string; income: number; expense: number }[]
+  todayIndex?: number
+}) {
+  const max = Math.max(1, ...data.flatMap((d) => [d.income, d.expense]))
+  const height = (v: number) => `${Math.max(6, (v / max) * 92)}%`
 
   return (
-    <div className="flex h-40 items-end gap-[3px]">
-      {data.map((d, i) => {
-        const quieto = d.value === 0
-        return (
-          <div
-            key={i}
-            className="flex h-full flex-1 flex-col justify-end gap-1"
-            title={`${d.label}: ${quieto ? 'sin movimiento' : `${compact(d.value)} €`}`}
-          >
-            {!quieto && (
-              <span
-                className={`text-center font-mono text-[0.5rem] leading-none tabular-nums ${
-                  d.value > 0 ? 'text-green-600 dark:text-green-500' : 'text-red-500'
-                }`}
-              >
-                {compact(d.value)}
-              </span>
-            )}
-            <span
-              className={`w-full rounded-md transition-opacity hover:opacity-70 ${
-                quieto ? 'bg-black/[0.08] dark:bg-white/[0.12]' : d.value > 0 ? 'bg-green-500' : 'bg-red-500'
+    <div>
+      <div className="flex h-40 items-end gap-[3px]">
+        {data.map((d, i) => {
+          const quieto = d.income === 0 && d.expense === 0
+          return (
+            <div
+              key={i}
+              title={`${d.label} · entra ${d.income.toFixed(2)} € · sale ${d.expense.toFixed(2)} €`}
+              className={`flex h-full flex-1 items-end gap-px rounded-lg p-px ${
+                i === todayIndex
+                  ? 'bg-black/[0.06] ring-1 ring-black/10 dark:bg-white/[0.08] dark:ring-white/15'
+                  : ''
               }`}
-              style={{ height: quieto ? '4px' : `${Math.max(6, (Math.abs(d.value) / max) * 92)}%` }}
-            />
-          </div>
-        )
-      })}
+            >
+              {quieto ? (
+                <span className="h-1 w-full rounded-md bg-black/[0.08] dark:bg-white/[0.12]" />
+              ) : (
+                <>
+                  <Half value={d.income} height={height(d.income)} up />
+                  <Half value={d.expense} height={height(d.expense)} up={false} />
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {todayIndex >= 0 && (
+        <div className="mt-1.5 flex gap-[3px]">
+          {data.map((_, i) => (
+            <span
+              key={i}
+              className="flex-1 text-center font-mono text-[0.5rem] leading-none text-neutral-400 dark:text-neutral-500"
+            >
+              {i === todayIndex ? 'hoy' : ''}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

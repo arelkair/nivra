@@ -75,13 +75,18 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           (_, i) => new Date(today.getFullYear(), today.getMonth(), i + 1),
         )
 
-  const netByDay = periodDays.map((d) => {
+  const todayKey = dateKey(today)
+  const todayIndex = periodDays.findIndex((d) => dateKey(d) === todayKey)
+
+  const byDay = periodDays.map((d) => {
     const key = dateKey(d)
+    const dayMoves = movements.filter((m) => m.date === key)
+    const sum = (kind: Movement['kind']) =>
+      dayMoves.filter((m) => m.kind === kind).reduce((s, m) => s + m.amount, 0)
     return {
       label: `${key.slice(8)}/${key.slice(5, 7)}`,
-      value: movements
-        .filter((m) => m.date === key)
-        .reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0),
+      income: sum('ingreso'),
+      expense: sum('gasto'),
     }
   })
 
@@ -94,8 +99,8 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
       .filter((c) => c.value > 0)
       .sort((a, b) => b.value - a.value)
 
-  const data = netByDay
-  const periodNet = data.reduce((s, d) => s + d.value, 0)
+  const data = byDay
+  const periodNet = data.reduce((s, d) => s + d.income - d.expense, 0)
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
@@ -149,7 +154,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
               />
             </div>
             <div className={`border-t px-5 pt-5 pb-4 sm:px-6 ${line}`}>
-              <BarChart data={data} />
+              <BarChart data={data} todayIndex={todayIndex} />
               <div className="mt-2 flex justify-between font-mono text-[0.65rem] text-neutral-400">
                 <span>{data[0].label}</span>
                 <span>{data[data.length - 1].label}</span>
