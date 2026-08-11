@@ -1,15 +1,10 @@
 import { useState } from 'react'
-import { MONTHS, type SubTask, type Task } from './store'
-import { Empty, Icon, Label, Modal, button, card, input } from './ui'
+import { shortDate, type SubTask, type Task } from '../lib/store'
+import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
 
 type Props = {
   tasks: Task[]
   setTasks: (update: (prev: Task[]) => Task[]) => void
-}
-
-export const shortDate = (date: string) => {
-  const [, m, d] = date.split('-').map(Number)
-  return `${d} ${MONTHS[m - 1].slice(0, 3)}`
 }
 
 export function Tasks({ tasks, setTasks }: Props) {
@@ -99,7 +94,7 @@ function Row({
 }) {
   const subDone = task.subtasks.filter((s) => s.done).length
   return (
-    <li className="flex items-center gap-3 border-b border-neutral-100 py-3 last:border-0 dark:border-neutral-800">
+    <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
       <button
         type="button"
         onClick={() => onPatch(task.id, { done: !task.done })}
@@ -107,7 +102,7 @@ function Row({
         aria-label={task.title}
         className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors ${
           task.done
-            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-black/[0.06] dark:bg-neutral-100 dark:text-neutral-900'
             : 'border-neutral-300 hover:border-neutral-500 dark:border-neutral-600'
         }`}
       >
@@ -214,7 +209,7 @@ function TaskDialog({
             {task.subtasks.map((s) => (
               <li
                 key={s.id}
-                className="flex items-center gap-3 border-b border-neutral-100 py-2 last:border-0 dark:border-neutral-800"
+                className="flex items-center gap-3 border-b border-black/[0.06] py-2 last:border-0 dark:border-white/[0.08]"
               >
                 <button
                   type="button"
@@ -225,7 +220,7 @@ function TaskDialog({
                   aria-label={s.title}
                   className={`grid h-4 w-4 shrink-0 place-items-center rounded border transition-colors ${
                     s.done
-                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-black/[0.06] dark:bg-neutral-100 dark:text-neutral-900'
                       : 'border-neutral-300 dark:border-neutral-600'
                   }`}
                 >

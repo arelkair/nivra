@@ -13,8 +13,8 @@ import {
   type CalItem,
   type ItemType,
   type NivraEvent,
-} from './store'
-import { Empty, Icon, Modal, button, input, select } from './ui'
+} from '../lib/store'
+import { Empty, Icon, Modal, button, input, select } from '../components/ui'
 
 type Props = {
   items: CalItem[]
@@ -45,7 +45,7 @@ export function Calendar({
   }
 
   const navButton =
-    'grid h-10 w-10 place-items-center rounded-xl border border-neutral-200 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100'
+    'grid h-10 w-10 place-items-center rounded-xl border border-black/[0.07] text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-100'
 
   return (
     <div className="mx-auto w-full max-w-4xl">
@@ -57,7 +57,7 @@ export function Calendar({
           <button
             type="button"
             onClick={() => setCursor({ y: today.getFullYear(), m: today.getMonth() })}
-            className="rounded-xl border border-neutral-200 px-4 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            className="rounded-xl border border-black/[0.07] px-4 text-sm text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-100"
           >
             Hoy
           </button>
@@ -110,10 +110,10 @@ export function Calendar({
               type="button"
               onClick={() => setSelected(key)}
               aria-label={`${day} de ${MONTHS[cursor.m]}`}
-              className="flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-neutral-200 hover:bg-white sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-neutral-800 dark:hover:bg-neutral-900"
+              className="flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-black/[0.07] hover:bg-white sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]"
             >
               <span
-                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm tabular-nums sm:h-8 sm:w-8 ${numberClass}`}
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-sm tabular-nums sm:h-8 sm:w-8 ${numberClass}`}
               >
                 {day}
               </span>
@@ -241,7 +241,7 @@ function DayDialog({
             className={`${square} ${
               free
                 ? 'border-red-500 bg-red-500'
-                : 'border-neutral-200 hover:border-red-400 dark:border-neutral-700'
+                : 'border-black/[0.07] hover:border-red-400 dark:border-neutral-700'
             } ${locked ? 'cursor-default opacity-70' : ''}`}
           />
           <button
@@ -253,7 +253,7 @@ function DayDialog({
             className={`${square} ${
               anniversary
                 ? 'border-yellow-500 bg-yellow-500 text-white'
-                : 'border-neutral-200 text-neutral-300 hover:border-yellow-400 dark:border-neutral-700 dark:text-neutral-600'
+                : 'border-black/[0.07] text-neutral-300 hover:border-yellow-400 dark:border-neutral-700 dark:text-neutral-600'
             }`}
           >
             <Icon name="star" className="h-4 w-4" />
@@ -280,7 +280,7 @@ function DayDialog({
           {items.map((e) => (
             <li
               key={e.id}
-              className="flex items-start gap-3 rounded-xl border border-neutral-200 px-4 py-3 dark:border-neutral-800"
+              className="flex items-start gap-3 rounded-xl border border-black/[0.07] px-4 py-3 dark:border-white/[0.08]"
             >
               <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
               <div className="min-w-0 flex-1">

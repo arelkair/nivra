@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 
 export function Intro({ onDone }: { onDone: () => void }) {
-  // ponytail: temporizador en vez de animationend, que no se dispara en pestañas en segundo plano
   useEffect(() => {
     const ms = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2650
     const id = setTimeout(onDone, ms)

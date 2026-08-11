@@ -6,7 +6,7 @@ export type ItemType = 'festividad' | 'tarea' | 'examen' | 'proyecto'
 
 export type NivraEvent = {
   id: string
-  date: string // YYYY-MM-DD
+  date: string
   title: string
   desc?: string
   type: ItemType
@@ -28,8 +28,8 @@ export type Work = {
   kind: 'examen' | 'proyecto'
   title: string
   desc?: string
-  date?: string // obligatoria en exámenes, opcional en proyectos
-  category?: 'colegio' | 'casa' // sólo proyectos
+  date?: string
+  category?: 'colegio' | 'casa'
 }
 
 export type Movement = {
@@ -40,7 +40,7 @@ export type Movement = {
   date: string
 }
 
-export type Anniversary = { id: string; md: string; name: string } // md = MM-DD
+export type Anniversary = { id: string; md: string; name: string }
 
 export type Block = { id: string; day: number; start: string; end: string; title: string }
 
@@ -88,14 +88,17 @@ export const MONTHS = [
 export const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 export const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
-/** Clave local del día, sin pasar por UTC (evita desfases de un día). */
 export const dateKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-/** Índice de día con la semana empezando en lunes. */
 export const weekIndex = (d: Date) => (d.getDay() + 6) % 7
 
 export const monthDay = (date: string) => date.slice(5)
+
+export const shortDate = (date: string) => {
+  const [, m, d] = date.split('-').map(Number)
+  return `${d} ${MONTHS[m - 1].slice(0, 3)}`
+}
 
 export function monthGrid(year: number, month: number): (number | null)[] {
   const offset = weekIndex(new Date(year, month, 1))
@@ -103,7 +106,6 @@ export function monthGrid(year: number, month: number): (number | null)[] {
   return [...Array<null>(offset).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)]
 }
 
-/** Festivos de fecha fija: nacionales + Galicia (Letras Galegas y Santiago Apóstol). */
 const FIXED_HOLIDAYS = [
   '01-01',
   '01-06',
@@ -118,7 +120,6 @@ const FIXED_HOLIDAYS = [
   '12-25',
 ]
 
-/** Domingo de Pascua (Meeus/Jones/Butcher). Jueves y Viernes Santo dependen de él. */
 export function easter(year: number): Date {
   const a = year % 19
   const b = Math.floor(year / 100)
@@ -139,7 +140,6 @@ export function easter(year: number): Date {
 
 const shift = (d: Date, days: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + days)
 
-/** Festivo oficial: fecha fija, o Jueves/Viernes Santo. */
 export function isOfficialHoliday(date: string): boolean {
   if (FIXED_HOLIDAYS.includes(monthDay(date))) return true
   const year = Number(date.slice(0, 4))
@@ -152,7 +152,6 @@ export const isWeekend = (date: string) => {
   return weekIndex(new Date(y, m - 1, d)) >= 5
 }
 
-/** Día sin trabajo: fin de semana, festivo oficial o marcado a mano. */
 export const isFreeDay = (date: string, manual: string[]) =>
   isWeekend(date) || isOfficialHoliday(date) || manual.includes(date)
 
@@ -165,10 +164,6 @@ export type CalItem = {
   origin: 'evento' | 'tarea' | 'examen' | 'proyecto'
 }
 
-/**
- * Vista única del calendario. Tareas y exámenes no se copian: se derivan de su
- * propia lista, así editarlos en su apartado los actualiza aquí sin duplicar datos.
- */
 export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]): CalItem[] {
   return [
     ...events.map((e) => ({
@@ -211,7 +206,7 @@ export function useStored<T>(key: string, initial: T) {
       const raw = localStorage.getItem(key)
       return raw ? (JSON.parse(raw) as T) : initial
     } catch {
-      return initial // ponytail: datos corruptos = empezar de cero, no romper la app
+      return initial
     }
   })
   useEffect(() => {
@@ -220,7 +215,6 @@ export function useStored<T>(key: string, initial: T) {
   return [value, setValue] as const
 }
 
-// ponytail: comprobación en dev de la lógica con aristas (fechas y festivos móviles)
 if (import.meta.env.DEV) {
   console.assert(dateKey(new Date(2026, 7, 5)) === '2026-08-05', 'dateKey debe rellenar con ceros')
   console.assert(monthGrid(2026, 7).length === 5 + 31, 'agosto 2026 empieza en sábado')

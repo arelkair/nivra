@@ -3,15 +3,15 @@ import {
   TYPES,
   dateKey,
   eur,
+  shortDate,
   weekIndex,
   type Block,
   type CalItem,
   type PageId,
   type Task,
   type Work,
-} from './store'
-import { shortDate } from './Tasks'
-import { Empty, Label, card } from './ui'
+} from '../lib/store'
+import { Empty, Label, card, line } from '../components/ui'
 
 type Props = {
   items: CalItem[]
@@ -63,9 +63,11 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
             key={s.label}
             type="button"
             onClick={() => onGo(s.page)}
-            className={`${card} px-4 py-4 text-left transition-colors hover:border-neutral-300 sm:px-5 sm:py-6 dark:hover:border-neutral-700`}
+            className={`${card} px-4 py-4 text-left transition-colors hover:border-black/15 sm:px-5 sm:py-6 dark:hover:border-white/20`}
           >
-            <p className="truncate text-xl font-semibold tabular-nums sm:text-3xl">{s.value}</p>
+            <p className="truncate font-mono text-xl font-medium tracking-tight tabular-nums sm:text-3xl">
+              {s.value}
+            </p>
             <p className="mt-1 text-[0.7rem] text-neutral-400 sm:text-xs dark:text-neutral-500">
               {s.label}
             </p>
@@ -78,12 +80,13 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
           {todayItems.length === 0 ? (
             <Empty>Sin actividades.</Empty>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col">
               {todayItems.map((e) => (
-                <li key={e.id} className="flex items-center gap-3 text-sm">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
+                <Row key={e.id}>
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
                   <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                </li>
+                  <span className="shrink-0 text-[0.7rem] text-neutral-400">{TYPES[e.type].label}</span>
+                </Row>
               ))}
             </ul>
           )}
@@ -93,14 +96,14 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
           {todayBlocks.length === 0 ? (
             <Empty>Sin bloques.</Empty>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col">
               {todayBlocks.map((b) => (
-                <li key={b.id} className="flex items-baseline gap-3 text-sm">
-                  <span className="w-24 shrink-0 tabular-nums text-neutral-400 dark:text-neutral-500">
+                <Row key={b.id}>
+                  <span className="w-24 shrink-0 font-mono text-xs tabular-nums text-neutral-400 dark:text-neutral-500">
                     {b.start}–{b.end}
                   </span>
                   <span className="min-w-0 flex-1 truncate">{b.title}</span>
-                </li>
+                </Row>
               ))}
             </ul>
           )}
@@ -110,15 +113,15 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
           {nextWorks.length === 0 ? (
             <Empty>Nada por venir.</Empty>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col">
               {nextWorks.map((w) => (
-                <li key={w.id} className="flex items-center gap-3 text-sm">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[w.kind].dot}`} />
+                <Row key={w.id}>
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[w.kind].dot}`} />
                   <span className="min-w-0 flex-1 truncate">{w.title}</span>
-                  <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                  <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
                     {shortDate(w.date!)}
                   </span>
-                </li>
+                </Row>
               ))}
             </ul>
           )}
@@ -128,15 +131,15 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
           {upcoming.length === 0 ? (
             <Empty>Sin actividades.</Empty>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col">
               {upcoming.map((e) => (
-                <li key={e.id} className="flex items-center gap-3 text-sm">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
+                <Row key={e.id}>
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
                   <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                  <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                  <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
                     {shortDate(e.date)}
                   </span>
-                </li>
+                </Row>
               ))}
             </ul>
           )}
@@ -146,18 +149,31 @@ export function Dashboard({ items, tasks, blocks, works, balance, onGo }: Props)
           {pending.length === 0 ? (
             <Empty>Sin tareas.</Empty>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col">
               {pending.slice(0, 5).map((t) => (
-                <li key={t.id} className="flex items-center gap-3 text-sm">
+                <Row key={t.id}>
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
                   <span className="min-w-0 flex-1 truncate">{t.title}</span>
-                </li>
+                  {t.date && (
+                    <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
+                      {shortDate(t.date)}
+                    </span>
+                  )}
+                </Row>
               ))}
             </ul>
           )}
         </Panel>
       </div>
     </div>
+  )
+}
+
+function Row({ children }: { children: React.ReactNode }) {
+  return (
+    <li className={`flex items-center gap-3 border-b py-2.5 text-sm last:border-0 ${line}`}>
+      {children}
+    </li>
   )
 }
 

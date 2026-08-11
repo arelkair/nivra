@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { TYPES, type Work } from './store'
-import { shortDate } from './Tasks'
-import { Empty, Icon, Label, Modal, button, card, input, select } from './ui'
+import { TYPES, shortDate, type Work } from '../lib/store'
+import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
   works: Work[]
@@ -31,7 +30,7 @@ export function Exams({ works, setWorks }: Props) {
           const title = String(data.get('title') ?? '').trim()
           const date = String(data.get('date') ?? '')
           if (!title) return
-          if (kind === 'examen' && !date) return // ponytail: el examen sin fecha no existe
+          if (kind === 'examen' && !date) return
           setWorks((prev) => [
             ...prev,
             {
@@ -55,7 +54,7 @@ export function Exams({ works, setWorks }: Props) {
               className={`flex-1 rounded-xl px-4 py-2.5 text-sm transition-colors ${
                 kind === k
                   ? 'bg-neutral-900 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900'
-                  : 'border border-neutral-200 text-neutral-500 hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800'
+                  : 'border border-black/[0.07] text-neutral-500 hover:bg-black/[0.04] dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06]'
               }`}
             >
               {TYPES[k].label}
@@ -133,7 +132,7 @@ function Row({
   onRemove: (id: string) => void
 }) {
   return (
-    <li className="flex items-center gap-3 border-b border-neutral-100 py-3 last:border-0 dark:border-neutral-800">
+    <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
       <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[work.kind].dot}`} />
       <button type="button" onClick={() => onOpen(work.id)} className="min-w-0 flex-1 text-left" title="Editar">
         <span className="block truncate text-sm">{work.title}</span>
@@ -190,7 +189,6 @@ function WorkDialog({
         <input
           type="date"
           value={work.date ?? ''}
-          // ponytail: un examen no puede quedarse sin fecha, se ignora el borrado
           onChange={(e) =>
             onPatch({ date: e.target.value || (work.kind === 'examen' ? work.date : undefined) })
           }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { DAYS, weekIndex, type Block } from './store'
-import { Empty, Icon, Modal, button, card, input } from './ui'
+import { DAYS, weekIndex, type Block } from '../lib/store'
+import { Empty, Icon, Modal, button, card, input } from '../components/ui'
 
 type Props = {
   blocks: Block[]
@@ -46,7 +46,7 @@ export function Schedule({ blocks, setBlocks }: Props) {
                   dayBlocks.map((b) => (
                     <li
                       key={b.id}
-                      className="group rounded-xl bg-stone-100 px-3 py-2.5 dark:bg-neutral-800"
+                      className="group rounded-xl bg-black/[0.04] px-3 py-2.5 dark:bg-white/[0.06]"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-[0.7rem] tabular-nums text-neutral-500 dark:text-neutral-400">
@@ -71,7 +71,7 @@ export function Schedule({ blocks, setBlocks }: Props) {
                 type="button"
                 onClick={() => setAdding(i)}
                 aria-label={`Añadir bloque el ${day}`}
-                className="mt-3 flex items-center justify-center gap-1 rounded-xl border border-dashed border-neutral-200 py-2 text-xs text-neutral-400 transition-colors hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
+                className="mt-3 flex items-center justify-center gap-1 rounded-xl border border-dashed border-black/[0.07] py-2 text-xs text-neutral-400 transition-colors hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
               >
                 <Icon name="plus" className="h-3.5 w-3.5" />
               </button>
@@ -91,7 +91,6 @@ export function Schedule({ blocks, setBlocks }: Props) {
               const a = String(data.get('start') ?? '')
               const b = String(data.get('end') ?? '')
               if (!title || !a || !b) return
-              // ponytail: si el usuario los invierte, se ordenan solos en vez de fallar
               const [start, end] = a <= b ? [a, b] : [b, a]
               setBlocks((prev) => [...prev, { id: crypto.randomUUID(), day: adding, start, end, title }])
               setAdding(null)

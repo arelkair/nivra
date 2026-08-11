@@ -1,11 +1,6 @@
-import {
-  EXPENSE_CATS,
-  INCOME_CATS,
-  dateKey,
-  eur,
-  type Movement,
-} from './store'
-import { CatChart, Empty, Icon, Label, NetChart, button, card, input, select } from './ui'
+import { useState } from 'react'
+import { EXPENSE_CATS, INCOME_CATS, dateKey, eur, type Movement } from '../lib/store'
+import { CatChart, Empty, Icon, Label, BarChart, Segmented, button, card, input, line, select } from '../components/ui'
 
 export type BankTab = 'dinero' | 'ingresos' | 'gastos'
 
@@ -18,7 +13,6 @@ type Props = {
   setTab: (tab: BankTab) => void
 }
 
-/** Lee un importe de un formulario. Devuelve null si no es un número positivo. */
 function readAmount(value: FormDataEntryValue | null): number | null {
   const n = Number(String(value ?? '').replace(',', '.'))
   if (!Number.isFinite(n) || n <= 0) return null
@@ -26,6 +20,8 @@ function readAmount(value: FormDataEntryValue | null): number | null {
 }
 
 export function Bank({ initial, setInitial, movements, setMovements, tab, setTab }: Props) {
+  const [period, setPeriod] = useState<'semana' | 'mes'>('semana')
+
   if (initial === null) {
     return (
       <div className="mx-auto w-full max-w-md">
@@ -38,8 +34,9 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           }}
           className={`${card} animate-[fade-in_0.4s_ease-out] flex flex-col gap-3 p-6`}
         >
+          <Label>Primera vez</Label>
           <h2 className="text-xl font-semibold">¿Cuánto dinero tienes ahora?</h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-neutral-400 dark:text-neutral-500">
             Sólo se pregunta una vez. Queda en tu navegador.
           </p>
           <input
@@ -50,7 +47,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
             autoFocus
             placeholder="0,00"
             aria-label="Dinero actual"
-            className={input}
+            className={`${input} font-mono`}
           />
           <button type="submit" className={button}>
             Guardar
@@ -63,19 +60,19 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
   const income = movements.filter((m) => m.kind === 'ingreso')
   const expense = movements.filter((m) => m.kind === 'gasto')
   const balance =
-    initial +
-    income.reduce((s, m) => s + m.amount, 0) -
-    expense.reduce((s, m) => s + m.amount, 0)
+    initial + income.reduce((s, m) => s + m.amount, 0) - expense.reduce((s, m) => s + m.amount, 0)
 
   const netByDay = (days: number) =>
     Array.from({ length: days }, (_, i) => {
       const d = new Date()
       d.setDate(d.getDate() - (days - 1 - i))
       const key = dateKey(d)
-      const value = movements
-        .filter((m) => m.date === key)
-        .reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0)
-      return { label: key, value }
+      return {
+        label: `${key.slice(8)}/${key.slice(5, 7)}`,
+        value: movements
+          .filter((m) => m.date === key)
+          .reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0),
+      }
     })
 
   const byCategory = (list: Movement[], cats: string[]) =>
@@ -87,69 +84,87 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
       .filter((c) => c.value > 0)
       .sort((a, b) => b.value - a.value)
 
-  const TABS: { id: BankTab; label: string }[] = [
-    { id: 'dinero', label: 'Dinero' },
-    { id: 'ingresos', label: 'Ingresos' },
-    { id: 'gastos', label: 'Gastos' },
-  ]
+  const data = netByDay(period === 'semana' ? 7 : 30)
+  const periodNet = data.reduce((s, d) => s + d.value, 0)
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <div className="flex gap-1 rounded-2xl border border-neutral-200 p-1 md:hidden dark:border-neutral-800">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`flex-1 rounded-xl py-2 text-sm transition-colors ${
-              tab === t.id
-                ? 'bg-neutral-900 font-medium text-white dark:bg-neutral-100 dark:text-neutral-900'
-                : 'text-neutral-500 dark:text-neutral-400'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+      <div className="md:hidden">
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { id: 'dinero', label: 'Dinero' },
+            { id: 'ingresos', label: 'Ingresos' },
+            { id: 'gastos', label: 'Gastos' },
+          ]}
+        />
       </div>
 
       {tab === 'dinero' && (
         <>
-          <section className={`${card} animate-[fade-in_0.35s_ease-out] p-6`}>
-            <Label>Dinero actual</Label>
-            <p
-              className={`font-display text-4xl font-semibold tabular-nums sm:text-5xl ${
-                balance < 0 ? 'text-red-500' : ''
-              }`}
-            >
-              {eur(balance)}
-            </p>
-            <button
-              type="button"
-              onClick={() => setInitial(() => null)}
-              className="mt-4 text-xs text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              Cambiar dinero inicial ({eur(initial)})
-            </button>
+          <section className={`${card} animate-[fade-in_0.35s_ease-out] overflow-hidden`}>
+            <div className="flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6">
+              <div>
+                <Label>Dinero actual</Label>
+                <p
+                  className={`font-mono text-4xl font-medium tracking-tight tabular-nums sm:text-5xl ${
+                    balance < 0 ? 'text-red-500' : ''
+                  }`}
+                >
+                  {eur(balance)}
+                </p>
+                <p className="mt-2 flex items-center gap-2 text-[0.7rem] text-neutral-400">
+                  <span
+                    className={`grid h-4 w-4 place-items-center rounded-full ${
+                      periodNet < 0 ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-600'
+                    }`}
+                  >
+                    <Icon name="up" className={`h-2.5 w-2.5 ${periodNet < 0 ? 'rotate-180' : ''}`} />
+                  </span>
+                  <span className={periodNet < 0 ? 'text-red-500' : 'text-green-600'}>
+                    {periodNet >= 0 ? '+' : ''}
+                    {eur(periodNet)}
+                  </span>
+                  <span>esta{period === 'semana' ? ' semana' : ' · 30 días'}</span>
+                </p>
+              </div>
+              <Segmented
+                value={period}
+                onChange={setPeriod}
+                options={[
+                  { id: 'semana', label: 'Semana' },
+                  { id: 'mes', label: 'Mes' },
+                ]}
+              />
+            </div>
+            <div className={`border-t px-5 pt-5 pb-4 sm:px-6 ${line}`}>
+              <BarChart data={data} />
+              <div className="mt-2 flex justify-between font-mono text-[0.65rem] text-neutral-400">
+                <span>{data[0].label}</span>
+                <span>{data[data.length - 1].label}</span>
+              </div>
+            </div>
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section className={`${card} animate-[fade-in_0.35s_ease-out_0.05s_both] p-5 sm:p-6`}>
-              <Label>Esta semana</Label>
-              <NetChart data={netByDay(7)} />
-            </section>
+          <div className="grid gap-4 lg:grid-cols-2">
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.1s_both] p-5 sm:p-6`}>
-              <Label>Este mes</Label>
-              <NetChart data={netByDay(30)} />
+              <Label>Dónde gastas</Label>
+              <CatChart data={byCategory(expense, EXPENSE_CATS)} tone="bg-neutral-900 dark:bg-white" />
             </section>
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.15s_both] p-5 sm:p-6`}>
-              <Label>Dónde gastas</Label>
-              <CatChart data={byCategory(expense, EXPENSE_CATS)} tone="bg-red-500/80" />
-            </section>
-            <section className={`${card} animate-[fade-in_0.35s_ease-out_0.2s_both] p-5 sm:p-6`}>
               <Label>De dónde viene</Label>
-              <CatChart data={byCategory(income, INCOME_CATS)} tone="bg-green-500/80" />
+              <CatChart data={byCategory(income, INCOME_CATS)} tone="bg-green-500" />
             </section>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setInitial(() => null)}
+            className="self-start text-[0.7rem] text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+          >
+            Cambiar dinero inicial ({eur(initial)})
+          </button>
         </>
       )}
 
@@ -191,7 +206,7 @@ function MovementPanel({
           const form = ev.currentTarget
           const data = new FormData(form)
           const amount = readAmount(data.get('amount'))
-          if (amount === null) return // ponytail: importe no válido, no se toca el saldo
+          if (amount === null) return
           onAdd({
             id: crypto.randomUUID(),
             kind,
@@ -203,15 +218,16 @@ function MovementPanel({
         }}
         className={`${card} flex flex-col gap-2 p-4 sm:p-5`}
       >
+        <Label>{positive ? 'Nuevo ingreso' : 'Nuevo gasto'}</Label>
         <input
           name="amount"
           type="number"
           step="0.01"
           min="0.01"
           required
-          placeholder={positive ? '¿Cuánto has ganado?' : '¿Cuánto has gastado?'}
+          placeholder="0,00"
           aria-label="Importe"
-          className={input}
+          className={`${input} font-mono text-lg`}
         />
         <div className="flex gap-2">
           <select name="category" defaultValue={cats[0]} aria-label="Categoría" className={select}>
@@ -245,16 +261,16 @@ function MovementPanel({
             {movements.map((m) => (
               <li
                 key={m.id}
-                className="flex items-center gap-3 border-b border-neutral-100 py-3 text-sm last:border-0 dark:border-neutral-800"
+                className={`flex items-center gap-3 border-b py-3 text-sm last:border-0 ${line}`}
               >
                 <span
-                  className={`w-20 shrink-0 tabular-nums ${positive ? 'text-green-600 dark:text-green-500' : 'text-red-500'}`}
+                  className={`w-24 shrink-0 font-mono tabular-nums ${positive ? 'text-green-600' : 'text-red-500'}`}
                 >
                   {positive ? '+' : '−'}
                   {eur(m.amount)}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{m.category}</span>
-                <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
                   {m.date.slice(8)}/{m.date.slice(5, 7)}
                 </span>
                 <button
