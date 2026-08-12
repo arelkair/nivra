@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { avisarCambio } from './sync'
+import { alSincronizar, avisarCambio } from './sync'
 
 export type PageId =
   | 'dashboard'
@@ -353,9 +353,27 @@ export function useStored<T>(key: string, initial: T) {
     }
   })
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(value))
-    avisarCambio()
+    const raw = JSON.stringify(value)
+    const previo = localStorage.getItem(key)
+    if (previo === raw) return
+    localStorage.setItem(key, raw)
+    avisarCambio(key, previo === null)
   }, [key, value])
+
+  useEffect(
+    () =>
+      alSincronizar(() => {
+        const raw = localStorage.getItem(key)
+        if (raw === null || raw === JSON.stringify(value)) return
+        try {
+          setValue(JSON.parse(raw) as T)
+        } catch {
+          /* si llega algo ilegible se ignora y se conserva lo de aquí */
+        }
+      }),
+    [key, value],
+  )
+
   return [value, setValue] as const
 }
 

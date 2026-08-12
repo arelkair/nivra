@@ -3,13 +3,17 @@ const PUBLIC_KEY = 'sb_publishable_yQ9Uk6CNHcbt4D05JmQVZw_d4Y5P_eh'
 
 const ALFA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const ESTADO = 'nivra-sync'
+const TIEMPOS = 'nivra-sync-times'
+const EVENTO = 'nivra-sync'
 
 export type EstadoSync = {
   code: string
   lastSeen: string | null
-  lastHash: string | null
   error?: string
 }
+
+type Entrada = { v: string; t: number }
+type Paquete = { v: 2; keys: Record<string, Entrada> }
 
 export function nuevoCodigo() {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
@@ -22,18 +26,43 @@ export const normaliza = (codigo: string) =>
 
 export const conGuiones = (codigo: string) => normaliza(codigo).match(/.{1,4}/g)?.join('-') ?? ''
 
-export function leerEstado(): EstadoSync | null {
+const leerJson = <T,>(clave: string, porDefecto: T): T => {
   try {
-    const raw = localStorage.getItem(ESTADO)
-    return raw ? (JSON.parse(raw) as EstadoSync) : null
+    const raw = localStorage.getItem(clave)
+    return raw ? (JSON.parse(raw) as T) : porDefecto
   } catch {
-    return null
+    return porDefecto
   }
 }
+
+export const leerEstado = () => leerJson<EstadoSync | null>(ESTADO, null)
 
 export function guardarEstado(estado: EstadoSync | null) {
   if (estado) localStorage.setItem(ESTADO, JSON.stringify(estado))
   else localStorage.removeItem(ESTADO)
+}
+
+const leerTiempos = () => leerJson<Record<string, number>>(TIEMPOS, {})
+const guardarTiempos = (t: Record<string, number>) =>
+  localStorage.setItem(TIEMPOS, JSON.stringify(t))
+
+const interna = (k: string) => k === ESTADO || k === TIEMPOS
+
+function valoresLocales() {
+  const out: Record<string, string> = {}
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (k && k.startsWith('nivra-') && !interna(k)) out[k] = localStorage.getItem(k) ?? ''
+  }
+  return out
+}
+
+function paqueteLocal(): Paquete {
+  const valores = valoresLocales()
+  const tiempos = leerTiempos()
+  const keys: Record<string, Entrada> = {}
+  for (const k of Object.keys(valores).sort()) keys[k] = { v: valores[k], t: tiempos[k] ?? 0 }
+  return { v: 2, keys }
 }
 
 const bytesAHex = (b: ArrayBuffer) =>
@@ -43,9 +72,7 @@ async function hex(texto: string) {
   return bytesAHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto)))
 }
 
-async function identificador(codigo: string) {
-  return hex(`nivra-id-v1:${codigo}`)
-}
+const identificador = (codigo: string) => hex(`nivra-id-v1:${codigo}`)
 
 async function clave(codigo: string) {
   const base = await crypto.subtle.importKey(
@@ -70,7 +97,6 @@ async function clave(codigo: string) {
 }
 
 const aBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
-
 const deBase64 = (texto: string) => Uint8Array.from(atob(texto), (c) => c.charCodeAt(0))
 
 async function cifrar(texto: string, k: CryptoKey) {
@@ -106,86 +132,136 @@ async function rpc(fn: string, body: Record<string, unknown>) {
   return r.json()
 }
 
-/** JSON con las claves ordenadas: dos dispositivos con los mismos datos dan el mismo texto. */
-function copiaLocal() {
-  const claves: string[] = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i)
-    if (k && k.startsWith('nivra-') && k !== ESTADO) claves.push(k)
-  }
-  claves.sort()
-  return JSON.stringify(Object.fromEntries(claves.map((k) => [k, localStorage.getItem(k) ?? ''])))
+function comoPaquete(json: string): Paquete {
+  const crudo = JSON.parse(json) as Paquete | Record<string, string>
+  if ((crudo as Paquete).v === 2) return crudo as Paquete
+  const keys: Record<string, Entrada> = {}
+  for (const [k, v] of Object.entries(crudo as Record<string, string>)) keys[k] = { v, t: 0 }
+  return { v: 2, keys }
 }
 
-function aplicar(datos: Record<string, string>) {
-  for (let i = localStorage.length - 1; i >= 0; i--) {
-    const k = localStorage.key(i)
-    if (k && k.startsWith('nivra-') && k !== ESTADO && !(k in datos)) localStorage.removeItem(k)
+/** Gana la versión más reciente de cada clave, no el último dispositivo en escribir. */
+function mezclar(local: Paquete, remoto: Paquete) {
+  const keys: Record<string, Entrada> = {}
+  let cambiaLocal = false
+  let cambiaRemoto = false
+
+  for (const k of [...new Set([...Object.keys(local.keys), ...Object.keys(remoto.keys)])].sort()) {
+    const a = local.keys[k]
+    const b = remoto.keys[k]
+    if (a && b) {
+      const gana = b.t > a.t ? b : a
+      keys[k] = gana
+      if (gana.v !== a.v) cambiaLocal = true
+      if (gana.v !== b.v) cambiaRemoto = true
+    } else if (b) {
+      keys[k] = b
+      cambiaLocal = true
+    } else {
+      keys[k] = a
+      cambiaRemoto = true
+    }
   }
-  for (const [k, v] of Object.entries(datos)) localStorage.setItem(k, v)
+  return { fusion: { v: 2, keys } as Paquete, cambiaLocal, cambiaRemoto }
 }
 
-export async function subir(estado: EstadoSync, forzar = false) {
-  const json = copiaLocal()
-  const huella = await hex(json)
-  if (!forzar && huella === estado.lastHash) return estado
+function aplicar(paquete: Paquete) {
+  const tiempos = leerTiempos()
+  let tocado = false
+  for (const [k, e] of Object.entries(paquete.keys)) {
+    if (localStorage.getItem(k) !== e.v) {
+      localStorage.setItem(k, e.v)
+      tocado = true
+    }
+    tiempos[k] = e.t
+  }
+  guardarTiempos(tiempos)
+  if (tocado) dispatchEvent(new Event(EVENTO))
+  return tocado
+}
 
+const texto = (p: Paquete) => JSON.stringify(p)
+
+export async function subir(estado: EstadoSync, paquete = paqueteLocal()) {
   const codigo = normaliza(estado.code)
-  const cifrado = await cifrar(json, await clave(codigo))
   const ts = await rpc('vault_put', {
     vault_id: await identificador(codigo),
-    vault_payload: cifrado,
+    vault_payload: await cifrar(texto(paquete), await clave(codigo)),
   })
-  const nuevo = { ...estado, lastSeen: ts as string, lastHash: huella, error: undefined }
+  const nuevo = { ...estado, lastSeen: ts as string, error: undefined }
   guardarEstado(nuevo)
   return nuevo
 }
 
-/** Devuelve true si ha traído datos nuevos y conviene recargar. */
-export async function bajar(estado: EstadoSync) {
-  const codigo = normaliza(estado.code)
+async function leerRemoto(codigo: string) {
   const filas = (await rpc('vault_get', { vault_id: await identificador(codigo) })) as {
     payload: string
     updated_at: string
   }[]
-  const fila = filas[0]
-  if (!fila) return { estado, hayDatos: false, cambio: false }
-  if (fila.updated_at === estado.lastSeen) return { estado, hayDatos: true, cambio: false }
+  if (!filas[0]) return null
+  return {
+    paquete: comoPaquete(await descifrar(filas[0].payload, await clave(codigo))),
+    updated_at: filas[0].updated_at,
+  }
+}
 
-  const json = await descifrar(fila.payload, await clave(codigo))
-  const huella = await hex(json)
-  if (huella === estado.lastHash) {
-    const igual = { ...estado, lastSeen: fila.updated_at }
-    guardarEstado(igual)
-    return { estado: igual, hayDatos: true, cambio: false }
+/** Trae lo del servidor, lo mezcla con lo de aquí y devuelve lo que haya cambiado. */
+export async function sincronizar(estado: EstadoSync) {
+  const codigo = normaliza(estado.code)
+  const remoto = await leerRemoto(codigo)
+  const local = paqueteLocal()
+
+  if (!remoto) {
+    const nuevo = await subir(estado, local)
+    return { estado: nuevo, cambio: false }
   }
 
-  aplicar(JSON.parse(json) as Record<string, string>)
-  const nuevo = { ...estado, lastSeen: fila.updated_at, lastHash: huella, error: undefined }
-  guardarEstado(nuevo)
-  return { estado: nuevo, hayDatos: true, cambio: true }
+  const { fusion, cambiaLocal, cambiaRemoto } = mezclar(local, remoto.paquete)
+  const cambio = cambiaLocal ? aplicar(fusion) : false
+
+  let siguiente = { ...estado, lastSeen: remoto.updated_at, error: undefined }
+  if (cambiaRemoto) siguiente = await subir(siguiente, fusion)
+  else guardarEstado(siguiente)
+
+  return { estado: siguiente, cambio }
 }
 
 export async function conectar(codigo: string) {
   const limpio = normaliza(codigo)
   if (limpio.length !== 16) throw new Error('El código debe tener 16 caracteres.')
-  const inicial: EstadoSync = { code: limpio, lastSeen: null, lastHash: null }
-  const { estado, hayDatos, cambio } = await bajar(inicial)
-  if (!hayDatos) {
-    guardarEstado(await subir(inicial, true))
+  const inicial: EstadoSync = { code: limpio, lastSeen: null }
+
+  const remoto = await leerRemoto(limpio)
+  if (!remoto) {
+    guardarEstado(await subir(inicial))
     return { creado: true, cambio: false }
   }
-  guardarEstado(estado)
+
+  const cambio = aplicar(remoto.paquete)
+  guardarEstado({ ...inicial, lastSeen: remoto.updated_at })
   return { creado: false, cambio }
 }
 
 let pendiente: ReturnType<typeof setTimeout> | null = null
 
-export function avisarCambio() {
+/** `inicial` marca los valores por defecto que crea la app al abrirse: no deben
+ *  ganarle a lo que ya haya en el otro dispositivo, así que van con tiempo cero. */
+export function avisarCambio(clave: string, inicial = false) {
+  const tiempos = leerTiempos()
+  tiempos[clave] = inicial ? 0 : Date.now()
+  guardarTiempos(tiempos)
+
   const estado = leerEstado()
   if (!estado) return
   if (pendiente) clearTimeout(pendiente)
   pendiente = setTimeout(() => {
-    subir(estado).catch((e) => guardarEstado({ ...estado, error: String(e.message ?? e) }))
-  }, 2000)
+    sincronizar(leerEstado() ?? estado).catch((e) =>
+      guardarEstado({ ...(leerEstado() ?? estado), error: String(e.message ?? e) }),
+    )
+  }, 1200)
+}
+
+export const alSincronizar = (fn: () => void) => {
+  addEventListener(EVENTO, fn)
+  return () => removeEventListener(EVENTO, fn)
 }

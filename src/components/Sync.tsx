@@ -26,7 +26,7 @@ export function SyncPanel({
     setTrabajando(true)
     setAviso(null)
     try {
-      const nuevo = await subir({ code: normaliza(nuevoCodigo()), lastSeen: null, lastHash: null }, true)
+      const nuevo = await subir({ code: normaliza(nuevoCodigo()), lastSeen: null })
       setEstado(nuevo)
       setVisible(true)
       setAviso('Listo. Copia el código y pégalo en el otro dispositivo.')
@@ -41,12 +41,14 @@ export function SyncPanel({
     setAviso(null)
     try {
       const r = await conectar(codigo)
-      if (r.cambio) {
-        location.reload()
-        return
-      }
       setEstado(leerEstado())
-      setAviso(r.creado ? 'Código nuevo: se han subido tus datos.' : 'Conectado. Ya estabais igual.')
+      setAviso(
+        r.creado
+          ? 'Código nuevo: se han subido tus datos.'
+          : r.cambio
+            ? 'Conectado. Datos del otro dispositivo descargados.'
+            : 'Conectado. Ya estabais igual.',
+      )
     } catch (e) {
       setAviso(`No se pudo conectar: ${(e as Error).message}`)
     }
@@ -87,7 +89,7 @@ export function SyncPanel({
             {estado.error
               ? `Último intento fallido: ${estado.error}`
               : estado.lastSeen
-                ? `Al día · ${new Date(estado.lastSeen).toLocaleString('es-ES')}`
+                ? `Al día · ${new Date(estado.lastSeen).toLocaleTimeString('es-ES')} · se comprueba cada 4 s`
                 : 'Sin sincronizar todavía.'}
           </p>
 

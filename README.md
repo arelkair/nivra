@@ -24,6 +24,11 @@ Los datos se cifran con `AES-GCM` antes de subirse, así que el servidor guarda 
 leer. Pegar el código en otro dispositivo descarga esos datos y deja los dos conectados. Sin el
 código no hay forma de recuperarlos.
 
+Una vez conectados se puede trabajar en los dos a la vez: los cambios suben a a los pocos segundos
+y bajan cada cuatro, y se aplican en caliente, sin recargar. Cada sección lleva su propia marca de
+tiempo y se mezcla por separado, así que editar las tareas en un dispositivo y las notas en el otro
+no pisa nada. Si tocas lo mismo en los dos a la vez, gana la edición más reciente.
+
 ## Desarrollo
 
 ```bash

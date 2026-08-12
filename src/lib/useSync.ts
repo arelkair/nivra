@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { bajar, leerEstado, type EstadoSync } from './sync'
+import { leerEstado, sincronizar, type EstadoSync } from './sync'
+
+const CADA = 4000
 
 export function useSync() {
   const [estado, setEstado] = useState<EstadoSync | null>(() => leerEstado())
@@ -8,27 +10,30 @@ export function useSync() {
   useEffect(() => {
     if (!code) return
     let vivo = true
+    let trabajando = false
 
-    const traer = async () => {
+    const vuelta = async () => {
       const actual = leerEstado()
-      if (!actual) return
+      if (!actual || trabajando) return
+      trabajando = true
       try {
-        const r = await bajar(actual)
-        if (!vivo) return
-        if (r.cambio) location.reload()
-        else setEstado(r.estado)
+        const r = await sincronizar(actual)
+        if (vivo) setEstado(r.estado)
       } catch {
         /* sin conexión: se reintenta en la siguiente vuelta */
       }
+      trabajando = false
     }
 
-    traer()
-    const id = setInterval(traer, 20000)
-    addEventListener('focus', traer)
+    vuelta()
+    const id = setInterval(vuelta, CADA)
+    addEventListener('focus', vuelta)
+    document.addEventListener('visibilitychange', vuelta)
     return () => {
       vivo = false
       clearInterval(id)
-      removeEventListener('focus', traer)
+      removeEventListener('focus', vuelta)
+      document.removeEventListener('visibilitychange', vuelta)
     }
   }, [code])
 
