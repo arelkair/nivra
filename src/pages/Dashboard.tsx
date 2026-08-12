@@ -69,7 +69,7 @@ export function Dashboard({
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 md:h-full md:min-h-0">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 lg:h-full lg:min-h-0">
       <header className="animate-[fade-in_0.4s_ease-out] shrink-0">
         <p className="text-sm text-neutral-400 first-letter:uppercase dark:text-neutral-500">
           {today.toLocaleDateString('es-ES', { weekday: 'long' })}
@@ -97,11 +97,11 @@ export function Dashboard({
         ))}
       </div>
 
-      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] md:min-h-0 md:flex-[2] md:overflow-y-auto md:overscroll-contain">
+      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
         <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
       </div>
 
-      <div className="grid gap-4 sm:gap-6 md:min-h-0 md:flex-[3] md:overflow-y-auto md:overscroll-contain lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-3 xl:grid-cols-3 xl:grid-rows-2">
         <Panel title="Hoy" delay={0.1}>
           {todayItems.length === 0 ? (
             <Empty>Sin actividades.</Empty>
@@ -217,10 +217,10 @@ function Panel({
   return (
     <section
       style={{ animationDelay: `${delay}s` }}
-      className={`${card} animate-[fade-in_0.4s_ease-out_both] p-5 sm:p-6`}
+      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex min-h-0 flex-col p-5 sm:p-6`}
     >
       <Label>{title}</Label>
-      {children}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
     </section>
   )
 }

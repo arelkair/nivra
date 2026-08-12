@@ -234,7 +234,7 @@ function App() {
           <main
             key={page}
             className={`animate-[fade-in_0.35s_ease-out] flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-28 sm:px-8 sm:pt-8 md:pb-12 ${
-              page === 'dashboard' ? 'md:overflow-hidden' : ''
+              page === 'dashboard' ? 'lg:overflow-hidden' : ''
             }`}
           >
             {page === 'dashboard' && (

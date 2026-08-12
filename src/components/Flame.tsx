@@ -18,7 +18,9 @@ export function Flame({
   const color = `color-mix(in oklab, #9ca3af, #ef4444 ${Math.round(mezcla * 100)}%)`
 
   return (
-    <section className={`${card} flex flex-col items-center justify-center gap-2 p-5 sm:p-6`}>
+    <section
+      className={`${card} flex min-h-0 flex-col items-center justify-center gap-1 overflow-hidden p-4`}
+    >
       <button
         type="button"
         disabled={yaHoy}
@@ -26,16 +28,20 @@ export function Flame({
           setStreak((prev) => ({ count: prev.last === ayer ? prev.count + 1 : 1, last: hoy }))
         }
         aria-label={yaHoy ? 'Racha ya marcada hoy' : 'Marcar día'}
-        title={yaHoy ? 'Ya has marcado hoy' : 'Marca tu día'}
-        className={`transition-transform ${yaHoy ? 'cursor-default' : 'hover:scale-110 active:scale-95'}`}
+        title={
+          yaHoy
+            ? `${streak.count} ${streak.count === 1 ? 'día seguido' : 'días seguidos'}. Ya has marcado hoy.`
+            : 'Marca tu día'
+        }
+        className={`flex items-center gap-2 transition-transform ${
+          yaHoy ? 'cursor-default' : 'hover:scale-105 active:scale-95'
+        }`}
         style={{ color, opacity: yaHoy ? 1 : 0.55 }}
       >
-        <Icon name="flame" className="h-10 w-10" />
+        <Icon name="flame" className="h-6 w-6 shrink-0" />
+        <span className="font-mono text-xl font-medium tabular-nums">{streak.count}</span>
       </button>
-      <p className="font-mono text-2xl font-medium tabular-nums" style={{ color }}>
-        {streak.count}
-      </p>
-      <p className="text-[0.65rem] tracking-wider text-neutral-400 uppercase dark:text-neutral-500">
+      <p className="truncate text-[0.55rem] tracking-wider text-neutral-400 uppercase dark:text-neutral-500">
         {streak.count === 1 ? 'día seguido' : 'días seguidos'}
       </p>
     </section>

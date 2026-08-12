@@ -7,6 +7,21 @@ type Props = {
   setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
 }
 
+const dosDigitos = (n: number) => String(n).padStart(2, '0')
+
+const fecha = (iso?: string) => {
+  const d = iso ? new Date(iso) : new Date()
+  return `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`
+}
+
+const hora = (iso?: string) => {
+  const d = iso ? new Date(iso) : new Date()
+  return `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`
+}
+
+const corta = (iso: string) =>
+  `${new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ${hora(iso)}`
+
 const DEFAULT_UNITS: Record<Unit, boolean> = {
   years: false,
   months: false,
@@ -142,6 +157,12 @@ function Card({
           style={{ width: `${pct * 100}%` }}
         />
       </div>
+      <p className="mt-1 flex justify-between gap-2 font-mono text-[0.6rem] text-neutral-400">
+        <span>{Math.round(pct * 100)}%</span>
+        <span className="truncate">
+          {corta(item.created)} → {corta(item.target)}
+        </span>
+      </p>
     </div>
   )
 }
@@ -166,15 +187,16 @@ function CountdownDialog({
           ev.preventDefault()
           const data = new FormData(ev.currentTarget)
           const title = String(data.get('title') ?? '').trim()
-          const date = String(data.get('date') ?? '')
-          const time = String(data.get('time') ?? '') || '00:00'
-          if (!title || !date) return
+          const desde = `${data.get('startDate')}T${String(data.get('startTime') || '00:00')}`
+          const hasta = `${data.get('date')}T${String(data.get('time') || '00:00')}`
+          if (!title || !data.get('startDate') || !data.get('date')) return
+          const [created, target] = desde <= hasta ? [desde, hasta] : [hasta, desde]
           onSave({
             id: item?.id ?? crypto.randomUUID(),
             title,
             subtitle: String(data.get('subtitle') ?? '').trim() || undefined,
-            target: `${date}T${time}`,
-            created: item?.created ?? new Date().toISOString(),
+            target,
+            created,
             units,
           })
         }}
@@ -195,22 +217,46 @@ function CountdownDialog({
           placeholder="Subtítulo"
           className={input}
         />
-        <div className="flex gap-2">
-          <input
-            name="date"
-            type="date"
-            defaultValue={item?.target.slice(0, 10)}
-            required
-            aria-label="Día del final"
-            className={input}
-          />
-          <input
-            name="time"
-            type="time"
-            defaultValue={item?.target.slice(11, 16) || '00:00'}
-            aria-label="Hora del final"
-            className={input}
-          />
+        <div className="mt-2">
+          <Label>Empieza</Label>
+          <div className="flex gap-2">
+            <input
+              name="startDate"
+              type="date"
+              defaultValue={fecha(item?.created)}
+              required
+              aria-label="Día de inicio"
+              className={input}
+            />
+            <input
+              name="startTime"
+              type="time"
+              defaultValue={hora(item?.created)}
+              aria-label="Hora de inicio"
+              className={input}
+            />
+          </div>
+        </div>
+
+        <div className="mt-2">
+          <Label>Acaba</Label>
+          <div className="flex gap-2">
+            <input
+              name="date"
+              type="date"
+              defaultValue={fecha(item?.target)}
+              required
+              aria-label="Día del final"
+              className={input}
+            />
+            <input
+              name="time"
+              type="time"
+              defaultValue={hora(item?.target)}
+              aria-label="Hora del final"
+              className={input}
+            />
+          </div>
         </div>
 
         <div className="mt-2">
