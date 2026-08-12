@@ -10,6 +10,8 @@ import { Tasks } from './pages/Tasks'
 import { Grades } from './pages/Grades'
 import { Wishlist } from './pages/Wishlist'
 import { Notepads } from './pages/Notepads'
+import { SyncPanel } from './components/Sync'
+import { useSync } from './lib/useSync'
 import { Clock, Confetti, Icon, Label, Modal, Switch, input, line } from './components/ui'
 import {
   ACCENTS,
@@ -80,6 +82,7 @@ function App() {
   const [page, setPage] = useState<PageId>('dashboard')
   const [bankTab, setBankTab] = useState<BankTab>('dinero')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [sync, setSync] = useSync()
   const [introEnabled, setIntroEnabled] = useStored('nivra-intro', true)
   const [accent, setAccent] = useStored('nivra-accent', 'basico')
   const [clockOn, setClockOn] = useStored('nivra-clock', false)
@@ -368,6 +371,10 @@ function App() {
               <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
                 El color tiñe el fondo por encima del modo claro u oscuro.
               </p>
+            </div>
+
+            <div className="mt-6">
+              <SyncPanel estado={sync} setEstado={setSync} />
             </div>
 
             <div className="mt-6">

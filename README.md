@@ -11,6 +11,19 @@ Organizador personal que guarda todo en tu navegador. Sin cuentas, sin servidor,
 
 Tema claro y oscuro, diseño adaptado a móvil, tablet y escritorio, y ajustes para la animación de inicio.
 
+## Sincronización entre dispositivos
+
+Opcional y apagada por defecto: mientras no la actives, nada sale de tu navegador.
+
+Al crear tu código, del código se derivan dos cosas distintas:
+
+- un **identificador** (`SHA-256`), que es lo único que viaja como dirección del cajón;
+- una **clave** (`PBKDF2`, 200 000 iteraciones), que nunca sale del navegador.
+
+Los datos se cifran con `AES-GCM` antes de subirse, así que el servidor guarda algo que no puede
+leer. Pegar el código en otro dispositivo descarga esos datos y deja los dos conectados. Sin el
+código no hay forma de recuperarlos.
+
 ## Desarrollo
 
 ```bash

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { avisarCambio } from './sync'
 
 export type PageId =
   | 'dashboard'
@@ -353,6 +354,7 @@ export function useStored<T>(key: string, initial: T) {
   })
   useEffect(() => {
     localStorage.setItem(key, JSON.stringify(value))
+    avisarCambio()
   }, [key, value])
   return [value, setValue] as const
 }
