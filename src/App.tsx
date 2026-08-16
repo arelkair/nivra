@@ -20,6 +20,7 @@ import { useSettings } from './lib/settings'
 import { lanzar, marcarEnviadas, pendientes } from './lib/notify'
 import { ATAJOS, escribiendo, teclaDe } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
+import { registrarAvisos } from './lib/undo'
 import {
   EXPENSE_CATS,
   INCOME_CATS,
@@ -138,14 +139,27 @@ function App() {
   )
 
   const avisar = useCallback(
-    (texto: string) => {
+    (texto: string, deshacer?: () => void) => {
       if (!cfg.toasts) return
       const id = crypto.randomUUID()
-      setAvisos((prev) => [...prev, { id, texto }])
-      setTimeout(() => setAvisos((prev) => prev.filter((a) => a.id !== id)), 6000)
+      setAvisos((prev) => [...prev, { id, texto, deshacer }])
+      setTimeout(() => setAvisos((prev) => prev.filter((a) => a.id !== id)), deshacer ? 8000 : 6000)
     },
     [cfg.toasts],
   )
+
+  useEffect(() => registrarAvisos(avisar), [avisar])
+
+  const [instalador, setInstalador] = useState<Event | null>(null)
+  useEffect(() => {
+    const guardar = (e: Event) => {
+      e.preventDefault()
+      setInstalador(e)
+    }
+    addEventListener('beforeinstallprompt', guardar)
+    addEventListener('appinstalled', () => setInstalador(null))
+    return () => removeEventListener('beforeinstallprompt', guardar)
+  }, [])
 
   const [theme, setTheme] = useStored<'light' | 'dark'>(
     'nivra-theme',
@@ -573,10 +587,11 @@ function App() {
                 subjects={cfg.subjects}
                 notepads={notepads}
                 setNotepads={setNotepads}
+                grades={grades}
               />
             )}
             {page === 'notas' && (
-              <Grades grades={grades} setGrades={setGrades} subjects={cfg.subjects} />
+              <Grades grades={grades} setGrades={setGrades} subjects={cfg.subjects} works={works} />
             )}
             {page === 'deseos' && <Wishlist wishes={wishes} setWishes={setWishes} />}
             {page === 'suscripciones' && <Subscriptions subs={subs} setSubs={setSubs} />}
@@ -641,6 +656,8 @@ function App() {
             cfg={cfg}
             sync={sync}
             setSync={setSync}
+            instalador={instalador}
+            onInstalado={() => setInstalador(null)}
             onClose={() => setSettingsOpen(false)}
             onAviso={avisar}
           />

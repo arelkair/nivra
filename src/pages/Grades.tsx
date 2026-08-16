@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { dateKey, shortDate, type Grade, type Subject } from '../lib/store'
+import { dateKey, shortDate, type Grade, type Subject, type Work } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
 
 type Props = {
   grades: Grade[]
   setGrades: (update: (prev: Grade[]) => Grade[]) => void
   subjects: Subject[]
+  works: Work[]
 }
 
 const KINDS: { id: Grade['kind']; label: string }[] = [
@@ -21,7 +23,7 @@ const tono = (v: number) =>
       ? 'text-neutral-900 dark:text-white'
       : 'text-red-500'
 
-export function Grades({ grades, setGrades, subjects }: Props) {
+export function Grades({ grades, setGrades, subjects, works }: Props) {
   const [filtro, setFiltro] = useState<'todos' | '1' | '2' | '3'>('todos')
   const visibles =
     filtro === 'todos' ? grades : grades.filter((g) => String(g.term ?? '') === filtro)
@@ -46,7 +48,10 @@ export function Grades({ grades, setGrades, subjects }: Props) {
               id: crypto.randomUUID(),
               value: Math.round(value * 100) / 100,
               subject: String(data.get('subject') ?? '') || undefined,
-              desc: subjects.find((x) => x.id === String(data.get('subject')))?.name,
+              work: String(data.get('work') ?? '') || undefined,
+              desc:
+                works.find((w) => w.id === String(data.get('work')))?.title ??
+                subjects.find((x) => x.id === String(data.get('subject')))?.name,
               kind: String(data.get('kind')) as Grade['kind'],
               date: dateKey(new Date()),
               term: Number(data.get('term')) as Grade['term'],
@@ -92,6 +97,16 @@ export function Grades({ grades, setGrades, subjects }: Props) {
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {works.length > 0 && (
+          <select name="work" defaultValue="" aria-label="Examen o proyecto" className={select}>
+            <option value="">Sin examen ni proyecto</option>
+            {works.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.kind === 'examen' ? 'Examen' : 'Proyecto'} · {w.title}
               </option>
             ))}
           </select>
@@ -153,7 +168,11 @@ export function Grades({ grades, setGrades, subjects }: Props) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setGrades((prev) => prev.filter((x) => x.id !== g.id))}
+                  onClick={() => {
+                    const antes = grades
+                    setGrades((prev) => prev.filter((x) => x.id !== g.id))
+                    conDeshacer(`Nota ${g.value} eliminada`, () => setGrades(() => antes))
+                  }}
                   aria-label={`Eliminar nota ${g.value}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >

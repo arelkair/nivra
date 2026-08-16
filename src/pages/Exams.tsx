@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { TYPES, mover, shortDate, type Notepad, type Subject, type Work } from '../lib/store'
+import { TYPES, mover, shortDate, type Grade, type Notepad, type Subject, type Work } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
@@ -8,16 +9,22 @@ type Props = {
   subjects: Subject[]
   notepads: Notepad[]
   setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
+  grades: Grade[]
 }
 
-export function Exams({ works, setWorks, subjects, notepads, setNotepads }: Props) {
+export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades }: Props) {
   const [kind, setKind] = useState<'examen' | 'proyecto'>('examen')
   const [editingId, setEditingId] = useState<string | null>(null)
   const editing = works.find((w) => w.id === editingId)
 
   const patch = (id: string, changes: Partial<Work>) =>
     setWorks((prev) => prev.map((w) => (w.id === id ? { ...w, ...changes } : w)))
-  const remove = (id: string) => setWorks((prev) => prev.filter((w) => w.id !== id))
+  const remove = (id: string) => {
+    const antes = works
+    const titulo = works.find((w) => w.id === id)?.title ?? ''
+    setWorks((prev) => prev.filter((w) => w.id !== id))
+    conDeshacer(`«${titulo}» eliminado`, () => setWorks(() => antes))
+  }
 
   const exams = works.filter((w) => w.kind === 'examen')
   const projects = works.filter((w) => w.kind === 'proyecto')
@@ -100,6 +107,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads }: Prop
                 key={w.id}
                 work={w}
                 subjects={subjects}
+                nota={grades.find((g) => g.work === w.id)?.value}
                 onOpen={setEditingId}
                 onRemove={remove}
                 onMover={(salto) => moverWork(w.id, salto)}
@@ -120,6 +128,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads }: Prop
                 key={w.id}
                 work={w}
                 subjects={subjects}
+                nota={grades.find((g) => g.work === w.id)?.value}
                 onOpen={setEditingId}
                 onRemove={remove}
                 onMover={(salto) => moverWork(w.id, salto)}
@@ -146,12 +155,14 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads }: Prop
 function Row({
   work,
   subjects,
+  nota,
   onOpen,
   onRemove,
   onMover,
 }: {
   work: Work
   subjects: Subject[]
+  nota?: number
   onOpen: (id: string) => void
   onRemove: (id: string) => void
   onMover: (salto: number) => void
@@ -178,6 +189,19 @@ function Row({
           {work.desc && <span className="truncate">{work.desc}</span>}
         </span>
       </button>
+      {nota !== undefined && (
+        <span
+          title="Nota obtenida"
+          className={`shrink-0 rounded-md px-2 py-0.5 font-mono text-sm font-medium tabular-nums ${
+            nota >= 5
+              ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200'
+              : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200'
+          }`}
+        >
+          {nota}
+        </span>
+      )}
+
       <span className="flex shrink-0 flex-col">
         <button
           type="button"

@@ -12,13 +12,17 @@ type Props = {
   cfg: Settings
   sync: EstadoSync | null
   setSync: (e: EstadoSync | null) => void
+  instalador: Event | null
+  onInstalado: () => void
   onClose: () => void
   onAviso: (texto: string) => void
 }
 
+type Instalable = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
+
 const COLORES_ASIG = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8', '#a855f7', '#ec4899']
 
-export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
+export function Settings({ cfg, sync, setSync, instalador, onInstalado, onClose, onAviso }: Props) {
   const [abierta, setAbierta] = useState<string | null>(null)
   const alterna = (id: string) => setAbierta((prev) => (prev === id ? null : id))
 
@@ -59,6 +63,15 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
               label="Ocultar grupo de cuentas atrás"
             />
           </div>
+        </Collapsible>
+
+        <Collapsible
+          title="Aplicación"
+          abierto={abierta === 'app'}
+          animar={cfg.animations}
+          onToggle={() => alterna('app')}
+        >
+          <Instalar instalador={instalador} onInstalado={onInstalado} onAviso={onAviso} />
         </Collapsible>
 
         <Collapsible title="Color" abierto={abierta === 'color'} animar={cfg.animations} onToggle={() => alterna('color')}>
@@ -348,6 +361,59 @@ function Copia({ onAviso }: { onAviso: (t: string) => void }) {
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
         El CSV es para abrirlo fuera; para volver a entrar usa el JSON. Importar reemplaza lo que
         haya.
+      </p>
+    </div>
+  )
+}
+
+function Instalar({
+  instalador,
+  onInstalado,
+  onAviso,
+}: {
+  instalador: Event | null
+  onInstalado: () => void
+  onAviso: (t: string) => void
+}) {
+  const yaInstalada = matchMedia('(display-mode: standalone)').matches
+  const esApple = /iphone|ipad|ipod/i.test(navigator.userAgent)
+
+  if (yaInstalada) {
+    return (
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        Ya la estás usando instalada.
+      </p>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {instalador ? (
+        <button
+          type="button"
+          onClick={async () => {
+            const evento = instalador as Instalable
+            await evento.prompt()
+            const { outcome } = await evento.userChoice
+            onInstalado()
+            onAviso(outcome === 'accepted' ? 'Nivra se está instalando.' : 'Instalación cancelada.')
+          }}
+          className={button}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Icon name="download" className="h-4 w-4" />
+            Instalar Nivra
+          </span>
+        </button>
+      ) : (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          {esApple
+            ? 'En iPhone o iPad: pulsa Compartir y luego «Añadir a pantalla de inicio».'
+            : 'Tu navegador aún no ofrece instalarla. Suele aparecer tras usar la web un rato, o desde su menú, en «Instalar aplicación».'}
+        </p>
+      )}
+      <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+        Instalada se abre a pantalla completa, con su icono, y funciona sin conexión.
       </p>
     </div>
   )

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { paginasDe, sanitize, type Notepad, type NotepadPage } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -104,9 +105,11 @@ export function Notepads({ notepads, setNotepads }: Props) {
                 <button
                   type="button"
                   onClick={() => {
+                    const antes = notepads
                     setNotepads((prev) => prev.filter((n) => n.id !== renaming.id))
                     setActiveId(null)
                     setRenaming(null)
+                    conDeshacer(`«${renaming.title}» eliminado`, () => setNotepads(() => antes))
                   }}
                   className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"
                 >

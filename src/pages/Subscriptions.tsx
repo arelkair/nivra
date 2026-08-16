@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { eur, type Subscription } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -61,7 +62,11 @@ export function Subscriptions({ subs, setSubs }: Props) {
                 )}
                 <button
                   type="button"
-                  onClick={() => setSubs((prev) => prev.filter((x) => x.id !== s.id))}
+                  onClick={() => {
+                    const antes = subs
+                    setSubs((prev) => prev.filter((x) => x.id !== s.id))
+                    conDeshacer(`«${s.title}» eliminada`, () => setSubs(() => antes))
+                  }}
                   aria-label={`Eliminar ${s.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >

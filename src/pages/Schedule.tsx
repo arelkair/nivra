@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DAYS, DEFAULT_PROFILE, blockProfile, weekIndex, type Block, type Profile } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -130,7 +131,11 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                           </button>
                           <button
                             type="button"
-                            onClick={() => setBlocks((prev) => prev.filter((x) => x.id !== b.id))}
+                            onClick={() => {
+                              const antes = blocks
+                              setBlocks((prev) => prev.filter((x) => x.id !== b.id))
+                              conDeshacer(`«${b.title}» eliminado`, () => setBlocks(() => antes))
+                            }}
                             aria-label={`Eliminar ${b.title}`}
                             className="text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                           >

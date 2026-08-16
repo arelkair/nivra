@@ -9,6 +9,7 @@ import {
   type Goal,
   type Movement,
 } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Goals } from './Goals'
 import { CatChart, Empty, Icon, Label, BarChart, Segmented, button, card, input, line, select } from '../components/ui'
 
@@ -206,7 +207,11 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           cats={tab === 'ingresos' ? INCOME_CATS : EXPENSE_CATS}
           movements={tab === 'ingresos' ? income : expense}
           onAdd={(m) => setMovements((prev) => [m, ...prev])}
-          onRemove={(id) => setMovements((prev) => prev.filter((m) => m.id !== id))}
+          onRemove={(id) => {
+            const antes = movements
+            setMovements((prev) => prev.filter((m) => m.id !== id))
+            conDeshacer('Movimiento eliminado', () => setMovements(() => antes))
+          }}
         />
       )}
     </div>

@@ -285,20 +285,38 @@ export function Collapsible({
   )
 }
 
-export type Aviso = { id: string; texto: string }
+export type Aviso = { id: string; texto: string; deshacer?: () => void }
 
 export function Toasts({ avisos, onCerrar }: { avisos: Aviso[]; onCerrar: (id: string) => void }) {
   return (
     <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex flex-col gap-2">
       {avisos.map((a) => (
-        <button
+        <div
           key={a.id}
-          type="button"
-          onClick={() => onCerrar(a.id)}
-          className={`animate-[fade-in_0.25s_ease-out] pointer-events-auto max-w-xs rounded-xl border bg-[var(--surface)] px-4 py-3 text-left text-sm shadow-lg ${line}`}
+          className={`animate-[fade-in_0.25s_ease-out] pointer-events-auto flex max-w-xs items-center gap-3 rounded-xl border bg-[var(--surface)] py-2 pr-2 pl-4 text-sm shadow-lg ${line}`}
         >
-          {a.texto}
-        </button>
+          <span className="min-w-0 flex-1 py-1">{a.texto}</span>
+          {a.deshacer && (
+            <button
+              type="button"
+              onClick={() => {
+                a.deshacer?.()
+                onCerrar(a.id)
+              }}
+              className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium underline underline-offset-2 transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
+            >
+              Deshacer
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onCerrar(a.id)}
+            aria-label="Cerrar aviso"
+            className="shrink-0 rounded-lg p-1 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+          >
+            <Icon name="close" className="h-3.5 w-3.5" />
+          </button>
+        </div>
       ))}
     </div>
   )

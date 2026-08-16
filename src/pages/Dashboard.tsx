@@ -4,6 +4,8 @@ import {
   blockProfile,
   dateKey,
   eur,
+  itemsDeDia,
+  proximos,
   shortDate,
   weekIndex,
   type Block,
@@ -47,11 +49,8 @@ export function Dashboard({
 }: Props) {
   const today = new Date()
   const todayKey = dateKey(today)
-  const todayItems = items.filter((e) => e.date === todayKey)
-  const upcoming = items
-    .filter((e) => e.date > todayKey)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 5)
+  const todayItems = itemsDeDia(items, todayKey)
+  const upcoming = proximos(items, today, 60).slice(0, 5)
   const pending = tasks.filter((t) => !t.done)
   const todayBlocks = blocks
     .filter((b) => b.day === weekIndex(today) && blockProfile(b) === profile)
@@ -158,12 +157,12 @@ export function Dashboard({
             <Empty>Sin actividades.</Empty>
           ) : (
             <ul className="flex flex-col">
-              {upcoming.map((e) => (
-                <Row key={e.id}>
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
-                  <span className="min-w-0 flex-1 truncate">{e.title}</span>
+              {upcoming.map(({ date, item }) => (
+                <Row key={item.id + date}>
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[item.type].dot}`} />
+                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
                   <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
-                    {shortDate(e.date)}
+                    {shortDate(date)}
                   </span>
                 </Row>
               ))}

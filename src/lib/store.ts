@@ -99,6 +99,7 @@ export type Grade = {
   value: number
   desc?: string
   subject?: string
+  work?: string
   kind: 'examen' | 'trabajo' | 'otro'
   date: string
   term?: 1 | 2 | 3
@@ -194,12 +195,21 @@ export function progress(created: string, target: string, now: Date) {
 
 export type ItemType = 'festividad' | 'tarea' | 'examen' | 'proyecto'
 
+export type Repeticion = 'semanal' | 'mensual' | 'anual'
+
+export const REPETICIONES: { id: Repeticion; label: string }[] = [
+  { id: 'semanal', label: 'Cada semana' },
+  { id: 'mensual', label: 'Cada mes' },
+  { id: 'anual', label: 'Cada año' },
+]
+
 export type NivraEvent = {
   id: string
   date: string
   title: string
   desc?: string
   type: ItemType
+  repeat?: Repeticion
 }
 
 export type SubTask = { id: string; title: string; done: boolean }
@@ -374,6 +384,38 @@ export type CalItem = {
   desc?: string
   type: ItemType
   origin: 'evento' | 'tarea' | 'examen' | 'proyecto'
+  repeat?: Repeticion
+}
+
+const diaDelMes = (fecha: string) => Number(fecha.slice(8))
+
+/** Un elemento cae en esa fecha por su día propio o porque se repite. */
+export function ocurreEn(item: CalItem, fecha: string) {
+  if (item.date === fecha) return true
+  if (!item.repeat || fecha < item.date) return false
+
+  const [y, m, d] = fecha.split('-').map(Number)
+  if (item.repeat === 'anual') return monthDay(item.date) === monthDay(fecha)
+  if (item.repeat === 'mensual') {
+    const ultimo = new Date(y, m, 0).getDate()
+    return diaDelMes(item.date) === d || (diaDelMes(item.date) > ultimo && d === ultimo)
+  }
+  const [y2, m2, d2] = item.date.split('-').map(Number)
+  return weekIndex(new Date(y, m - 1, d)) === weekIndex(new Date(y2, m2 - 1, d2))
+}
+
+export const itemsDeDia = (items: CalItem[], fecha: string) =>
+  items.filter((i) => ocurreEn(i, fecha))
+
+/** Los próximos días con algo, mirando también las repeticiones. */
+export function proximos(items: CalItem[], desde: Date, dias: number) {
+  const out: { date: string; item: CalItem }[] = []
+  for (let i = 1; i <= dias; i++) {
+    const d = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate() + i)
+    const fecha = dateKey(d)
+    for (const item of itemsDeDia(items, fecha)) out.push({ date: fecha, item })
+  }
+  return out
 }
 
 export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]): CalItem[] {
@@ -385,6 +427,7 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
       desc: e.desc,
       type: e.type ?? 'festividad',
       origin: 'evento' as const,
+      repeat: e.repeat,
     })),
     ...tasks
       .filter((t) => t.date)
@@ -474,5 +517,25 @@ if (import.meta.env.DEV) {
   console.assert(
     sanitize('<a href="javascript:alert(1)" onclick="x()">v</a>') === '<a>v</a>',
     'ni enlaces ni atributos ejecutables',
+  )
+
+  const semanal: CalItem = {
+    id: 'x',
+    date: '2026-08-04',
+    title: 'x',
+    type: 'festividad',
+    origin: 'evento',
+    repeat: 'semanal',
+  }
+  console.assert(ocurreEn(semanal, '2026-08-11'), 'lo semanal cae el martes siguiente')
+  console.assert(!ocurreEn(semanal, '2026-08-12'), 'pero no el miércoles')
+  console.assert(!ocurreEn(semanal, '2026-07-28'), 'ni antes de empezar')
+  console.assert(
+    ocurreEn({ ...semanal, repeat: 'mensual' }, '2026-09-04'),
+    'lo mensual cae el mismo día del mes',
+  )
+  console.assert(
+    ocurreEn({ ...semanal, date: '2026-01-31', repeat: 'mensual' }, '2026-02-28'),
+    'y el 31 cae en el último día de febrero',
   )
 }

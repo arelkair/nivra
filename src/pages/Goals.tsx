@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { dateKey, eur, shortDate, weekIndex, type Goal, type Movement } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Label, Modal, Segmented, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -35,7 +36,12 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
   const limites = goals.filter((g) => g.kind === 'limite')
   const ideas = goals.filter((g) => g.kind === 'idea')
 
-  const borrar = (id: string) => setGoals((prev) => prev.filter((g) => g.id !== id))
+  const borrar = (id: string) => {
+    const antes = goals
+    const titulo = goals.find((g) => g.id === id)?.title ?? ''
+    setGoals((prev) => prev.filter((g) => g.id !== id))
+    conDeshacer(`«${titulo}» eliminado`, () => setGoals(() => antes))
+  }
 
   return (
     <div className="flex flex-col gap-4">

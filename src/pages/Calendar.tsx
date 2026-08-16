@@ -1,20 +1,26 @@
 import { useState } from 'react'
 import {
+  DAYS,
   MONTHS,
+  REPETICIONES,
   TYPES,
   WEEKDAYS,
   dateKey,
+  itemsDeDia,
   isFreeDay,
   isOfficialHoliday,
   isWeekend,
   monthDay,
   monthGrid,
+  weekIndex,
   type Anniversary,
   type CalItem,
   type ItemType,
   type NivraEvent,
+  type Repeticion,
 } from '../lib/store'
-import { Empty, Icon, Modal, button, input, select } from '../components/ui'
+import { conDeshacer } from '../lib/undo'
+import { Empty, Icon, Modal, Segmented, button, input, select } from '../components/ui'
 
 type Props = {
   items: CalItem[]
@@ -44,6 +50,17 @@ export function Calendar({
   const today = new Date()
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [selected, setSelected] = useState<string | null>(null)
+  const [vista, setVista] = useState<'mes' | 'semana'>('mes')
+  const [lunes, setLunes] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), today.getDate() - weekIndex(today)),
+  )
+
+  const diasSemana = Array.from(
+    { length: 7 },
+    (_, i) => new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i),
+  )
+  const moverSemana = (delta: number) =>
+    setLunes((prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + delta * 7))
 
   const cells = monthGrid(cursor.y, cursor.m)
   const todayKey = dateKey(today)
@@ -57,26 +74,118 @@ export function Calendar({
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold tracking-tight first-letter:uppercase sm:text-3xl">
-          {MONTHS[cursor.m]} <span className="text-neutral-300 dark:text-neutral-600">{cursor.y}</span>
+          {vista === 'mes' ? (
+            <>
+              {MONTHS[cursor.m]}{' '}
+              <span className="text-neutral-300 dark:text-neutral-600">{cursor.y}</span>
+            </>
+          ) : (
+            <>
+              {diasSemana[0].getDate()} {MONTHS[diasSemana[0].getMonth()].slice(0, 3)}
+              <span className="text-neutral-300 dark:text-neutral-600"> — </span>
+              {diasSemana[6].getDate()} {MONTHS[diasSemana[6].getMonth()].slice(0, 3)}
+            </>
+          )}
         </h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented
+            value={vista}
+            onChange={setVista}
+            options={[
+              { id: 'mes', label: 'Mes' },
+              { id: 'semana', label: 'Semana' },
+            ]}
+          />
           <button
             type="button"
-            onClick={() => setCursor({ y: today.getFullYear(), m: today.getMonth() })}
-            className="rounded-xl border border-black/[0.07] px-4 text-sm text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-100"
+            onClick={() => {
+              setCursor({ y: today.getFullYear(), m: today.getMonth() })
+              setLunes(
+                new Date(today.getFullYear(), today.getMonth(), today.getDate() - weekIndex(today)),
+              )
+            }}
+            className="rounded-xl border border-black/[0.07] px-4 py-2 text-sm text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-100"
           >
             Hoy
           </button>
-          <button type="button" onClick={() => move(-1)} aria-label="Mes anterior" className={navButton}>
+          <button
+            type="button"
+            onClick={() => (vista === 'mes' ? move(-1) : moverSemana(-1))}
+            aria-label={vista === 'mes' ? 'Mes anterior' : 'Semana anterior'}
+            className={navButton}
+          >
             <Icon name="left" className="h-4 w-4" />
           </button>
-          <button type="button" onClick={() => move(1)} aria-label="Mes siguiente" className={navButton}>
+          <button
+            type="button"
+            onClick={() => (vista === 'mes' ? move(1) : moverSemana(1))}
+            aria-label={vista === 'mes' ? 'Mes siguiente' : 'Semana siguiente'}
+            className={navButton}
+          >
             <Icon name="right" className="h-4 w-4" />
           </button>
         </div>
       </div>
+
+      {vista === 'semana' && (
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {diasSemana.map((d) => {
+            const key = dateKey(d)
+            const suyos = itemsDeDia(items, key)
+            const aniv = anniversaries.find((a) => a.md === monthDay(key))
+            const libre = isFreeDay(key, freeDays)
+            const esHoy = key === todayKey
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelected(key)}
+                className={`flex min-h-32 flex-col rounded-2xl border p-3 text-left transition-colors hover:border-neutral-400 ${
+                  esHoy ? 'border-neutral-900 dark:border-white' : 'border-black/[0.07] dark:border-white/[0.08]'
+                }`}
+              >
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="text-[0.65rem] tracking-wider text-neutral-400 uppercase">
+                    {DAYS[weekIndex(d)].slice(0, 3)}
+                  </span>
+                  <span
+                    className={`font-mono text-lg tabular-nums ${libre ? 'text-red-500' : ''}`}
+                  >
+                    {d.getDate()}
+                  </span>
+                </span>
+
+                <span className="mt-2 flex min-w-0 flex-col gap-1">
+                  {aniv && (
+                    <span className="truncate rounded-md bg-yellow-100 px-1.5 py-0.5 text-[0.65rem] text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-200">
+                      {aniv.name || 'Aniversario'}
+                    </span>
+                  )}
+                  {suyos.length === 0 && !aniv ? (
+                    <span className="text-[0.7rem] text-neutral-300 dark:text-neutral-600">
+                      Nada
+                    </span>
+                  ) : (
+                    suyos.map((e) => (
+                      <span
+                        key={e.id}
+                        className={`truncate rounded-md px-1.5 py-0.5 text-[0.65rem] ${TYPES[e.type].chip}`}
+                      >
+                        {e.title}
+                      </span>
+                    ))
+                  )}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {vista === 'mes' && (
+      <>
 
       <div className="mb-2 grid grid-cols-7 text-center text-[0.7rem] font-semibold tracking-wider text-neutral-300 dark:text-neutral-600">
         {WEEKDAYS.map((d, i) => (
@@ -93,7 +202,7 @@ export function Calendar({
         {cells.map((day, i) => {
           if (day === null) return <span key={`empty-${i}`} />
           const key = dateKey(new Date(cursor.y, cursor.m, day))
-          const dayItems = items.filter((e) => e.date === key)
+          const dayItems = itemsDeDia(items, key)
           const anniversary = anniversaries.find((a) => a.md === monthDay(key))
           const free = isFreeDay(key, freeDays)
           const especial = specialDays.includes(key) || autoSpecial.includes(key)
@@ -168,11 +277,14 @@ export function Calendar({
         })}
       </div>
 
+      </>
+      )}
+
       {selected && (
         <DayDialog
           key={selected}
           date={selected}
-          items={items.filter((e) => e.date === selected)}
+          items={itemsDeDia(items, selected)}
           anniversary={anniversaries.find((a) => a.md === monthDay(selected))}
           free={isFreeDay(selected, freeDays)}
           locked={isWeekend(selected) || isOfficialHoliday(selected)}
@@ -200,13 +312,26 @@ export function Calendar({
               prev.map((a) => (a.md === monthDay(selected) ? { ...a, name } : a)),
             )
           }
-          onAdd={(title, type, desc) =>
+          onAdd={(title, type, desc, repeat) =>
             setEvents((prev) => [
               ...prev,
-              { id: crypto.randomUUID(), date: selected, title, type, desc: desc || undefined },
+              {
+                id: crypto.randomUUID(),
+                date: selected,
+                title,
+                type,
+                desc: desc || undefined,
+                repeat,
+              },
             ])
           }
-          onDelete={(id) => setEvents((prev) => prev.filter((e) => e.id !== id))}
+          onDelete={(id, titulo) => {
+            setEvents((prev) => {
+              const antes = prev
+              conDeshacer(`«${titulo}» eliminada`, () => setEvents(() => antes))
+              return prev.filter((e) => e.id !== id)
+            })
+          }}
         />
       )}
     </div>
@@ -225,8 +350,8 @@ type DialogProps = {
   onToggleFree: () => void
   onToggleAnniversary: () => void
   onRenameAnniversary: (name: string) => void
-  onAdd: (title: string, type: ItemType, desc: string) => void
-  onDelete: (id: string) => void
+  onAdd: (title: string, type: ItemType, desc: string, repeat?: Repeticion) => void
+  onDelete: (id: string, titulo: string) => void
 }
 
 function DayDialog({
@@ -332,13 +457,14 @@ function DayDialog({
                 )}
                 <p className="mt-1 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
                   {TYPES[e.type].label}
+                  {e.repeat && ` · ${REPETICIONES.find((r) => r.id === e.repeat)?.label.toLowerCase()}`}
                   {e.origin !== 'evento' && ' · desde su apartado'}
                 </p>
               </div>
               {e.origin === 'evento' && (
                 <button
                   type="button"
-                  onClick={() => onDelete(e.id)}
+                  onClick={() => onDelete(e.id, e.title)}
                   aria-label={`Eliminar ${e.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >
@@ -357,7 +483,12 @@ function DayDialog({
           const data = new FormData(form)
           const title = String(data.get('title') ?? '').trim()
           if (!title) return
-          onAdd(title, String(data.get('type')) as ItemType, String(data.get('desc') ?? '').trim())
+          onAdd(
+            title,
+            String(data.get('type')) as ItemType,
+            String(data.get('desc') ?? '').trim(),
+            (String(data.get('repeat')) || undefined) as Repeticion | undefined,
+          )
           form.reset()
         }}
         className="flex flex-col gap-2"
@@ -369,6 +500,14 @@ function DayDialog({
             {Object.entries(TYPES).map(([value, t]) => (
               <option key={value} value={value}>
                 {t.label}
+              </option>
+            ))}
+          </select>
+          <select name="repeat" defaultValue="" className={select} aria-label="Repetición">
+            <option value="">No se repite</option>
+            {REPETICIONES.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
               </option>
             ))}
           </select>

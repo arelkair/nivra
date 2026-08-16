@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { mover, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
@@ -18,7 +19,12 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
 
   const patch = (id: string, changes: Partial<Task>) =>
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...changes } : t)))
-  const remove = (id: string) => setTasks((prev) => prev.filter((t) => t.id !== id))
+  const remove = (id: string) => {
+    const antes = tasks
+    const titulo = tasks.find((t) => t.id === id)?.title ?? ''
+    setTasks((prev) => prev.filter((t) => t.id !== id))
+    conDeshacer(`«${titulo}» eliminada`, () => setTasks(() => antes))
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 sm:gap-8">
@@ -85,7 +91,11 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
           </ul>
           <button
             type="button"
-            onClick={() => setTasks((prev) => prev.filter((t) => !t.done))}
+            onClick={() => {
+              const antes = tasks
+              setTasks((prev) => prev.filter((t) => !t.done))
+              conDeshacer(`${done.length} tareas hechas eliminadas`, () => setTasks(() => antes))
+            }}
             className="mt-4 text-xs text-neutral-400 transition-colors hover:text-red-500"
           >
             Vaciar

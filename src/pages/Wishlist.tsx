@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { eur, mover, type Wish } from '../lib/store'
+import { conDeshacer } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
 
 type Props = {
@@ -83,7 +84,11 @@ export function Wishlist({ wishes, setWishes }: Props) {
                 )}
                 <button
                   type="button"
-                  onClick={() => setWishes((prev) => prev.filter((x) => x.id !== w.id))}
+                  onClick={() => {
+                    const antes = wishes
+                    setWishes((prev) => prev.filter((x) => x.id !== w.id))
+                    conDeshacer(`«${w.title}» eliminado`, () => setWishes(() => antes))
+                  }}
                   aria-label={`Eliminar ${w.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >
