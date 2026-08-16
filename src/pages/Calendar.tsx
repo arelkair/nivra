@@ -393,10 +393,12 @@ function DayDialog({
             aria-label="Día sin trabajo"
             className={`${square} ${
               free
-                ? 'border-red-500 bg-red-500'
-                : 'border-black/[0.07] hover:border-red-400 dark:border-neutral-700'
+                ? 'border-red-500 bg-red-500 text-white'
+                : 'border-black/[0.07] text-neutral-300 hover:border-red-400 dark:border-neutral-700 dark:text-neutral-600'
             } ${locked ? 'cursor-default opacity-70' : ''}`}
-          />
+          >
+            <Icon name="pin" className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={onToggleEspecial}
