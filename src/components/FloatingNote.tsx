@@ -9,7 +9,7 @@ type Props = {
   onCerrar: () => void
 }
 
-const ANCHO = 380
+const ANCHO = 400
 const ALTO = 440
 
 export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
@@ -58,17 +58,40 @@ export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
         onPointerDown={(e) => {
           arrastre.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y }
         }}
-        className={`flex shrink-0 cursor-grab items-center gap-2 border-b px-3 py-2 active:cursor-grabbing ${line}`}
+        className={`flex shrink-0 cursor-grab flex-col gap-2 border-b px-3 py-2 active:cursor-grabbing ${line}`}
       >
-        <Icon name="drag" className="h-4 w-4 shrink-0 text-neutral-300 dark:text-neutral-600" />
+        <div className="flex items-center gap-2">
+          <Icon name="drag" className="h-4 w-4 shrink-0 text-neutral-300 dark:text-neutral-600" />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium" title={activa?.title}>
+            {activa?.title ?? 'Sin blocs todavía'}
+          </span>
+          <button
+            type="button"
+            onClick={crear}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label="Nuevo bloc"
+            className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+          >
+            <Icon name="plus" className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onCerrar}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label="Cerrar nota flotante"
+            className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+          >
+            <Icon name="close" className="h-4 w-4" />
+          </button>
+        </div>
 
-        {notepads.length > 0 ? (
+        {notepads.length > 1 && (
           <select
             value={activa?.id}
             onChange={(e) => setActivaId(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             aria-label="Bloc de notas"
-            className={`${select} h-8 min-w-0 flex-1 truncate px-2 py-0 text-xs`}
+            className={`${select} h-8 w-full px-2 py-0 text-xs`}
           >
             {notepads.map((n) => (
               <option key={n.id} value={n.id}>
@@ -76,28 +99,7 @@ export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
               </option>
             ))}
           </select>
-        ) : (
-          <span className="min-w-0 flex-1 truncate text-xs text-neutral-400">Sin blocs todavía</span>
         )}
-
-        <button
-          type="button"
-          onClick={crear}
-          onPointerDown={(e) => e.stopPropagation()}
-          aria-label="Nuevo bloc"
-          className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-        >
-          <Icon name="plus" className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={onCerrar}
-          onPointerDown={(e) => e.stopPropagation()}
-          aria-label="Cerrar nota flotante"
-          className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-        >
-          <Icon name="close" className="h-4 w-4" />
-        </button>
       </header>
 
       {activa ? (

@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { exportarCsv, exportarJson, importarJson } from '../lib/backup'
 import { pedirPermiso, permiso, soportadas } from '../lib/notify'
 import type { Settings } from '../lib/settings'
-import { ATAJOS } from '../lib/shortcuts'
+import { ATAJOS, teclaDe } from '../lib/shortcuts'
 import { ACCENTS, mover } from '../lib/store'
 import type { EstadoSync } from '../lib/sync'
 import { SyncPanel } from './Sync'
@@ -187,26 +187,7 @@ export function Settings({ cfg, sync, setSync, instalador, onInstalado, onClose,
             label="Atajos activados"
             hint="No se disparan mientras escribes en un campo."
           />
-          <ul className="mt-3 flex flex-col">
-            {ATAJOS.map((a) => (
-              <li key={a.id} className={`flex items-center gap-3 border-b py-2 last:border-0 ${line}`}>
-                <span className="min-w-0 flex-1 truncate text-sm">{a.label}</span>
-                <kbd className="shrink-0 rounded-md border border-black/10 bg-[var(--sunken)] px-2 py-0.5 font-mono text-[0.65rem] dark:border-white/15">
-                  {a.tecla}
-                </kbd>
-                <input
-                  type="checkbox"
-                  checked={cfg.atajos[a.id] !== false}
-                  disabled={!cfg.shortcutsOn}
-                  onChange={(e) =>
-                    cfg.setAtajos((prev) => ({ ...prev, [a.id]: e.target.checked }))
-                  }
-                  aria-label={`Activar ${a.label}`}
-                  className="h-4 w-4 shrink-0 accent-neutral-900 dark:accent-white"
-                />
-              </li>
-            ))}
-          </ul>
+          <Teclas cfg={cfg} onAviso={onAviso} />
         </Collapsible>
 
         <Collapsible
@@ -416,5 +397,89 @@ function Instalar({
         Instalada se abre a pantalla completa, con su icono, y funciona sin conexión.
       </p>
     </div>
+  )
+}
+
+
+function Teclas({ cfg, onAviso }: { cfg: Settings; onAviso: (t: string) => void }) {
+  const [capturando, setCapturando] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!capturando) return
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault()
+      if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return
+      if (e.key === 'Escape') {
+        setCapturando(null)
+        return
+      }
+      const tecla = teclaDe(e)
+      const ocupada = ATAJOS.find(
+        (a) => a.id !== capturando && (cfg.teclas[a.id] ?? a.tecla) === tecla,
+      )
+      if (ocupada) {
+        onAviso(`Esa tecla ya la usa «${ocupada.label}».`)
+        setCapturando(null)
+        return
+      }
+      cfg.setTeclas((prev) => ({ ...prev, [capturando]: tecla }))
+      setCapturando(null)
+    }
+    addEventListener('keydown', onKey, true)
+    return () => removeEventListener('keydown', onKey, true)
+  }, [capturando, cfg, onAviso])
+
+  return (
+    <ul className="mt-3 flex flex-col">
+      {ATAJOS.map((a) => {
+        const tecla = cfg.teclas[a.id] ?? a.tecla
+        const cambiada = tecla !== a.tecla
+        return (
+          <li key={a.id} className={`flex items-center gap-2 border-b py-2 last:border-0 ${line}`}>
+            <span className="min-w-0 flex-1 truncate text-sm">{a.label}</span>
+
+            <button
+              type="button"
+              disabled={!cfg.shortcutsOn}
+              onClick={() => setCapturando(capturando === a.id ? null : a.id)}
+              title="Pulsa para cambiar la tecla"
+              className={`shrink-0 rounded-md border px-2 py-1 font-mono text-[0.65rem] transition-colors disabled:opacity-40 ${
+                capturando === a.id
+                  ? 'border-neutral-900 dark:border-white'
+                  : 'border-black/10 bg-[var(--sunken)] hover:border-neutral-400 dark:border-white/15'
+              }`}
+            >
+              {capturando === a.id ? 'pulsa una tecla…' : tecla}
+            </button>
+
+            {cambiada && (
+              <button
+                type="button"
+                onClick={() =>
+                  cfg.setTeclas((prev) => {
+                    const copia = { ...prev }
+                    delete copia[a.id]
+                    return copia
+                  })
+                }
+                aria-label={`Restaurar tecla de ${a.label}`}
+                className="shrink-0 text-neutral-300 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+              >
+                <Icon name="close" className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            <input
+              type="checkbox"
+              checked={cfg.atajos[a.id] !== false}
+              disabled={!cfg.shortcutsOn}
+              onChange={(e) => cfg.setAtajos((prev) => ({ ...prev, [a.id]: e.target.checked }))}
+              aria-label={`Activar ${a.label}`}
+              className="h-4 w-4 shrink-0 accent-neutral-900 dark:accent-white"
+            />
+          </li>
+        )
+      })}
+    </ul>
   )
 }

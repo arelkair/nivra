@@ -49,6 +49,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
               kind,
               title,
               date: date || undefined,
+              subject: String(data.get('subject') ?? '') || undefined,
               category: kind === 'proyecto' ? 'colegio' : undefined,
             },
           ])
@@ -79,6 +80,16 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           placeholder={kind === 'examen' ? 'Nuevo examen' : 'Nuevo proyecto'}
           className={input}
         />
+        {subjects.length > 0 && (
+          <select name="subject" defaultValue="" aria-label="Asignatura" className={select}>
+            <option value="">Sin asignatura</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        )}
         <div className="flex gap-2">
           <input
             name="date"

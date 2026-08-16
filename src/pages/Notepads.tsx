@@ -141,16 +141,25 @@ export function Editor({
   const actual = paginas[Math.min(indice, paginas.length - 1)]
   const ref = useRef<HTMLDivElement>(null)
 
-  const cargada = useRef('')
+  const ultimo = useRef<string | null>(null)
+
   useEffect(() => {
-    const clave = notepad.id + actual.id
-    if (cargada.current === clave) return
-    cargada.current = clave
-    if (ref.current) ref.current.innerHTML = sanitize(actual.html)
+    const el = ref.current
+    if (!el) return
+    const limpio = sanitize(actual.html)
+    if (limpio === ultimo.current) return
+    if (el.innerHTML === limpio) {
+      ultimo.current = limpio
+      return
+    }
+    el.innerHTML = limpio
+    ultimo.current = limpio
   })
 
-  const onChange = (html: string) =>
+  const onChange = (html: string) => {
+    ultimo.current = html
     onPaginas(paginas.map((p) => (p.id === actual.id ? { ...p, html } : p)))
+  }
 
   const aplicar = (comando: string, valor?: string) => {
     ref.current?.focus()

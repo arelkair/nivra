@@ -356,7 +356,9 @@ function App() {
       const combo = anterior === 'g' ? `g ${tecla}` : tecla
       anterior = tecla === 'g' ? 'g' : ''
 
-      const atajo = ATAJOS.find((a) => a.tecla === combo && cfg.atajos[a.id] !== false)
+      const atajo = ATAJOS.find(
+        (a) => (cfg.teclas[a.id] ?? a.tecla) === combo && cfg.atajos[a.id] !== false,
+      )
       if (!atajo) return
       e.preventDefault()
       const a = atajo.accion
@@ -370,7 +372,7 @@ function App() {
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [cfg.shortcutsOn, cfg.atajos, irA, atras, adelante, theme, setTheme])
+  }, [cfg.shortcutsOn, cfg.atajos, cfg.teclas, irA, atras, adelante, theme, setTheme])
 
   if (!setupDone) {
     return (

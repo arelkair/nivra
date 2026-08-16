@@ -35,6 +35,9 @@ type Props = {
   setAnniversaries: (update: (prev: Anniversary[]) => Anniversary[]) => void
 }
 
+const GRADIENTE =
+  'bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)]'
+
 export function Calendar({
   items,
   setEvents,
@@ -136,13 +139,14 @@ export function Calendar({
             const suyos = itemsDeDia(items, key)
             const aniv = anniversaries.find((a) => a.md === monthDay(key))
             const libre = isFreeDay(key, freeDays)
+            const espec = specialDays.includes(key) || autoSpecial.includes(key)
             const esHoy = key === todayKey
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => setSelected(key)}
-                className={`flex min-h-32 flex-col rounded-2xl border p-3 text-left transition-colors hover:border-neutral-400 ${
+                className={`flex min-h-40 flex-col rounded-2xl border p-4 text-left transition-colors hover:border-neutral-400 lg:min-h-56 ${
                   esHoy ? 'border-neutral-900 dark:border-white' : 'border-black/[0.07] dark:border-white/[0.08]'
                 }`}
               >
@@ -151,7 +155,15 @@ export function Calendar({
                     {DAYS[weekIndex(d)].slice(0, 3)}
                   </span>
                   <span
-                    className={`font-mono text-lg tabular-nums ${libre ? 'text-red-500' : ''}`}
+                    className={`font-mono text-2xl tabular-nums ${
+                      libre
+                        ? 'text-red-500'
+                        : espec
+                          ? `${GRADIENTE} bg-clip-text text-transparent`
+                          : aniv
+                            ? 'text-yellow-600 dark:text-yellow-500'
+                            : ''
+                    }`}
                   >
                     {d.getDate()}
                   </span>
@@ -163,7 +175,14 @@ export function Calendar({
                       {aniv.name || 'Aniversario'}
                     </span>
                   )}
-                  {suyos.length === 0 && !aniv ? (
+                  {espec && (
+                    <span
+                      className={`truncate rounded-md ${GRADIENTE} px-1.5 py-0.5 text-[0.65rem] text-white`}
+                    >
+                      Día especial
+                    </span>
+                  )}
+                  {suyos.length === 0 && !aniv && !espec ? (
                     <span className="text-[0.7rem] text-neutral-300 dark:text-neutral-600">
                       Nada
                     </span>
@@ -220,7 +239,7 @@ export function Calendar({
             : free
               ? 'text-red-500'
               : especial
-                ? 'bg-gradient-to-br from-fuchsia-500 via-amber-500 to-cyan-500 bg-clip-text text-transparent'
+                ? 'bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)] bg-clip-text text-transparent'
                 : anniversary
                   ? 'text-yellow-600 dark:text-yellow-500'
                   : ''
@@ -407,7 +426,7 @@ function DayDialog({
             aria-label="Día especial"
             className={`${square} ${
               especial
-                ? 'border-transparent bg-gradient-to-br from-fuchsia-500 via-amber-500 to-cyan-500 text-white'
+                ? 'border-transparent bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)] text-white'
                 : 'border-black/[0.07] text-neutral-300 hover:border-fuchsia-400 dark:border-white/[0.08] dark:text-neutral-600'
             }`}
           >

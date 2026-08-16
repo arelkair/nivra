@@ -14,6 +14,7 @@ export function useSettings() {
   const [navButtons, setNavButtons] = useStored('nivra-nav-buttons', true)
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [atajos, setAtajos] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
+  const [teclas, setTeclas] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
   const [hideCountdowns, setHideCountdowns] = useStored('nivra-hide-countdowns', false)
 
   return {
@@ -43,6 +44,8 @@ export function useSettings() {
     setShortcutsOn,
     atajos,
     setAtajos,
+    teclas,
+    setTeclas,
     hideCountdowns,
     setHideCountdowns,
   }
