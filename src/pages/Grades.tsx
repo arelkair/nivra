@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { dateKey, shortDate, type Grade } from '../lib/store'
+import { dateKey, shortDate, type Grade, type Subject } from '../lib/store'
 import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
 
 type Props = {
   grades: Grade[]
   setGrades: (update: (prev: Grade[]) => Grade[]) => void
+  subjects: Subject[]
 }
 
 const KINDS: { id: Grade['kind']; label: string }[] = [
@@ -20,7 +21,7 @@ const tono = (v: number) =>
       ? 'text-neutral-900 dark:text-white'
       : 'text-red-500'
 
-export function Grades({ grades, setGrades }: Props) {
+export function Grades({ grades, setGrades, subjects }: Props) {
   const [filtro, setFiltro] = useState<'todos' | '1' | '2' | '3'>('todos')
   const visibles =
     filtro === 'todos' ? grades : grades.filter((g) => String(g.term ?? '') === filtro)
@@ -44,7 +45,8 @@ export function Grades({ grades, setGrades }: Props) {
             {
               id: crypto.randomUUID(),
               value: Math.round(value * 100) / 100,
-              desc: String(data.get('desc') ?? '').trim() || undefined,
+              subject: String(data.get('subject') ?? '') || undefined,
+              desc: subjects.find((x) => x.id === String(data.get('subject')))?.name,
               kind: String(data.get('kind')) as Grade['kind'],
               date: dateKey(new Date()),
               term: Number(data.get('term')) as Grade['term'],
@@ -81,7 +83,19 @@ export function Grades({ grades, setGrades }: Props) {
             <option value="3">3º Trimestre</option>
           </select>
         </div>
-        <input name="desc" maxLength={80} placeholder="¿De qué?" className={input} />
+        {subjects.length === 0 ? (
+          <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+            Crea asignaturas en Ajustes para poder elegir de qué es la nota.
+          </p>
+        ) : (
+          <select name="subject" defaultValue={subjects[0].id} aria-label="Asignatura" className={select}>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        )}
         <button type="submit" className={button}>
           Añadir
         </button>

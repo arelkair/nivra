@@ -1,8 +1,18 @@
 import { useState } from 'react'
-import { EXPENSE_CATS, INCOME_CATS, dateKey, eur, weekIndex, type Movement } from '../lib/store'
+import {
+  EXPENSE_CATS,
+  INCOME_CATS,
+  SUBSCRIPTION_CAT,
+  dateKey,
+  eur,
+  weekIndex,
+  type Goal,
+  type Movement,
+} from '../lib/store'
+import { Goals } from './Goals'
 import { CatChart, Empty, Icon, Label, BarChart, Segmented, button, card, input, line, select } from '../components/ui'
 
-export type BankTab = 'dinero' | 'ingresos' | 'gastos'
+export type BankTab = 'dinero' | 'ingresos' | 'gastos' | 'objetivos'
 
 type Props = {
   initial: number | null
@@ -11,6 +21,8 @@ type Props = {
   setMovements: (update: (prev: Movement[]) => Movement[]) => void
   tab: BankTab
   setTab: (tab: BankTab) => void
+  goals: Goal[]
+  setGoals: (update: (prev: Goal[]) => Goal[]) => void
 }
 
 function readAmount(value: FormDataEntryValue | null): number | null {
@@ -19,7 +31,7 @@ function readAmount(value: FormDataEntryValue | null): number | null {
   return Math.round(n * 100) / 100
 }
 
-export function Bank({ initial, setInitial, movements, setMovements, tab, setTab }: Props) {
+export function Bank({ initial, setInitial, movements, setMovements, tab, setTab, goals, setGoals }: Props) {
   const [period, setPeriod] = useState<'semana' | 'mes'>('semana')
 
   if (initial === null) {
@@ -112,6 +124,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
             { id: 'dinero', label: 'Dinero' },
             { id: 'ingresos', label: 'Ingresos' },
             { id: 'gastos', label: 'Gastos' },
+            { id: 'objetivos', label: 'Objetivos' },
           ]}
         />
       </div>
@@ -165,7 +178,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           <div className="grid gap-4 lg:grid-cols-2">
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.1s_both] p-5 sm:p-6`}>
               <Label>Dónde gastas</Label>
-              <CatChart data={byCategory(expense, EXPENSE_CATS)} tone="bg-red-500" />
+              <CatChart data={byCategory(expense, [...EXPENSE_CATS, SUBSCRIPTION_CAT])} tone="bg-red-500" />
             </section>
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.15s_both] p-5 sm:p-6`}>
               <Label>De dónde viene</Label>
@@ -183,7 +196,11 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
         </>
       )}
 
-      {tab !== 'dinero' && (
+      {tab === 'objetivos' && (
+        <Goals goals={goals} setGoals={setGoals} balance={balance} movements={movements} />
+      )}
+
+      {(tab === 'ingresos' || tab === 'gastos') && (
         <MovementPanel
           kind={tab === 'ingresos' ? 'ingreso' : 'gasto'}
           cats={tab === 'ingresos' ? INCOME_CATS : EXPENSE_CATS}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { sanitize, type Notepad } from '../lib/store'
+import { paginasDe, sanitize, type Notepad, type NotepadPage } from '../lib/store'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -16,9 +16,10 @@ export function Notepads({ notepads, setNotepads }: Props) {
   const active = notepads.find((n) => n.id === activeId) ?? notepads[0]
 
   const crear = (title: string) => {
-    const nuevo = { id: crypto.randomUUID(), title, html: '' }
+    const id = crypto.randomUUID()
+    const nuevo: Notepad = { id, title, pages: [{ id: id + '-1', html: '' }] }
     setNotepads((prev) => [...prev, nuevo])
-    setActiveId(nuevo.id)
+    setActiveId(id)
   }
 
   return (
@@ -51,10 +52,11 @@ export function Notepads({ notepads, setNotepads }: Props) {
 
       {active ? (
         <Editor
-          key={active.id}
           notepad={active}
-          onChange={(html) =>
-            setNotepads((prev) => prev.map((n) => (n.id === active.id ? { ...n, html } : n)))
+          onPaginas={(pages) =>
+            setNotepads((prev) =>
+              prev.map((n) => (n.id === active.id ? { ...n, pages, html: undefined } : n)),
+            )
           }
         />
       ) : (
@@ -122,13 +124,28 @@ export function Notepads({ notepads, setNotepads }: Props) {
   )
 }
 
-function Editor({ notepad, onChange }: { notepad: Notepad; onChange: (html: string) => void }) {
+function Editor({
+  notepad,
+  onPaginas,
+}: {
+  notepad: Notepad
+  onPaginas: (pages: NotepadPage[]) => void
+}) {
+  const paginas = paginasDe(notepad)
+  const [indice, setIndice] = useState(0)
+  const actual = paginas[Math.min(indice, paginas.length - 1)]
   const ref = useRef<HTMLDivElement>(null)
-  const inicial = useRef(notepad.html)
 
+  const cargada = useRef('')
   useEffect(() => {
-    if (ref.current) ref.current.innerHTML = sanitize(inicial.current)
-  }, [])
+    const clave = notepad.id + actual.id
+    if (cargada.current === clave) return
+    cargada.current = clave
+    if (ref.current) ref.current.innerHTML = sanitize(actual.html)
+  })
+
+  const onChange = (html: string) =>
+    onPaginas(paginas.map((p) => (p.id === actual.id ? { ...p, html } : p)))
 
   const aplicar = (comando: string, valor?: string) => {
     ref.current?.focus()
@@ -209,6 +226,7 @@ function Editor({ notepad, onChange }: { notepad: Notepad; onChange: (html: stri
       </div>
 
       <div
+        key={notepad.id + actual.id}
         ref={ref}
         contentEditable
         suppressContentEditableWarning
@@ -218,6 +236,73 @@ function Editor({ notepad, onChange }: { notepad: Notepad; onChange: (html: stri
         onInput={(e) => onChange(sanitize(e.currentTarget.innerHTML))}
         className="min-h-[24rem] p-5 text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5"
       />
+
+      <div className={`flex items-center justify-between gap-2 border-t p-2 ${line}`}>
+        <button
+          type="button"
+          onClick={() => setIndice((i) => Math.max(0, i - 1))}
+          disabled={indice === 0}
+          aria-label="Página anterior"
+          className={boton + ' ' + line + ' disabled:opacity-30'}
+        >
+          <Icon name="left" className="h-4 w-4" />
+        </button>
+
+        <div className="flex flex-wrap items-center justify-center gap-1">
+          {paginas.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setIndice(i)}
+              aria-label={'Página ' + (i + 1)}
+              aria-current={i === indice}
+              className={
+                'h-7 min-w-7 rounded-lg px-2 font-mono text-xs transition-colors ' +
+                (i === indice
+                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                  : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white')
+              }
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              const nueva = { id: crypto.randomUUID(), html: '' }
+              onPaginas([...paginas, nueva])
+              setIndice(paginas.length)
+            }}
+            aria-label="Nueva página"
+            className={boton + ' ' + line + ' ml-1'}
+          >
+            <Icon name="plus" className="h-3.5 w-3.5" />
+          </button>
+          {paginas.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                onPaginas(paginas.filter((p) => p.id !== actual.id))
+                setIndice((i) => Math.max(0, i - 1))
+              }}
+              aria-label="Eliminar esta página"
+              className={boton + ' ' + line + ' text-neutral-400 hover:text-red-500'}
+            >
+              <Icon name="trash" className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIndice((i) => Math.min(paginas.length - 1, i + 1))}
+          disabled={indice >= paginas.length - 1}
+          aria-label="Página siguiente"
+          className={boton + ' ' + line + ' disabled:opacity-30'}
+        >
+          <Icon name="right" className="h-4 w-4" />
+        </button>
+      </div>
     </section>
   )
 }

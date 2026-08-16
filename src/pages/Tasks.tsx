@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { shortDate, type SubTask, type Task } from '../lib/store'
-import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
+import { mover, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
+import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
   tasks: Task[]
   setTasks: (update: (prev: Task[]) => Task[]) => void
+  subjects: Subject[]
+  notepads: Notepad[]
+  setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
 }
 
-export function Tasks({ tasks, setTasks }: Props) {
+export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const pending = tasks.filter((t) => !t.done)
   const done = tasks.filter((t) => t.done)
@@ -46,7 +49,17 @@ export function Tasks({ tasks, setTasks }: Props) {
         ) : (
           <ul className="flex flex-col">
             {pending.map((t) => (
-              <Row key={t.id} task={t} onPatch={patch} onRemove={remove} onOpen={setEditingId} />
+              <Row
+                key={t.id}
+                task={t}
+                subjects={subjects}
+                onPatch={patch}
+                onRemove={remove}
+                onOpen={setEditingId}
+                onMover={(salto) =>
+                  setTasks((prev) => mover(prev, prev.findIndex((x) => x.id === t.id), salto))
+                }
+              />
             ))}
           </ul>
         )}
@@ -57,7 +70,17 @@ export function Tasks({ tasks, setTasks }: Props) {
           <Label>Hecho · {done.length}</Label>
           <ul className="flex flex-col">
             {done.map((t) => (
-              <Row key={t.id} task={t} onPatch={patch} onRemove={remove} onOpen={setEditingId} />
+              <Row
+                key={t.id}
+                task={t}
+                subjects={subjects}
+                onPatch={patch}
+                onRemove={remove}
+                onOpen={setEditingId}
+                onMover={(salto) =>
+                  setTasks((prev) => mover(prev, prev.findIndex((x) => x.id === t.id), salto))
+                }
+              />
             ))}
           </ul>
           <button
@@ -73,6 +96,9 @@ export function Tasks({ tasks, setTasks }: Props) {
       {editing && (
         <TaskDialog
           task={editing}
+          subjects={subjects}
+          notepads={notepads}
+          setNotepads={setNotepads}
           onClose={() => setEditingId(null)}
           onPatch={(changes) => patch(editing.id, changes)}
         />
@@ -83,15 +109,20 @@ export function Tasks({ tasks, setTasks }: Props) {
 
 function Row({
   task,
+  subjects,
   onPatch,
   onRemove,
   onOpen,
+  onMover,
 }: {
   task: Task
+  subjects: Subject[]
   onPatch: (id: string, changes: Partial<Task>) => void
   onRemove: (id: string) => void
   onOpen: (id: string) => void
+  onMover: (salto: number) => void
 }) {
+  const asignatura = subjects.find((s) => s.id === task.subject)
   const subDone = task.subtasks.filter((s) => s.done).length
   return (
     <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
@@ -123,6 +154,12 @@ function Row({
           {task.title}
         </span>
         <span className="mt-0.5 flex gap-2 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+          {asignatura && (
+            <span className="rounded px-1.5 text-white" style={{ background: asignatura.color }}>
+              {asignatura.name}
+            </span>
+          )}
+          {task.notepad && <span>Con bloc</span>}
           {task.date && (
             <span className="rounded bg-blue-100 px-1.5 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
               {shortDate(task.date)}
@@ -136,6 +173,25 @@ function Row({
           {task.desc && <span className="truncate">{task.desc}</span>}
         </span>
       </button>
+
+      <span className="flex shrink-0 flex-col">
+        <button
+          type="button"
+          onClick={() => onMover(-1)}
+          aria-label={`Subir ${task.title}`}
+          className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+        >
+          <Icon name="up" className="h-3 w-3" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMover(1)}
+          aria-label={`Bajar ${task.title}`}
+          className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+        >
+          <Icon name="down" className="h-3 w-3" />
+        </button>
+      </span>
 
       <button
         type="button"
@@ -151,14 +207,26 @@ function Row({
 
 function TaskDialog({
   task,
+  subjects,
+  notepads,
+  setNotepads,
   onClose,
   onPatch,
 }: {
   task: Task
+  subjects: Subject[]
+  notepads: Notepad[]
+  setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
   onClose: () => void
   onPatch: (changes: Partial<Task>) => void
 }) {
   const setSubs = (subtasks: SubTask[]) => onPatch({ subtasks })
+
+  const crearBloc = () => {
+    const id = crypto.randomUUID()
+    setNotepads((prev) => [...prev, { id, title: task.title, pages: [{ id: id + '-1', html: '' }] }])
+    onPatch({ notepad: id })
+  }
 
   return (
     <Modal title="Tarea" onClose={onClose}>
@@ -200,6 +268,39 @@ function TaskDialog({
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
           Con fecha aparece en el calendario como Tarea, en azul.
         </p>
+
+        <select
+          value={task.subject ?? ''}
+          onChange={(e) => onPatch({ subject: e.target.value || undefined })}
+          aria-label="Asignatura"
+          className={select}
+        >
+          <option value="">Sin asignatura</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex gap-2">
+          <select
+            value={task.notepad ?? ''}
+            onChange={(e) => onPatch({ notepad: e.target.value || undefined })}
+            aria-label="Bloc de notas"
+            className={select}
+          >
+            <option value="">Sin bloc de notas</option>
+            {notepads.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.title}
+              </option>
+            ))}
+          </select>
+          <button type="button" onClick={crearBloc} className={button + ' shrink-0'}>
+            Nuevo
+          </button>
+        </div>
       </div>
 
       <div className="mt-6">
@@ -233,6 +334,26 @@ function TaskDialog({
                 >
                   {s.title}
                 </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSubs(mover(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), -1))
+                  }
+                  aria-label={`Subir ${s.title}`}
+                  className="shrink-0 text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                >
+                  <Icon name="up" className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSubs(mover(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), 1))
+                  }
+                  aria-label={`Bajar ${s.title}`}
+                  className="shrink-0 text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                >
+                  <Icon name="down" className="h-3 w-3" />
+                </button>
                 <button
                   type="button"
                   onClick={() => setSubs(task.subtasks.filter((x) => x.id !== s.id))}

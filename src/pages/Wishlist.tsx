@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { eur, type Wish } from '../lib/store'
+import { eur, mover, type Wish } from '../lib/store'
 import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
 
 type Props = {
@@ -31,7 +31,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
           <Empty>Sin deseos.</Empty>
         ) : (
           <ul className="flex flex-col">
-            {wishes.map((w) => (
+            {wishes.map((w, i) => (
               <li
                 key={w.id}
                 className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]"
@@ -49,6 +49,24 @@ export function Wishlist({ wishes, setWishes }: Props) {
                     </span>
                   )}
                 </button>
+                <span className="flex shrink-0 flex-col">
+                  <button
+                    type="button"
+                    onClick={() => setWishes((prev) => mover(prev, i, -1))}
+                    aria-label={`Subir ${w.title}`}
+                    className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                  >
+                    <Icon name="up" className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWishes((prev) => mover(prev, i, 1))}
+                    aria-label={`Bajar ${w.title}`}
+                    className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                  >
+                    <Icon name="down" className="h-3 w-3" />
+                  </button>
+                </span>
                 {w.price !== undefined && (
                   <span className="shrink-0 font-mono text-sm tabular-nums">{eur(w.price)}</span>
                 )}

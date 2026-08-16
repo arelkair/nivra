@@ -11,6 +11,8 @@ export type PageId =
   | 'bloc'
   | 'banco'
   | 'deseos'
+  | 'suscripciones'
+  | `cuenta:${string}`
 
 export type Unit = 'years' | 'months' | 'days' | 'hours' | 'minutes' | 'seconds'
 
@@ -34,6 +36,54 @@ export type Countdown = {
 
 export type Profile = { id: string; name: string }
 
+export type Subject = { id: string; name: string; color: string }
+
+export type Subscription = {
+  id: string
+  title: string
+  url?: string
+  price: number
+  day: number
+  lastCharged?: string
+}
+
+export type Goal =
+  | { id: string; kind: 'meta'; title: string; amount: number; date: string }
+  | { id: string; kind: 'limite'; title: string; amount: number; period: 'semana' | 'mes' }
+  | { id: string; kind: 'idea'; title: string; desc?: string }
+
+export const SUBSCRIPTION_CAT = 'Suscripción'
+
+/** Renovaciones que tocan y aún no se han cobrado, desde la última vez hasta hoy. */
+export function cobrosPendientes(subs: Subscription[], hoy: Date) {
+  const pendientes: { sub: Subscription; date: string }[] = []
+  for (const sub of subs) {
+    let año = hoy.getFullYear()
+    let mes = hoy.getMonth()
+    for (let i = 0; i < 12; i++) {
+      const ultimo = new Date(año, mes + 1, 0).getDate()
+      const fecha = dateKey(new Date(año, mes, Math.min(sub.day, ultimo)))
+      if (fecha > dateKey(hoy)) {
+        mes--
+        if (mes < 0) {
+          mes = 11
+          año--
+        }
+        continue
+      }
+      if (sub.lastCharged && fecha <= sub.lastCharged) break
+      pendientes.push({ sub, date: fecha })
+      if (!sub.lastCharged) break
+      mes--
+      if (mes < 0) {
+        mes = 11
+        año--
+      }
+    }
+  }
+  return pendientes
+}
+
 export const DEFAULT_PROFILE = 'principal'
 
 export type Wish = {
@@ -48,6 +98,7 @@ export type Grade = {
   id: string
   value: number
   desc?: string
+  subject?: string
   kind: 'examen' | 'trabajo' | 'otro'
   date: string
   term?: 1 | 2 | 3
@@ -55,7 +106,12 @@ export type Grade = {
 
 export type Streak = { count: number; last: string }
 
-export type Notepad = { id: string; title: string; html: string }
+export type NotepadPage = { id: string; html: string }
+
+export type Notepad = { id: string; title: string; html?: string; pages?: NotepadPage[] }
+
+export const paginasDe = (n: Notepad): NotepadPage[] =>
+  n.pages?.length ? n.pages : [{ id: `${n.id}-1`, html: n.html ?? '' }]
 
 const HTML_PROHIBIDO = /^(script|style|iframe|object|embed|link|meta|form)$/i
 
@@ -155,6 +211,8 @@ export type Task = {
   date?: string
   done: boolean
   subtasks: SubTask[]
+  subject?: string
+  notepad?: string
 }
 
 export type Work = {
@@ -164,6 +222,8 @@ export type Work = {
   desc?: string
   date?: string
   category?: 'colegio' | 'casa'
+  subject?: string
+  notepad?: string
 }
 
 export type Movement = {
@@ -208,6 +268,15 @@ export const TYPES: Record<ItemType, { label: string; dot: string; chip: string 
     dot: 'bg-green-600',
     chip: 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200',
   },
+}
+
+export function mover<T>(lista: T[], indice: number, salto: number): T[] {
+  const destino = indice + salto
+  if (destino < 0 || destino >= lista.length) return lista
+  const copia = [...lista]
+  const [item] = copia.splice(indice, 1)
+  copia.splice(destino, 0, item)
+  return copia
 }
 
 export const INCOME_CATS = ['Regalo', 'Deuda', 'Venta', 'Otros']

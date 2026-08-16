@@ -202,7 +202,7 @@ export function Clock({ hour12 }: { hour12: boolean }) {
 
   return (
     <span
-      className={`hidden h-10 items-center rounded-xl border px-3 font-mono text-sm tabular-nums text-neutral-500 sm:flex ${line} dark:text-neutral-400`}
+      className={`flex h-10 shrink-0 items-center rounded-xl border px-2.5 font-mono text-xs tabular-nums text-neutral-500 sm:px-3 sm:text-sm ${line} dark:text-neutral-400`}
     >
       {now.toLocaleTimeString('es-ES', {
         hour: '2-digit',
@@ -238,6 +238,57 @@ export function Confetti() {
             animationDuration: `${c.duration}s`,
           }}
         />
+      ))}
+    </div>
+  )
+}
+
+export function Collapsible({
+  title,
+  abierto,
+  onToggle,
+  children,
+}: {
+  title: string
+  abierto: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  return (
+    <div className={`rounded-2xl border ${line}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={abierto}
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+      >
+        <span className="text-[0.68rem] font-medium tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
+          {title}
+        </span>
+        <Icon
+          name="chevron"
+          className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${abierto ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {abierto && <div className={`border-t px-4 py-4 ${line}`}>{children}</div>}
+    </div>
+  )
+}
+
+export type Aviso = { id: string; texto: string }
+
+export function Toasts({ avisos, onCerrar }: { avisos: Aviso[]; onCerrar: (id: string) => void }) {
+  return (
+    <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex flex-col gap-2">
+      {avisos.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          onClick={() => onCerrar(a.id)}
+          className={`animate-[fade-in_0.25s_ease-out] pointer-events-auto max-w-xs rounded-xl border bg-[var(--surface)] px-4 py-3 text-left text-sm shadow-lg ${line}`}
+        >
+          {a.texto}
+        </button>
       ))}
     </div>
   )
@@ -348,6 +399,48 @@ const PATHS: Record<string, ReactNode> = {
   right: <path d="M9.5 5l6.5 7-6.5 7" />,
   trash: <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" />,
   up: <path d="M12 19V5M6 11l6-6 6 6" />,
+  down: <path d="M12 5v14M18 13l-6 6-6-6" />,
+  back: <path d="M19 12H5M11 6l-6 6 6 6" />,
+  forward: <path d="M5 12h14M13 6l6 6-6 6" />,
+  chevron: <path d="M6 9l6 6 6-6" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </>
+  ),
+  bell: <path d="M18 16v-5a6 6 0 10-12 0v5l-2 3h16zM10 22h4" />,
+  download: <path d="M12 3v13M7 12l5 5 5-5M4 21h16" />,
+  upload: <path d="M12 21V8M7 12l5-5 5 5M4 3h16" />,
+  keyboard: (
+    <>
+      <rect x="2" y="6" width="20" height="12" rx="3" />
+      <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
+    </>
+  ),
+  subs: (
+    <>
+      <rect x="2.5" y="5" width="19" height="14" rx="3" />
+      <path d="M2.5 10h19" />
+    </>
+  ),
+  goal: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="0.6" />
+    </>
+  ),
+  drag: <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="12" height="12" rx="2.5" />
+      <path d="M5 15V5.5A2.5 2.5 0 017.5 3H15" />
+    </>
+  ),
+  special: (
+    <path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM19 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
+  ),
   wish: <path d="M12 20s-7-4.4-7-9.3A3.9 3.9 0 0112 8.4a3.9 3.9 0 017 2.3c0 4.9-7 9.3-7 9.3z" />,
   grades: (
     <>

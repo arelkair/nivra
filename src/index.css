@@ -130,6 +130,31 @@ body {
   color: #e4e4e7;
 }
 
+.nivra-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, currentColor 22%, transparent) transparent;
+}
+
+.nivra-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.nivra-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nivra-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: color-mix(in oklab, currentColor 20%, transparent);
+}
+
+.nivra-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, currentColor 38%, transparent);
+}
+
 .font-display {
   font-family: 'Fraunces', ui-serif, Georgia, serif;
 }

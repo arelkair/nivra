@@ -18,6 +18,10 @@ import { Empty, Icon, Modal, button, input, select } from '../components/ui'
 
 type Props = {
   items: CalItem[]
+  specialDays: string[]
+  setSpecialDays: (update: (prev: string[]) => string[]) => void
+  autoSpecial: string[]
+  subDays: number[]
   setEvents: (update: (prev: NivraEvent[]) => NivraEvent[]) => void
   freeDays: string[]
   setFreeDays: (update: (prev: string[]) => string[]) => void
@@ -30,6 +34,10 @@ export function Calendar({
   setEvents,
   freeDays,
   setFreeDays,
+  specialDays,
+  setSpecialDays,
+  autoSpecial,
+  subDays,
   anniversaries,
   setAnniversaries,
 }: Props) {
@@ -88,6 +96,8 @@ export function Calendar({
           const dayItems = items.filter((e) => e.date === key)
           const anniversary = anniversaries.find((a) => a.md === monthDay(key))
           const free = isFreeDay(key, freeDays)
+          const especial = specialDays.includes(key) || autoSpecial.includes(key)
+          const haySub = subDays.includes(day)
           const isToday = key === todayKey
 
           const numberClass = isToday
@@ -100,9 +110,11 @@ export function Calendar({
               }`
             : free
               ? 'text-red-500'
-              : anniversary
-                ? 'text-yellow-600 dark:text-yellow-500'
-                : ''
+              : especial
+                ? 'bg-gradient-to-br from-fuchsia-500 via-amber-500 to-cyan-500 bg-clip-text text-transparent'
+                : anniversary
+                  ? 'text-yellow-600 dark:text-yellow-500'
+                  : ''
 
           return (
             <button
@@ -110,8 +122,14 @@ export function Calendar({
               type="button"
               onClick={() => setSelected(key)}
               aria-label={`${day} de ${MONTHS[cursor.m]}`}
-              className="flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-black/[0.07] hover:bg-white sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]"
+              className="relative flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-black/[0.07] hover:bg-white sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]"
             >
+              {haySub && (
+                <span
+                  title="Ese día se renueva una suscripción"
+                  className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-neutral-400 ring-2 ring-[var(--paper)] dark:bg-neutral-500"
+                />
+              )}
               <span
                 className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-sm tabular-nums sm:h-8 sm:w-8 ${numberClass}`}
               >
@@ -158,6 +176,12 @@ export function Calendar({
           anniversary={anniversaries.find((a) => a.md === monthDay(selected))}
           free={isFreeDay(selected, freeDays)}
           locked={isWeekend(selected) || isOfficialHoliday(selected)}
+          especial={specialDays.includes(selected) || autoSpecial.includes(selected)}
+          onToggleEspecial={() =>
+            setSpecialDays((prev) =>
+              prev.includes(selected) ? prev.filter((d) => d !== selected) : [...prev, selected],
+            )
+          }
           onClose={() => setSelected(null)}
           onToggleFree={() =>
             setFreeDays((prev) =>
@@ -195,6 +219,8 @@ type DialogProps = {
   anniversary?: Anniversary
   free: boolean
   locked: boolean
+  especial: boolean
+  onToggleEspecial: () => void
   onClose: () => void
   onToggleFree: () => void
   onToggleAnniversary: () => void
@@ -209,6 +235,8 @@ function DayDialog({
   anniversary,
   free,
   locked,
+  especial,
+  onToggleEspecial,
   onClose,
   onToggleFree,
   onToggleAnniversary,
@@ -244,6 +272,20 @@ function DayDialog({
                 : 'border-black/[0.07] hover:border-red-400 dark:border-neutral-700'
             } ${locked ? 'cursor-default opacity-70' : ''}`}
           />
+          <button
+            type="button"
+            onClick={onToggleEspecial}
+            aria-pressed={especial}
+            title="Marcar como día especial"
+            aria-label="Día especial"
+            className={`${square} ${
+              especial
+                ? 'border-transparent bg-gradient-to-br from-fuchsia-500 via-amber-500 to-cyan-500 text-white'
+                : 'border-black/[0.07] text-neutral-300 hover:border-fuchsia-400 dark:border-white/[0.08] dark:text-neutral-600'
+            }`}
+          >
+            <Icon name="special" className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={onToggleAnniversary}

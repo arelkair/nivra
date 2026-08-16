@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { TYPES, shortDate, type Work } from '../lib/store'
+import { TYPES, mover, shortDate, type Notepad, type Subject, type Work } from '../lib/store'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
   works: Work[]
   setWorks: (update: (prev: Work[]) => Work[]) => void
+  subjects: Subject[]
+  notepads: Notepad[]
+  setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
 }
 
-export function Exams({ works, setWorks }: Props) {
+export function Exams({ works, setWorks, subjects, notepads, setNotepads }: Props) {
   const [kind, setKind] = useState<'examen' | 'proyecto'>('examen')
   const [editingId, setEditingId] = useState<string | null>(null)
   const editing = works.find((w) => w.id === editingId)
@@ -16,9 +19,10 @@ export function Exams({ works, setWorks }: Props) {
     setWorks((prev) => prev.map((w) => (w.id === id ? { ...w, ...changes } : w)))
   const remove = (id: string) => setWorks((prev) => prev.filter((w) => w.id !== id))
 
-  const byDate = (a: Work, b: Work) => (a.date ?? '9999').localeCompare(b.date ?? '9999')
-  const exams = works.filter((w) => w.kind === 'examen').sort(byDate)
-  const projects = works.filter((w) => w.kind === 'proyecto').sort(byDate)
+  const exams = works.filter((w) => w.kind === 'examen')
+  const projects = works.filter((w) => w.kind === 'proyecto')
+  const moverWork = (id: string, salto: number) =>
+    setWorks((prev) => mover(prev, prev.findIndex((w) => w.id === id), salto))
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 sm:gap-8">
@@ -92,7 +96,14 @@ export function Exams({ works, setWorks }: Props) {
         ) : (
           <ul className="flex flex-col">
             {exams.map((w) => (
-              <Row key={w.id} work={w} onOpen={setEditingId} onRemove={remove} />
+              <Row
+                key={w.id}
+                work={w}
+                subjects={subjects}
+                onOpen={setEditingId}
+                onRemove={remove}
+                onMover={(salto) => moverWork(w.id, salto)}
+              />
             ))}
           </ul>
         )}
@@ -105,7 +116,14 @@ export function Exams({ works, setWorks }: Props) {
         ) : (
           <ul className="flex flex-col">
             {projects.map((w) => (
-              <Row key={w.id} work={w} onOpen={setEditingId} onRemove={remove} />
+              <Row
+                key={w.id}
+                work={w}
+                subjects={subjects}
+                onOpen={setEditingId}
+                onRemove={remove}
+                onMover={(salto) => moverWork(w.id, salto)}
+              />
             ))}
           </ul>
         )}
@@ -114,6 +132,9 @@ export function Exams({ works, setWorks }: Props) {
       {editing && (
         <WorkDialog
           work={editing}
+          subjects={subjects}
+          notepads={notepads}
+          setNotepads={setNotepads}
           onClose={() => setEditingId(null)}
           onPatch={(changes) => patch(editing.id, changes)}
         />
@@ -124,13 +145,18 @@ export function Exams({ works, setWorks }: Props) {
 
 function Row({
   work,
+  subjects,
   onOpen,
   onRemove,
+  onMover,
 }: {
   work: Work
+  subjects: Subject[]
   onOpen: (id: string) => void
   onRemove: (id: string) => void
+  onMover: (salto: number) => void
 }) {
+  const asignatura = subjects.find((s) => s.id === work.subject)
   return (
     <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
       <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[work.kind].dot}`} />
@@ -142,10 +168,35 @@ function Row({
           ) : (
             <span>Sin fecha</span>
           )}
+          {asignatura && (
+            <span className="rounded px-1.5 text-white" style={{ background: asignatura.color }}>
+              {asignatura.name}
+            </span>
+          )}
+          {work.notepad && <span>Con bloc</span>}
           {work.category && <span className="capitalize">{work.category}</span>}
           {work.desc && <span className="truncate">{work.desc}</span>}
         </span>
       </button>
+      <span className="flex shrink-0 flex-col">
+        <button
+          type="button"
+          onClick={() => onMover(-1)}
+          aria-label={`Subir ${work.title}`}
+          className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+        >
+          <Icon name="up" className="h-3 w-3" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMover(1)}
+          aria-label={`Bajar ${work.title}`}
+          className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+        >
+          <Icon name="down" className="h-3 w-3" />
+        </button>
+      </span>
+
       <button
         type="button"
         onClick={() => onRemove(work.id)}
@@ -160,13 +211,25 @@ function Row({
 
 function WorkDialog({
   work,
+  subjects,
+  notepads,
+  setNotepads,
   onClose,
   onPatch,
 }: {
   work: Work
+  subjects: Subject[]
+  notepads: Notepad[]
+  setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
   onClose: () => void
   onPatch: (changes: Partial<Work>) => void
 }) {
+  const crearBloc = () => {
+    const id = crypto.randomUUID()
+    setNotepads((prev) => [...prev, { id, title: work.title, pages: [{ id: id + '-1', html: '' }] }])
+    onPatch({ notepad: id })
+  }
+
   return (
     <Modal title={TYPES[work.kind].label} onClose={onClose}>
       <div className="flex flex-col gap-2">
@@ -196,6 +259,39 @@ function WorkDialog({
           aria-label="Fecha"
           className={input}
         />
+
+        <select
+          value={work.subject ?? ''}
+          onChange={(e) => onPatch({ subject: e.target.value || undefined })}
+          aria-label="Asignatura"
+          className={select}
+        >
+          <option value="">Sin asignatura</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex gap-2">
+          <select
+            value={work.notepad ?? ''}
+            onChange={(e) => onPatch({ notepad: e.target.value || undefined })}
+            aria-label="Bloc de notas"
+            className={select}
+          >
+            <option value="">Sin bloc de notas</option>
+            {notepads.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.title}
+              </option>
+            ))}
+          </select>
+          <button type="button" onClick={crearBloc} className={button + ' shrink-0'}>
+            Nuevo
+          </button>
+        </div>
 
         {work.kind === 'proyecto' && (
           <>
