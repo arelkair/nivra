@@ -247,11 +247,13 @@ export function Collapsible({
   title,
   abierto,
   onToggle,
+  animar = true,
   children,
 }: {
   title: string
   abierto: boolean
   onToggle: () => void
+  animar?: boolean
   children: ReactNode
 }) {
   return (
@@ -270,7 +272,15 @@ export function Collapsible({
           className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${abierto ? 'rotate-180' : ''}`}
         />
       </button>
-      {abierto && <div className={`border-t px-4 py-4 ${line}`}>{children}</div>}
+      <div
+        className={`grid ${animar ? 'transition-[grid-template-rows] duration-300 ease-out' : ''} ${
+          abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className={`border-t px-4 py-4 ${line}`}>{children}</div>
+        </div>
+      </div>
     </div>
   )
 }

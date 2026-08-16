@@ -19,13 +19,13 @@ type Props = {
 const COLORES_ASIG = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8', '#a855f7', '#ec4899']
 
 export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
-  const [abierta, setAbierta] = useState<string | null>('general')
+  const [abierta, setAbierta] = useState<string | null>(null)
   const alterna = (id: string) => setAbierta((prev) => (prev === id ? null : id))
 
   return (
     <Modal title="Ajustes" onClose={onClose}>
       <div className="flex flex-col gap-2">
-        <Collapsible title="General" abierto={abierta === 'general'} onToggle={() => alterna('general')}>
+        <Collapsible title="General" abierto={abierta === 'general'} animar={cfg.animations} onToggle={() => alterna('general')}>
           <div className="flex flex-col gap-1">
             <Switch
               checked={cfg.intro}
@@ -61,7 +61,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
           </div>
         </Collapsible>
 
-        <Collapsible title="Color" abierto={abierta === 'color'} onToggle={() => alterna('color')}>
+        <Collapsible title="Color" abierto={abierta === 'color'} animar={cfg.animations} onToggle={() => alterna('color')}>
           <div className="grid grid-cols-5 gap-2">
             {ACCENTS.map((a) => (
               <button
@@ -89,7 +89,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
         <Collapsible
           title="Asignaturas"
           abierto={abierta === 'asignaturas'}
-          onToggle={() => alterna('asignaturas')}
+          animar={cfg.animations} onToggle={() => alterna('asignaturas')}
         >
           <form
             onSubmit={(ev) => {
@@ -158,7 +158,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
         <Collapsible
           title="Notificaciones"
           abierto={abierta === 'notificaciones'}
-          onToggle={() => alterna('notificaciones')}
+          animar={cfg.animations} onToggle={() => alterna('notificaciones')}
         >
           <Notificaciones cfg={cfg} onAviso={onAviso} />
         </Collapsible>
@@ -166,7 +166,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
         <Collapsible
           title="Atajos de teclado"
           abierto={abierta === 'atajos'}
-          onToggle={() => alterna('atajos')}
+          animar={cfg.animations} onToggle={() => alterna('atajos')}
         >
           <Switch
             checked={cfg.shortcutsOn}
@@ -199,7 +199,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
         <Collapsible
           title="Sincronización"
           abierto={abierta === 'sync'}
-          onToggle={() => alterna('sync')}
+          animar={cfg.animations} onToggle={() => alterna('sync')}
         >
           <SyncPanel estado={sync} setEstado={setSync} />
         </Collapsible>
@@ -207,7 +207,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
         <Collapsible
           title="Copia de seguridad"
           abierto={abierta === 'copia'}
-          onToggle={() => alterna('copia')}
+          animar={cfg.animations} onToggle={() => alterna('copia')}
         >
           <Copia onAviso={onAviso} />
         </Collapsible>
@@ -215,7 +215,7 @@ export function Settings({ cfg, sync, setSync, onClose, onAviso }: Props) {
         <Collapsible
           title="Cumpleaños"
           abierto={abierta === 'cumple'}
-          onToggle={() => alterna('cumple')}
+          animar={cfg.animations} onToggle={() => alterna('cumple')}
         >
           <div className="flex items-center gap-2">
             <input
