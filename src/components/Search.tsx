@@ -1,18 +1,30 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PageId } from '../lib/store'
 import { Icon, card, input, line } from './ui'
 
-export type Resultado = { id: string; titulo: string; tipo: string; page: PageId }
+export type Destino = PageId | 'ajustes'
+
+export type Resultado = { id: string; titulo: string; tipo: string; page: Destino }
 
 export function Search({
   buscar,
   onIr,
 }: {
   buscar: (texto: string) => Resultado[]
-  onIr: (page: PageId) => void
+  onIr: (page: Destino) => void
 }) {
   const [texto, setTexto] = useState('')
   const [abierto, setAbierto] = useState(false)
+  const caja = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!abierto) return
+    const fuera = (e: PointerEvent) => {
+      if (!caja.current?.contains(e.target as Node)) setAbierto(false)
+    }
+    addEventListener('pointerdown', fuera)
+    return () => removeEventListener('pointerdown', fuera)
+  }, [abierto])
   const resultados = useMemo(() => (texto.trim() ? buscar(texto.trim()) : []), [texto, buscar])
 
   const elegir = (r: Resultado) => {
@@ -22,7 +34,7 @@ export function Search({
   }
 
   return (
-    <div className="relative">
+    <div ref={caja} className="relative">
       <div className="flex items-center">
         <button
           type="button"
@@ -56,14 +68,13 @@ export function Search({
             }}
             placeholder="Buscar…"
             aria-label="Buscar"
-            className={`${input} h-10 w-44 py-0 pl-9 lg:w-60`}
+            className={`${input} h-10 w-44 py-0 !pl-9 lg:w-60`}
           />
         </div>
       </div>
 
       {abierto && (
         <>
-          <div className="fixed inset-0 z-20 sm:hidden" onClick={() => setAbierto(false)} />
           <div
             className={`${card} absolute top-12 right-0 z-30 w-[min(22rem,calc(100vw-2.5rem))] overflow-hidden p-2 shadow-xl`}
           >

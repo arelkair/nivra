@@ -12,7 +12,7 @@ import { Tasks } from './pages/Tasks'
 import { Wishlist } from './pages/Wishlist'
 import { CountdownPage } from './pages/CountdownPage'
 import { Intro } from './components/Intro'
-import { Search, type Resultado } from './components/Search'
+import { Search, type Destino, type Resultado } from './components/Search'
 import { Settings } from './components/Settings'
 import { FloatingNote } from './components/FloatingNote'
 import { Clock, Confetti, Icon, Toasts, line, type Aviso } from './components/ui'
@@ -21,6 +21,8 @@ import { lanzar, marcarEnviadas, pendientes } from './lib/notify'
 import { ATAJOS, escribiendo, teclaDe } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
 import {
+  EXPENSE_CATS,
+  INCOME_CATS,
   SUBSCRIPTION_CAT,
   calendarItems,
   cobrosPendientes,
@@ -83,6 +85,23 @@ const BANK_TABS: { id: BankTab; label: string }[] = [
   { id: 'ingresos', label: 'Ingresos' },
   { id: 'gastos', label: 'Gastos' },
   { id: 'objetivos', label: 'Objetivos' },
+]
+
+const OPCIONES = [
+  'Animación de inicio',
+  'Animaciones al cambiar de apartado',
+  'Reloj',
+  'Formato de 12 horas',
+  'Buscador',
+  'Botones de atrás y adelante',
+  'Ocultar grupo de cuentas atrás',
+  'Color',
+  'Asignaturas',
+  'Notificaciones',
+  'Atajos de teclado',
+  'Sincronización',
+  'Copia de seguridad',
+  'Cumpleaños',
 ]
 
 const headerButton =
@@ -217,27 +236,83 @@ function App() {
 
   const buscar = useCallback(
     (texto: string): Resultado[] => {
-      const q = texto.toLowerCase()
-      const casa = (s?: string) => !!s && s.toLowerCase().includes(q)
+      const q = texto
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+      const casa = (s?: string) =>
+        !!s &&
+        s
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .includes(q)
       const out: Resultado[] = []
-      for (const t of tasks) if (casa(t.title)) out.push({ id: t.id, titulo: t.title, tipo: 'Tarea', page: 'tareas' })
+      const add = (id: string, titulo: string, tipo: string, page: Destino) =>
+        out.push({ id, titulo, tipo, page })
+
+      for (const t of tasks) if (casa(t.title)) add(t.id, t.title, 'Tarea', 'tareas')
       for (const w of works)
         if (casa(w.title))
-          out.push({ id: w.id, titulo: w.title, tipo: w.kind === 'examen' ? 'Examen' : 'Proyecto', page: 'examenes' })
+          add(w.id, w.title, w.kind === 'examen' ? 'Examen' : 'Proyecto', 'examenes')
       for (const e of events)
-        if (casa(e.title)) out.push({ id: e.id, titulo: e.title, tipo: 'Actividad del calendario', page: 'calendario' })
-      for (const w of wishes) if (casa(w.title)) out.push({ id: w.id, titulo: w.title, tipo: 'Deseo', page: 'deseos' })
-      for (const s of subs) if (casa(s.title)) out.push({ id: s.id, titulo: s.title, tipo: 'Suscripción', page: 'suscripciones' })
-      for (const n of notepads) if (casa(n.title)) out.push({ id: n.id, titulo: n.title, tipo: 'Bloc de notas', page: 'bloc' })
-      for (const g of grades)
-        if (casa(g.desc)) out.push({ id: g.id, titulo: g.desc ?? '', tipo: 'Nota', page: 'notas' })
-      for (const b of blocks) if (casa(b.title)) out.push({ id: b.id, titulo: b.title, tipo: 'Bloque del horario', page: 'horario' })
+        if (casa(e.title)) add(e.id, e.title, 'Actividad del calendario', 'calendario')
+      for (const a of anniversaries)
+        if (casa(a.name)) add(a.id, a.name, 'Aniversario', 'calendario')
+      for (const w of wishes) if (casa(w.title)) add(w.id, w.title, 'Deseo', 'deseos')
+      for (const x of subs) if (casa(x.title)) add(x.id, x.title, 'Suscripción', 'suscripciones')
+      for (const n of notepads) if (casa(n.title)) add(n.id, n.title, 'Bloc de notas', 'bloc')
+      for (const g of grades) if (casa(g.desc)) add(g.id, g.desc ?? '', 'Nota', 'notas')
+      for (const b of blocks) if (casa(b.title)) add(b.id, b.title, 'Bloque del horario', 'horario')
       for (const c of countdowns)
         if (casa(c.title))
-          out.push({ id: c.id, titulo: c.title, tipo: 'Cuenta atrás', page: c.id === general?.id ? 'dashboard' : `cuenta:${c.id}` })
+          add(c.id, c.title, 'Cuenta atrás', c.id === general?.id ? 'dashboard' : `cuenta:${c.id}`)
+      for (const g of goals)
+        if (casa(g.title))
+          add(
+            g.id,
+            g.title,
+            g.kind === 'meta' ? 'Meta de ahorro' : g.kind === 'limite' ? 'Límite de gasto' : 'Idea',
+            'banco',
+          )
+      for (const p of profiles) if (casa(p.name)) add(p.id, p.name, 'Perfil de horario', 'horario')
+      for (const a of cfg.subjects) if (casa(a.name)) add(a.id, a.name, 'Asignatura', 'ajustes')
+
+      for (const c of [...new Set([...EXPENSE_CATS, SUBSCRIPTION_CAT])])
+        if (casa(c)) add(`gasto-${c}`, c, 'Categoría de gasto', 'banco')
+      for (const c of INCOME_CATS)
+        if (casa(c)) add(`ingreso-${c}`, c, 'Categoría de ingreso', 'banco')
+
+      const vistos = new Set<string>()
+      for (const m of movements) {
+        const etiqueta = `${m.category} · ${m.amount.toFixed(2)} €`
+        if (casa(m.category) && !vistos.has(m.id)) {
+          vistos.add(m.id)
+          add(m.id, etiqueta, m.kind === 'gasto' ? 'Gasto' : 'Ingreso', 'banco')
+        }
+      }
+
+      for (const o of OPCIONES) if (casa(o)) add(`op-${o}`, o, 'Ajustes', 'ajustes')
+
       return out.slice(0, 12)
     },
-    [tasks, works, events, wishes, subs, notepads, grades, blocks, countdowns, general],
+    [
+      tasks,
+      works,
+      events,
+      anniversaries,
+      wishes,
+      subs,
+      notepads,
+      grades,
+      blocks,
+      countdowns,
+      goals,
+      profiles,
+      movements,
+      cfg.subjects,
+      general,
+    ],
   )
 
   useEffect(() => {
@@ -408,7 +483,14 @@ function App() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              {cfg.searchOn && <Search buscar={buscar} onIr={irA} />}
+              {cfg.searchOn && (
+                <Search
+                  buscar={buscar}
+                  onIr={(destino) =>
+                    destino === 'ajustes' ? setSettingsOpen(true) : irA(destino as PageId)
+                  }
+                />
+              )}
               {cfg.clockOn && <Clock hour12={cfg.hour12} />}
               <button
                 type="button"
