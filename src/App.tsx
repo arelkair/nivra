@@ -126,6 +126,7 @@ function App() {
   const irA = useCallback(
     (destino: PageId) => {
       setMenuAbierto(false)
+      if (destino === 'banco' && historial[indice] !== 'banco') setBankTab('dinero')
       setHistorial((prev) => {
         if (prev[indice] === destino) return prev
         return [...prev.slice(0, indice + 1), destino]

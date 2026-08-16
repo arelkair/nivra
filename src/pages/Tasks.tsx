@@ -171,7 +171,7 @@ function Row({
           )}
           {task.notepad && <span>Con bloc</span>}
           {task.date && (
-            <span className="rounded bg-blue-100 px-1.5 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
+            <span className="whitespace-nowrap rounded bg-blue-100 px-1.5 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
               {shortDate(task.date)}
             </span>
           )}

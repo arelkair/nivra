@@ -73,8 +73,15 @@ export function marcarEnviadas(claves: string[]) {
   localStorage.setItem(ENVIADAS, JSON.stringify(todas.slice(-200)))
 }
 
-export function lanzar(texto: string) {
+export async function lanzar(texto: string) {
   if (permiso() !== 'granted') return false
-  new Notification('Nivra', { body: texto, icon: '/favicon.svg' })
+  // ponytail: con un service worker activo, algunos navegadores (Android Chrome)
+  // sólo permiten notificar vía registration.showNotification, no `new Notification`.
+  const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined
+  if (reg) {
+    await reg.showNotification('Nivra', { body: texto, icon: '/favicon.svg' })
+  } else {
+    new Notification('Nivra', { body: texto, icon: '/favicon.svg' })
+  }
   return true
 }

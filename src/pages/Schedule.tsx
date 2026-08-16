@@ -117,7 +117,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                       }`}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <span className="font-mono text-[0.7rem] tabular-nums text-neutral-500 dark:text-neutral-400">
+                        <span className="whitespace-nowrap font-mono text-[0.7rem] tabular-nums text-neutral-500 dark:text-neutral-400">
                           {b.start}–{b.end}
                         </span>
                         <span className="flex shrink-0 gap-1">
