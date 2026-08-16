@@ -93,7 +93,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                   {day}
                 </h3>
                 {i === todayIndex && (
-                  <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[0.6rem] font-medium text-neutral-50 dark:bg-neutral-200 dark:text-neutral-900">
+                  <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[0.6rem] font-medium text-neutral-50 dark:bg-white dark:text-neutral-900">
                     hoy
                   </span>
                 )}

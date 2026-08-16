@@ -80,7 +80,7 @@ export function CountdownPage({ id, countdowns, setCountdowns, onSalir }: Props)
 
         <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
           <div
-            className="h-full rounded-full bg-neutral-700 transition-[width] duration-1000 dark:bg-neutral-300"
+            className="h-full rounded-full bg-neutral-700 transition-[width] duration-1000 dark:bg-white"
             style={{ width: `${pct * 100}%` }}
           />
         </div>

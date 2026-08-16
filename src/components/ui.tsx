@@ -10,7 +10,7 @@ export const input =
 export const select = `${input} appearance-none`
 
 export const button =
-  'rounded-xl bg-neutral-800 px-4 py-2.5 text-sm font-medium text-neutral-50 transition-opacity hover:opacity-85 active:scale-[.98] sm:px-5 sm:py-3 dark:bg-neutral-200 dark:text-neutral-900'
+  'rounded-xl bg-neutral-800 px-4 py-2.5 text-sm font-medium text-neutral-50 transition-opacity hover:opacity-85 active:scale-[.98] sm:px-5 sm:py-3 dark:bg-white dark:text-neutral-900'
 
 export const ghost = `rounded-xl border px-4 py-2.5 text-sm text-neutral-500 transition-colors hover:bg-black/[0.03] sm:px-5 ${line} dark:text-neutral-400 dark:hover:bg-white/[0.04]`
 
@@ -157,11 +157,11 @@ export function Switch({
         aria-label={label}
         onClick={() => onChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? 'bg-neutral-800 dark:bg-neutral-200' : 'bg-black/10 dark:bg-white/15'
+          checked ? 'bg-neutral-800 dark:bg-white' : 'bg-black/10 dark:bg-white/15'
         }`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-neutral-50 shadow-sm transition-[left] dark:bg-neutral-800 ${
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-neutral-50 shadow-sm transition-[left] dark:bg-neutral-900 ${
             checked ? 'left-[22px]' : 'left-0.5'
           }`}
         />
@@ -343,7 +343,7 @@ export function Modal({
       ref={ref}
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
       onClick={(e) => e.target === ref.current && onClose()}
-      className={`m-auto w-[min(100%-1.5rem,30rem)] rounded-3xl border bg-[var(--surface)] p-5 text-neutral-800 backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-7 ${line} dark:text-neutral-200`}
+      className={`m-auto w-[min(100%-1.5rem,30rem)] rounded-3xl border bg-[var(--surface)] p-5 text-neutral-800 backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-7 ${line} dark:text-neutral-100`}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <h3 className="mr-auto text-lg font-semibold first-letter:uppercase sm:text-xl">{title}</h3>

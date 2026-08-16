@@ -143,7 +143,7 @@ function Row({
         aria-label={task.title}
         className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors ${
           task.done
-            ? 'border-neutral-800 bg-neutral-800 text-neutral-50 dark:border-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+            ? 'border-neutral-800 bg-neutral-800 text-neutral-50 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
             : 'border-neutral-300 hover:border-neutral-500 dark:border-neutral-600'
         }`}
       >
@@ -331,7 +331,7 @@ function TaskDialog({
                   aria-label={s.title}
                   className={`grid h-4 w-4 shrink-0 place-items-center rounded border transition-colors ${
                     s.done
-                      ? 'border-neutral-800 bg-neutral-800 text-neutral-50 dark:border-neutral-200 dark:bg-neutral-200 dark:text-neutral-900'
+                      ? 'border-neutral-800 bg-neutral-800 text-neutral-50 dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
                       : 'border-neutral-300 dark:border-neutral-600'
                   }`}
                 >

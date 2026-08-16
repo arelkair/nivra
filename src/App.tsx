@@ -396,7 +396,7 @@ function App() {
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
 
-      <div className="flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-300">
+      <div className="flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-200">
         <aside
           className={`nivra-scroll fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto overscroll-contain border-r px-3 py-4 md:flex ${line}`}
         >
