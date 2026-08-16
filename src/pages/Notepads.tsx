@@ -124,12 +124,14 @@ export function Notepads({ notepads, setNotepads }: Props) {
   )
 }
 
-function Editor({
+export function Editor({
   notepad,
   onPaginas,
+  compacto,
 }: {
   notepad: Notepad
   onPaginas: (pages: NotepadPage[]) => void
+  compacto?: boolean
 }) {
   const paginas = paginasDe(notepad)
   const [indice, setIndice] = useState(0)
@@ -234,7 +236,7 @@ function Editor({
         aria-multiline="true"
         aria-label={`Contenido de ${notepad.title}`}
         onInput={(e) => onChange(sanitize(e.currentTarget.innerHTML))}
-        className="min-h-[24rem] p-5 text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5"
+        className={`${compacto ? 'min-h-40 flex-1 overflow-y-auto p-4' : 'min-h-[24rem] p-5'} nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5`}
       />
 
       <div className={`flex items-center justify-between gap-2 border-t p-2 ${line}`}>

@@ -14,6 +14,7 @@ import { CountdownPage } from './pages/CountdownPage'
 import { Intro } from './components/Intro'
 import { Search, type Resultado } from './components/Search'
 import { Settings } from './components/Settings'
+import { FloatingNote } from './components/FloatingNote'
 import { Clock, Confetti, Icon, Toasts, line, type Aviso } from './components/ui'
 import { useSettings } from './lib/settings'
 import { lanzar, marcarEnviadas, pendientes } from './lib/notify'
@@ -91,6 +92,7 @@ function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
   const [introDone, setIntroDone] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [notaFlotante, setNotaFlotante] = useState(false)
   const [bankTab, setBankTab] = useState<BankTab>('dinero')
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const [sync, setSync] = useSync()
@@ -256,7 +258,7 @@ function App() {
       else if (a.tipo === 'adelante') adelante()
       else if (a.tipo === 'ajustes') setSettingsOpen(true)
       else if (a.tipo === 'tema') setTheme(theme === 'dark' ? 'light' : 'dark')
-      else if (a.tipo === 'nota') irA('bloc')
+      else if (a.tipo === 'nota') setNotaFlotante((v) => !v)
       else if (a.tipo === 'buscar') document.getElementById('nivra-buscador')?.focus()
     }
     addEventListener('keydown', onKey)
@@ -538,6 +540,14 @@ function App() {
             </button>
           ))}
         </nav>
+
+        {notaFlotante && (
+          <FloatingNote
+            notepads={notepads}
+            setNotepads={setNotepads}
+            onCerrar={() => setNotaFlotante(false)}
+          />
+        )}
 
         {esCumple && <Confetti />}
         {cfg.toasts && (
