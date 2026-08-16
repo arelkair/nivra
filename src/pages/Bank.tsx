@@ -11,7 +11,20 @@ import {
 } from '../lib/store'
 import { conDeshacer } from '../lib/undo'
 import { Goals } from './Goals'
-import { CatChart, Empty, Icon, Label, BarChart, Segmented, button, card, input, line, select } from '../components/ui'
+import {
+  CatChart,
+  Empty,
+  Icon,
+  Label,
+  BarChart,
+  Modal,
+  Segmented,
+  button,
+  card,
+  input,
+  line,
+  select,
+} from '../components/ui'
 
 export type BankTab = 'dinero' | 'ingresos' | 'gastos' | 'objetivos'
 
@@ -207,6 +220,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           cats={tab === 'ingresos' ? INCOME_CATS : EXPENSE_CATS}
           movements={tab === 'ingresos' ? income : expense}
           onAdd={(m) => setMovements((prev) => [m, ...prev])}
+          onEdit={(m) => setMovements((prev) => prev.map((x) => (x.id === m.id ? m : x)))}
           onRemove={(id) => {
             const antes = movements
             setMovements((prev) => prev.filter((m) => m.id !== id))
@@ -223,16 +237,19 @@ function MovementPanel({
   cats,
   movements,
   onAdd,
+  onEdit,
   onRemove,
 }: {
   kind: 'ingreso' | 'gasto'
   cats: string[]
   movements: Movement[]
   onAdd: (m: Movement) => void
+  onEdit: (m: Movement) => void
   onRemove: (id: string) => void
 }) {
   const positive = kind === 'ingreso'
   const total = movements.reduce((s, m) => s + m.amount, 0)
+  const [editando, setEditando] = useState<Movement | null>(null)
 
   return (
     <>
@@ -250,6 +267,7 @@ function MovementPanel({
             amount,
             category: String(data.get('category')),
             date: String(data.get('date')) || dateKey(new Date()),
+            note: String(data.get('note') ?? '').trim() || undefined,
           })
           form.reset()
         }}
@@ -265,6 +283,13 @@ function MovementPanel({
           placeholder="0,00"
           aria-label="Importe"
           className={`${input} font-mono text-lg`}
+        />
+        <input
+          name="note"
+          maxLength={60}
+          placeholder={positive ? '¿De qué? (opcional)' : '¿En qué? (opcional)'}
+          aria-label="Concepto"
+          className={input}
         />
         <div className="flex gap-2">
           <select name="category" defaultValue={cats[0]} aria-label="Categoría" className={select}>
@@ -306,7 +331,19 @@ function MovementPanel({
                   {positive ? '+' : '−'}
                   {eur(m.amount)}
                 </span>
-                <span className="min-w-0 flex-1 truncate">{m.category}</span>
+                <button
+                  type="button"
+                  onClick={() => setEditando(m)}
+                  className="min-w-0 flex-1 text-left"
+                  title="Editar"
+                >
+                  <span className="block truncate">{m.note || m.category}</span>
+                  {m.note && (
+                    <span className="block truncate text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+                      {m.category}
+                    </span>
+                  )}
+                </button>
                 <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
                   {m.date.slice(8)}/{m.date.slice(5, 7)}
                 </span>
@@ -323,6 +360,71 @@ function MovementPanel({
           </ul>
         )}
       </section>
+
+      {editando && (
+        <Modal title={positive ? 'Ingreso' : 'Gasto'} onClose={() => setEditando(null)}>
+          <form
+            onSubmit={(ev) => {
+              ev.preventDefault()
+              const data = new FormData(ev.currentTarget)
+              const amount = readAmount(data.get('amount'))
+              if (amount === null) return
+              onEdit({
+                ...editando,
+                amount,
+                category: String(data.get('category')),
+                date: String(data.get('date')) || editando.date,
+                note: String(data.get('note') ?? '').trim() || undefined,
+              })
+              setEditando(null)
+            }}
+            className="flex flex-col gap-2"
+          >
+            <input
+              name="note"
+              defaultValue={editando.note}
+              maxLength={60}
+              placeholder="Concepto"
+              aria-label="Concepto"
+              className={input}
+            />
+            <input
+              name="amount"
+              type="number"
+              step="0.01"
+              min="0.01"
+              defaultValue={editando.amount}
+              required
+              aria-label="Importe"
+              className={`${input} font-mono`}
+            />
+            <div className="flex gap-2">
+              <select
+                name="category"
+                defaultValue={editando.category}
+                aria-label="Categoría"
+                className={select}
+              >
+                {[...new Set([...cats, editando.category])].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <input
+                name="date"
+                type="date"
+                defaultValue={editando.date}
+                aria-label="Fecha"
+                className={input}
+              />
+            </div>
+            <button type="submit" className={`${button} mt-2`}>
+              Guardar
+            </button>
+          </form>
+        </Modal>
+      )}
     </>
   )
 }

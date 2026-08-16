@@ -9,7 +9,7 @@ const FEATURES = [
 
 export function SetupScreen({ onDone, delay }: { onDone: () => void; delay: number }) {
   return (
-    <div className="flex min-h-svh items-center bg-[#f6f5f2] px-6 py-16 text-neutral-900 sm:px-10 dark:bg-[#0b0b0c] dark:text-neutral-200">
+    <div className="flex min-h-svh items-center bg-[var(--paper)] px-6 py-16 text-neutral-900 sm:px-10  dark:text-neutral-200">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-10">
         <div
           style={{ animationDelay: `${delay}s` }}

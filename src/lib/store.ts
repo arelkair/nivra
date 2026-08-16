@@ -242,6 +242,7 @@ export type Movement = {
   amount: number
   category: string
   date: string
+  note?: string
 }
 
 export type Anniversary = { id: string; md: string; name: string }

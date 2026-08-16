@@ -76,7 +76,7 @@ export function Search({
       {abierto && (
         <>
           <div
-            className={`${card} absolute top-12 right-0 z-30 w-[min(22rem,calc(100vw-2.5rem))] overflow-hidden p-2 shadow-xl`}
+            className={`${card} fixed inset-x-3 top-[4.2rem] z-30 overflow-hidden p-2 shadow-xl sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-[22rem]`}
           >
             <input
               value={texto}

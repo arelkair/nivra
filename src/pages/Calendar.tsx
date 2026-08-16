@@ -231,7 +231,7 @@ export function Calendar({
               type="button"
               onClick={() => setSelected(key)}
               aria-label={`${day} de ${MONTHS[cursor.m]}`}
-              className="relative flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-black/[0.07] hover:bg-white sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]"
+              className="relative flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-black/[0.07] hover:bg-[var(--surface)] sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]"
             >
               {haySub && (
                 <span

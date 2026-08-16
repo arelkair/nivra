@@ -10,8 +10,8 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="description" content="Tu espacio privado de organización." />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f5f2" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0c" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f1ed" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15151a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Nivra" />
@@ -30,7 +30,7 @@
           stored === 'dark' ||
           (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
         if (dark) document.documentElement.classList.add('dark')
-        document.documentElement.style.backgroundColor = dark ? '#0b0b0c' : '#f6f5f2'
+        document.documentElement.style.backgroundColor = dark ? '#15151a' : '#f2f1ed'
         var accent = JSON.parse(localStorage.getItem('nivra-accent'))
         if (accent && accent !== 'basico') document.documentElement.dataset.accent = accent
       } catch (e) {}

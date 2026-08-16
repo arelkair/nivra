@@ -112,6 +112,7 @@ function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
   const [introDone, setIntroDone] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [menuAbierto, setMenuAbierto] = useState(false)
   const [notaFlotante, setNotaFlotante] = useState(false)
   const [bankTab, setBankTab] = useState<BankTab>('dinero')
   const [avisos, setAvisos] = useState<Aviso[]>([])
@@ -124,6 +125,7 @@ function App() {
 
   const irA = useCallback(
     (destino: PageId) => {
+      setMenuAbierto(false)
       setHistorial((prev) => {
         if (prev[indice] === destino) return prev
         return [...prev.slice(0, indice + 1), destino]
@@ -209,6 +211,22 @@ function App() {
     [specialDays, countdowns],
   )
   const diasSuscripcion = useMemo(() => subs.map((s) => s.day), [subs])
+
+  const crearCuenta = () => {
+    const id = crypto.randomUUID()
+    const ahora = new Date()
+    setCountdowns((prev) => [
+      ...prev,
+      {
+        id,
+        title: 'Nueva cuenta atrás',
+        target: `${dateKey(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 7))}T00:00`,
+        created: ahora.toISOString(),
+        units: { years: false, months: false, days: true, hours: true, minutes: true, seconds: true },
+      },
+    ])
+    irA(`cuenta:${id}`)
+  }
 
   useEffect(() => {
     const pendientesDeCobro = cobrosPendientes(subs, new Date())
@@ -374,85 +392,26 @@ function App() {
   const actual = PAGES.find((p) => p.id === page)
   const tituloCuenta = countdowns.find((c) => c.id === cuentaAbierta)?.title
 
-  const navItem = (activo: boolean) =>
-    `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-      activo
-        ? 'bg-black/[0.06] font-medium text-neutral-900 dark:bg-white/[0.10] dark:text-white'
-        : 'text-neutral-500 hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
-    }`
-
   return (
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
 
-      <div className="flex h-svh overflow-hidden text-neutral-900 dark:text-neutral-200">
+      <div className="flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-300">
         <aside
           className={`nivra-scroll fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto overscroll-contain border-r px-3 py-4 md:flex ${line}`}
         >
           <span className="font-display mb-7 px-3 text-2xl font-semibold tracking-tight">Nivra</span>
 
-          <nav className="flex flex-col gap-6 pb-4">
-            {GROUPS.map((g) => (
-              <div key={g.title}>
-                <p className="mb-2 px-3 text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
-                  {g.title}
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {g.pages.map((p) => (
-                    <div key={p.id}>
-                      <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
-                        <Icon name={p.icon} className="h-[17px] w-[17px] shrink-0" />
-                        <span className="min-w-0 truncate">{p.label}</span>
-                      </button>
-
-                      {p.id === 'banco' && page === 'banco' && bankInitial !== null && (
-                        <div className={`mt-1 ml-6 flex flex-col gap-0.5 border-l pl-3 ${line}`}>
-                          {BANK_TABS.map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => setBankTab(t.id)}
-                              className={`rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
-                                bankTab === t.id
-                                  ? 'font-medium text-neutral-900 dark:text-white'
-                                  : 'text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white'
-                              }`}
-                            >
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {!cfg.hideCountdowns && (
-              <GrupoCuentas
-                countdowns={pequenas}
-                page={page}
-                onIr={irA}
-                onCrear={() => {
-                  const id = crypto.randomUUID()
-                  const ahora = new Date()
-                  setCountdowns((prev) => [
-                    ...prev,
-                    {
-                      id,
-                      title: 'Nueva cuenta atrás',
-                      target: `${dateKey(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 7))}T00:00`,
-                      created: ahora.toISOString(),
-                      units: { years: false, months: false, days: true, hours: true, minutes: true, seconds: true },
-                    },
-                  ])
-                  irA(`cuenta:${id}`)
-                }}
-                navItem={navItem}
-              />
-            )}
-          </nav>
+          <Navegacion
+            page={page}
+            irA={irA}
+            bankTab={bankTab}
+            setBankTab={setBankTab}
+            bankInitial={bankInitial}
+            pequenas={pequenas}
+            ocultarCuentas={cfg.hideCountdowns}
+            onCrearCuenta={crearCuenta}
+          />
         </aside>
 
         <div className="flex h-full min-w-0 flex-1 flex-col md:ml-60">
@@ -460,6 +419,14 @@ function App() {
             className={`flex shrink-0 items-center justify-between gap-2 border-b px-3 py-3 sm:gap-4 sm:px-8 ${line}`}
           >
             <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMenuAbierto(true)}
+                aria-label="Menú"
+                className={`${headerButton} md:hidden`}
+              >
+                <Icon name="menu" className="h-[18px] w-[18px]" />
+              </button>
               {cfg.navButtons && (
                 <div className="flex gap-1">
                   <button
@@ -527,7 +494,7 @@ function App() {
 
           <main
             key={cfg.animations ? page : 'fijo'}
-            className={`nivra-scroll flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-28 sm:px-8 sm:pt-8 md:pb-12 ${
+            className={`nivra-scroll flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-10 sm:px-8 sm:pt-8 md:pb-12 ${
               cfg.animations ? 'animate-[fade-in_0.35s_ease-out]' : ''
             } ${page === 'dashboard' ? 'lg:overflow-hidden' : ''}`}
           >
@@ -618,25 +585,44 @@ function App() {
           </main>
         </div>
 
-        <nav
-          className={`nivra-scroll fixed inset-x-0 bottom-0 z-10 flex overflow-x-auto border-t bg-[var(--paper)]/95 backdrop-blur-md md:hidden ${line}`}
-        >
-          {PAGES.map((p) => (
+        {menuAbierto && (
+          <div className="fixed inset-0 z-30 md:hidden">
             <button
-              key={p.id}
               type="button"
-              onClick={() => irA(p.id)}
-              className={`flex min-w-[4.2rem] flex-1 flex-col items-center gap-1 py-2.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] text-[0.58rem] transition-colors ${
-                page === p.id
-                  ? 'font-medium text-neutral-900 dark:text-white'
-                  : 'text-neutral-400 dark:text-neutral-500'
-              }`}
+              aria-label="Cerrar menú"
+              onClick={() => setMenuAbierto(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <div
+              className={`nivra-scroll animate-[fade-in_0.2s_ease-out] absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r bg-[var(--paper)] px-3 py-4 ${line}`}
             >
-              <Icon name={p.icon} className="h-[18px] w-[18px]" />
-              {p.short}
-            </button>
-          ))}
-        </nav>
+              <div className="mb-6 flex items-center justify-between px-3">
+                <span className="font-display text-2xl font-semibold tracking-tight">Nivra</span>
+                <button
+                  type="button"
+                  onClick={() => setMenuAbierto(false)}
+                  aria-label="Cerrar"
+                  className="text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                >
+                  <Icon name="close" className="h-5 w-5" />
+                </button>
+              </div>
+              <Navegacion
+                page={page}
+                irA={irA}
+                bankTab={bankTab}
+                setBankTab={(t) => {
+                  setBankTab(t)
+                  setMenuAbierto(false)
+                }}
+                bankInitial={bankInitial}
+                pequenas={pequenas}
+                ocultarCuentas={cfg.hideCountdowns}
+                onCrearCuenta={crearCuenta}
+              />
+            </div>
+          </div>
+        )}
 
         {notaFlotante && (
           <FloatingNote
@@ -664,6 +650,84 @@ function App() {
         )}
       </div>
     </>
+  )
+}
+
+function Navegacion({
+  page,
+  irA,
+  bankTab,
+  setBankTab,
+  bankInitial,
+  pequenas,
+  ocultarCuentas,
+  onCrearCuenta,
+}: {
+  page: PageId
+  irA: (p: PageId) => void
+  bankTab: BankTab
+  setBankTab: (t: BankTab) => void
+  bankInitial: number | null
+  pequenas: Countdown[]
+  ocultarCuentas: boolean
+  onCrearCuenta: () => void
+}) {
+  const navItem = (activo: boolean) =>
+    `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+      activo
+        ? 'bg-black/[0.06] font-medium text-neutral-900 dark:bg-white/[0.10] dark:text-white'
+        : 'text-neutral-500 hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
+    }`
+
+  return (
+          <nav className="flex flex-col gap-6 pb-4">
+            {GROUPS.map((g) => (
+              <div key={g.title}>
+                <p className="mb-2 px-3 text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+                  {g.title}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {g.pages.map((p) => (
+                    <div key={p.id}>
+                      <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
+                        <Icon name={p.icon} className="h-[17px] w-[17px] shrink-0" />
+                        <span className="min-w-0 truncate">{p.label}</span>
+                      </button>
+
+                      {p.id === 'banco' && page === 'banco' && bankInitial !== null && (
+                        <div className={`mt-1 ml-6 flex flex-col gap-0.5 border-l pl-3 ${line}`}>
+                          {BANK_TABS.map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setBankTab(t.id)}
+                              className={`rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
+                                bankTab === t.id
+                                  ? 'font-medium text-neutral-900 dark:text-white'
+                                  : 'text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white'
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {!ocultarCuentas && (
+              <GrupoCuentas
+                countdowns={pequenas}
+                page={page}
+                onIr={irA}
+                onCrear={onCrearCuenta}
+                navItem={navItem}
+              />
+            )}
+          </nav>
   )
 }
 
