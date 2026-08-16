@@ -11,6 +11,13 @@ Organizador personal que guarda todo en tu navegador. Sin cuentas, sin servidor,
 
 Tema claro y oscuro, diseño adaptado a móvil, tablet y escritorio, y ajustes para la animación de inicio.
 
+## Instalación en el móvil
+
+Nivra es una PWA: al abrirla en el navegador del móvil puedes darle a «Añadir a la pantalla de
+inicio» y queda como una aplicación más, a pantalla completa y con su icono. Un service worker
+guarda la aplicación en el dispositivo, así que **abre y funciona sin conexión**; sólo la
+sincronización entre dispositivos necesita internet.
+
 ## Sincronización entre dispositivos
 
 Opcional y apagada por defecto: mientras no la actives, nada sale de tu navegador.
