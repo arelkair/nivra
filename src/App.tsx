@@ -100,6 +100,7 @@ const BANK_TABS: { id: BankTab; label: string }[] = [
 const OPCIONES = [
   'Animación de inicio',
   'Animaciones al cambiar de apartado',
+  'Tema según la hora',
   'Reloj',
   'Formato de 12 horas',
   'Buscador',
@@ -112,6 +113,11 @@ const OPCIONES = [
   'Exportar o importar datos',
   'Cumpleaños',
 ]
+
+/** El tema automático va por reloj: claro de 7:00 a 20:00, oscuro el resto. */
+const DIA_DESDE = 7
+const DIA_HASTA = 20
+const esDeDia = (d: Date) => d.getHours() >= DIA_DESDE && d.getHours() < DIA_HASTA
 
 const headerButton =
   'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-black/[0.07] text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 disabled:opacity-30 disabled:hover:bg-transparent dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
@@ -179,6 +185,25 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  const tramoAplicado = useRef<'light' | 'dark' | null>(null)
+  useEffect(() => {
+    if (!cfg.autoTheme) {
+      tramoAplicado.current = null
+      return
+    }
+    // Sólo cambia al cruzar el amanecer o el anochecer, así un cambio a mano a
+    // media tarde aguanta hasta el siguiente tramo en vez de deshacerse solo.
+    const aplicar = () => {
+      const tramo = esDeDia(new Date()) ? 'light' : 'dark'
+      if (tramo === tramoAplicado.current) return
+      tramoAplicado.current = tramo
+      setTheme(tramo)
+    }
+    aplicar()
+    const id = setInterval(aplicar, 60000)
+    return () => clearInterval(id)
+  }, [cfg.autoTheme, setTheme])
   useEffect(() => {
     if (cfg.accent === 'basico') delete document.documentElement.dataset.accent
     else document.documentElement.dataset.accent = cfg.accent
@@ -358,6 +383,22 @@ function App() {
       cfg.subjects,
     ],
   )
+
+  useEffect(() => {
+    const onRaton = (e: MouseEvent) => {
+      if (e.button !== 3 && e.button !== 4) return
+      // Sin esto el navegador se lleva por delante la pestaña entera, que aquí
+      // saldría de Nivra en vez de moverse por sus apartados.
+      e.preventDefault()
+      if (e.type === 'mouseup') (e.button === 3 ? atras : adelante)()
+    }
+    addEventListener('mousedown', onRaton)
+    addEventListener('mouseup', onRaton)
+    return () => {
+      removeEventListener('mousedown', onRaton)
+      removeEventListener('mouseup', onRaton)
+    }
+  }, [atras, adelante])
 
   useEffect(() => {
     if (!cfg.shortcutsOn) return

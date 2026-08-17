@@ -4,6 +4,7 @@ export function useSettings() {
   const [intro, setIntro] = useStored('nivra-intro', true)
   const [accent, setAccent] = useStored('nivra-accent', 'basico')
   const [clockOn, setClockOn] = useStored('nivra-clock', false)
+  const [autoTheme, setAutoTheme] = useStored('nivra-auto-theme', false)
   const [hour12, setHour12] = useStored('nivra-hour12', false)
   const [birthday, setBirthday] = useStored('nivra-birthday', '')
   const [subjects, setSubjects] = useStored<Subject[]>('nivra-subjects', [])
@@ -23,6 +24,8 @@ export function useSettings() {
     setAccent,
     clockOn,
     setClockOn,
+    autoTheme,
+    setAutoTheme,
     hour12,
     setHour12,
     birthday,

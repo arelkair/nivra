@@ -56,6 +56,12 @@ export function Settings({
               onChange={cfg.setAnimations}
               label="Animaciones al cambiar de apartado"
             />
+            <Switch
+              checked={cfg.autoTheme}
+              onChange={cfg.setAutoTheme}
+              label="Tema según la hora"
+              hint="Claro de 7:00 a 20:00 y oscuro el resto. Si lo cambias a mano, aguanta hasta el siguiente tramo."
+            />
             <Switch checked={cfg.clockOn} onChange={cfg.setClockOn} label="Reloj" />
             {cfg.clockOn && (
               <Switch checked={cfg.hour12} onChange={cfg.setHour12} label="Formato de 12 horas" />
