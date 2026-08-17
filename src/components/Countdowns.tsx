@@ -46,7 +46,6 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
     <section className={`${card} p-5 sm:p-6`}>
       <div className="flex items-center justify-between gap-2">
         <Label>Cuenta atrás</Label>
-        {countdowns.length === 0 && (
         <button
           type="button"
           onClick={() => setCreating(true)}
@@ -55,7 +54,6 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
         >
           <Icon name="plus" className="h-3.5 w-3.5" />
         </button>
-        )}
       </div>
 
       {countdowns.length === 0 ? (

@@ -127,6 +127,17 @@ export function Notepads({ notepads, setNotepads }: Props) {
   )
 }
 
+const textoPlano = (html: string) => {
+  const div = document.createElement('div')
+  div.innerHTML = html
+  return div.textContent ?? ''
+}
+
+const contarPalabras = (html: string) => {
+  const m = textoPlano(html).match(/\S+/g)
+  return m ? m.length : 0
+}
+
 export function Editor({
   notepad,
   onPaginas,
@@ -140,6 +151,8 @@ export function Editor({
   const [indice, setIndice] = useState(0)
   const actual = paginas[Math.min(indice, paginas.length - 1)]
   const ref = useRef<HTMLDivElement>(null)
+  const [buscando, setBuscando] = useState(false)
+  const [query, setQuery] = useState('')
 
   const ultimo = useRef<string | null>(null)
 
@@ -166,6 +179,22 @@ export function Editor({
     document.execCommand(comando, false, valor)
     if (ref.current) onChange(sanitize(ref.current.innerHTML))
   }
+
+  const buscarSiguiente = (atras: boolean) => {
+    if (!query) return
+    ref.current?.focus()
+    // ponytail: busca con window.find, nativo del navegador; puede saltar fuera
+    // del editor si no queda ninguna coincidencia más en esta página.
+    ;(window as Window & { find?: (s: string, c?: boolean, b?: boolean, w?: boolean) => boolean }).find?.(
+      query,
+      false,
+      atras,
+      true,
+    )
+  }
+
+  const palabrasPagina = contarPalabras(actual.html)
+  const palabrasTotal = paginas.reduce((s, p) => s + contarPalabras(p.html), 0)
 
   const boton =
     'grid h-9 w-9 place-items-center rounded-lg border text-sm transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
@@ -237,7 +266,50 @@ export function Editor({
         >
           <Icon name="close" className="h-4 w-4" />
         </button>
+
+        <button
+          type="button"
+          onClick={() => setBuscando((v) => !v)}
+          aria-label="Buscar en el bloc"
+          aria-pressed={buscando}
+          className={`${boton} ${line} ml-auto ${buscando ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
+        >
+          <Icon name="search" className="h-4 w-4" />
+        </button>
       </div>
+
+      {buscando && (
+        <div className={`flex items-center gap-2 border-b p-2 ${line}`}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') buscarSiguiente(e.shiftKey)
+              if (e.key === 'Escape') setBuscando(false)
+            }}
+            autoFocus
+            placeholder="Buscar en esta página…"
+            aria-label="Buscar en el bloc"
+            className={`${input} h-8 flex-1 py-0 text-sm`}
+          />
+          <button
+            type="button"
+            onClick={() => buscarSiguiente(true)}
+            aria-label="Coincidencia anterior"
+            className={`${boton} ${line} h-8 w-8`}
+          >
+            <Icon name="up" className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => buscarSiguiente(false)}
+            aria-label="Siguiente coincidencia"
+            className={`${boton} ${line} h-8 w-8`}
+          >
+            <Icon name="down" className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       <div
         key={notepad.id + actual.id}
@@ -250,6 +322,11 @@ export function Editor({
         onInput={(e) => onChange(sanitize(e.currentTarget.innerHTML))}
         className={`${compacto ? 'min-h-40 flex-1 overflow-y-auto p-4' : 'min-h-[24rem] p-5'} nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5`}
       />
+
+      <p className={`border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
+        {palabrasPagina} palabra{palabrasPagina === 1 ? '' : 's'} en esta página
+        {paginas.length > 1 && ` · ${palabrasTotal} en el bloc`}
+      </p>
 
       <div className={`flex items-center justify-between gap-2 border-t p-2 ${line}`}>
         <button

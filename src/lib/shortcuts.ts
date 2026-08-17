@@ -22,6 +22,8 @@ export const ATAJOS: Atajo[] = [
   { id: 'banco', label: 'Ir al banco', tecla: 'g m', accion: { tipo: 'ir', page: 'banco' } },
   { id: 'deseos', label: 'Ir a la lista de deseos', tecla: 'g l', accion: { tipo: 'ir', page: 'deseos' } },
   { id: 'suscripciones', label: 'Ir a suscripciones', tecla: 'g s', accion: { tipo: 'ir', page: 'suscripciones' } },
+  { id: 'cuentas', label: 'Ir a cuentas atrás', tecla: 'g u', accion: { tipo: 'ir', page: 'cuentas' } },
+  { id: 'recordatorios', label: 'Ir a recordatorios', tecla: 'g r', accion: { tipo: 'ir', page: 'recordatorios' } },
   { id: 'buscar', label: 'Buscar', tecla: '/', accion: { tipo: 'buscar' } },
   { id: 'ajustes', label: 'Abrir ajustes', tecla: ',', accion: { tipo: 'ajustes' } },
   { id: 'tema', label: 'Cambiar tema', tecla: 'shift+t', accion: { tipo: 'tema' } },

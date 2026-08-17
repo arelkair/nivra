@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { exportarCsv, exportarJson, importarJson } from '../lib/backup'
+import { exportarCsv, exportarIcsCalendario, exportarIcsHorario, exportarJson, importarJson } from '../lib/backup'
 import { pedirPermiso, permiso, soportadas } from '../lib/notify'
 import type { Settings } from '../lib/settings'
 import { ATAJOS, teclaDe } from '../lib/shortcuts'
-import { ACCENTS, mover } from '../lib/store'
+import { ACCENTS, mover, type Anniversary, type Block, type CalItem } from '../lib/store'
 import type { EstadoSync } from '../lib/sync'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
@@ -16,13 +16,27 @@ type Props = {
   onInstalado: () => void
   onClose: () => void
   onAviso: (texto: string) => void
+  items: CalItem[]
+  anniversaries: Anniversary[]
+  blocks: Block[]
 }
 
 type Instalable = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
 
 const COLORES_ASIG = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8', '#a855f7', '#ec4899']
 
-export function Settings({ cfg, sync, setSync, instalador, onInstalado, onClose, onAviso }: Props) {
+export function Settings({
+  cfg,
+  sync,
+  setSync,
+  instalador,
+  onInstalado,
+  onClose,
+  onAviso,
+  items,
+  anniversaries,
+  blocks,
+}: Props) {
   const [abierta, setAbierta] = useState<string | null>(null)
   const alterna = (id: string) => setAbierta((prev) => (prev === id ? null : id))
 
@@ -60,7 +74,8 @@ export function Settings({ cfg, sync, setSync, instalador, onInstalado, onClose,
             <Switch
               checked={cfg.hideCountdowns}
               onChange={cfg.setHideCountdowns}
-              label="Ocultar grupo de cuentas atrás"
+              label="Ocultar cuentas atrás"
+              hint="Las quita del menú y del dashboard."
             />
           </div>
         </Collapsible>
@@ -199,11 +214,11 @@ export function Settings({ cfg, sync, setSync, instalador, onInstalado, onClose,
         </Collapsible>
 
         <Collapsible
-          title="Copia de seguridad"
+          title="Exportar o importar datos"
           abierto={abierta === 'copia'}
           animar={cfg.animations} onToggle={() => alterna('copia')}
         >
-          <Copia onAviso={onAviso} />
+          <Copia onAviso={onAviso} items={items} anniversaries={anniversaries} blocks={blocks} />
         </Collapsible>
 
         <Collapsible
@@ -295,11 +310,24 @@ function Notificaciones({ cfg, onAviso }: { cfg: Settings; onAviso: (t: string) 
   )
 }
 
-function Copia({ onAviso }: { onAviso: (t: string) => void }) {
+function Copia({
+  onAviso,
+  items,
+  anniversaries,
+  blocks,
+}: {
+  onAviso: (t: string) => void
+  items: CalItem[]
+  anniversaries: Anniversary[]
+  blocks: Block[]
+}) {
   const fichero = useRef<HTMLInputElement>(null)
 
   return (
     <div className="flex flex-col gap-2">
+      <p className="text-[0.7rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+        Copia de seguridad
+      </p>
       <div className="flex gap-2">
         <button type="button" onClick={exportarJson} className={`${ghost} flex-1`}>
           <span className="flex items-center justify-center gap-2">
@@ -342,6 +370,35 @@ function Copia({ onAviso }: { onAviso: (t: string) => void }) {
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
         El CSV es para abrirlo fuera; para volver a entrar usa el JSON. Importar reemplaza lo que
         haya.
+      </p>
+
+      <p className="mt-3 text-[0.7rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+        Exportar a Google/Apple Calendar
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => exportarIcsCalendario(items, anniversaries)}
+          className={`${ghost} flex-1`}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Icon name="download" className="h-4 w-4" />
+            Calendario (.ics)
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => exportarIcsHorario(blocks)}
+          className={`${ghost} flex-1`}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Icon name="download" className="h-4 w-4" />
+            Horario (.ics)
+          </span>
+        </button>
+      </div>
+      <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+        Ábrelos con «Importar calendario» en Google Calendar o Apple Calendar.
       </p>
     </div>
   )

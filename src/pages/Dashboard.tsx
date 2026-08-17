@@ -12,13 +12,14 @@ import {
   type CalItem,
   type Countdown,
   type PageId,
+  type Reminder,
   type Streak,
   type Task,
   type Work,
 } from '../lib/store'
 import { Countdowns } from '../components/Countdowns'
 import { Flame } from '../components/Flame'
-import { Empty, Label, card, line } from '../components/ui'
+import { Empty, Icon, Label, card, line } from '../components/ui'
 
 type Props = {
   items: CalItem[]
@@ -28,6 +29,8 @@ type Props = {
   balance: number | null
   countdowns: Countdown[]
   setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
+  hideCountdowns: boolean
+  remindersHoy: Reminder[]
   streak: Streak
   setStreak: (update: (prev: Streak) => Streak) => void
   profile: string
@@ -42,6 +45,8 @@ export function Dashboard({
   balance,
   countdowns,
   setCountdowns,
+  hideCountdowns,
+  remindersHoy,
   streak,
   setStreak,
   profile,
@@ -69,6 +74,29 @@ export function Dashboard({
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 lg:h-full lg:min-h-0">
+      {remindersHoy.length > 0 && (
+        <div className="animate-[fade-in_0.4s_ease-out] flex shrink-0 flex-col gap-2">
+          {remindersHoy.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => onGo('recordatorios')}
+              className={`${card} flex w-full items-start gap-3 border-l-4 !border-l-neutral-900 p-4 text-left dark:!border-l-white`}
+            >
+              <Icon name="bell" className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{r.title}</p>
+                {r.subtitle && (
+                  <p className="truncate text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+                    {r.subtitle}
+                  </p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
       <header className="animate-[fade-in_0.4s_ease-out] shrink-0">
         <p className="text-sm text-neutral-400 first-letter:uppercase dark:text-neutral-500">
           {today.toLocaleDateString('es-ES', { weekday: 'long' })}
@@ -96,9 +124,11 @@ export function Dashboard({
         ))}
       </div>
 
-      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
-        <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
-      </div>
+      {!hideCountdowns && (
+        <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
+          <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-3 xl:grid-cols-3 xl:grid-rows-2">
         <Panel title="Hoy" delay={0.1}>

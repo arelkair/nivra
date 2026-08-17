@@ -4,6 +4,7 @@ import {
   type Anniversary,
   type CalItem,
   type Countdown,
+  type Reminder,
   type Work,
 } from './store'
 
@@ -36,6 +37,7 @@ export function pendientes(
     anniversaries: Anniversary[]
     items: CalItem[]
     works: Work[]
+    reminders: Reminder[]
   },
 ): Pendiente[] {
   const clave = dateKey(hoy)
@@ -63,6 +65,10 @@ export function pendientes(
 
   if (datos.works.some((w) => w.date === mañana)) {
     añadir(`manana:${mañana}`, 'Mañana hay algún examen/proyecto')
+  }
+
+  for (const r of datos.reminders) {
+    if (r.date === clave) añadir(`record:${r.id}:${clave}`, r.title)
   }
 
   return out

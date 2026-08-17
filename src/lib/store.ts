@@ -12,7 +12,8 @@ export type PageId =
   | 'banco'
   | 'deseos'
   | 'suscripciones'
-  | `cuenta:${string}`
+  | 'cuentas'
+  | 'recordatorios'
 
 export type Unit = 'years' | 'months' | 'days' | 'hours' | 'minutes' | 'seconds'
 
@@ -234,6 +235,15 @@ export type Work = {
   category?: 'colegio' | 'casa'
   subject?: string
   notepad?: string
+}
+
+export type Reminder = {
+  id: string
+  title: string
+  subtitle?: string
+  date: string
+  time?: string
+  work?: string
 }
 
 export type Movement = {

@@ -5,16 +5,17 @@ import { Dashboard } from './pages/Dashboard'
 import { Exams } from './pages/Exams'
 import { Grades } from './pages/Grades'
 import { Notepads } from './pages/Notepads'
+import { Reminders } from './pages/Reminders'
 import { Schedule } from './pages/Schedule'
 import { SetupScreen } from './pages/SetupScreen'
 import { Subscriptions } from './pages/Subscriptions'
 import { Tasks } from './pages/Tasks'
 import { Wishlist } from './pages/Wishlist'
-import { CountdownPage } from './pages/CountdownPage'
 import { Intro } from './components/Intro'
 import { Search, type Destino, type Resultado } from './components/Search'
 import { Settings } from './components/Settings'
 import { FloatingNote } from './components/FloatingNote'
+import { Countdowns } from './components/Countdowns'
 import { Clock, Confetti, Icon, Toasts, line, type Aviso } from './components/ui'
 import { useSettings } from './lib/settings'
 import { lanzar, marcarEnviadas, pendientes } from './lib/notify'
@@ -40,6 +41,7 @@ import {
   type Notepad,
   type PageId,
   type Profile,
+  type Reminder,
   type Streak,
   type Subscription,
   type Task,
@@ -77,6 +79,13 @@ const GROUPS: { title: string; pages: Page[] }[] = [
       { id: 'suscripciones', label: 'Suscripciones', short: 'Subs', icon: 'subs' },
     ],
   },
+  {
+    title: 'Utilidades',
+    pages: [
+      { id: 'cuentas', label: 'Cuentas atrás', short: 'Cuentas', icon: 'timer' },
+      { id: 'recordatorios', label: 'Recordatorios', short: 'Avisos', icon: 'bell' },
+    ],
+  },
 ]
 
 const PAGES = GROUPS.flatMap((g) => g.pages)
@@ -95,13 +104,13 @@ const OPCIONES = [
   'Formato de 12 horas',
   'Buscador',
   'Botones de atrás y adelante',
-  'Ocultar grupo de cuentas atrás',
+  'Ocultar cuentas atrás',
   'Color',
   'Asignaturas',
   'Notificaciones',
   'Atajos de teclado',
   'Sincronización',
-  'Copia de seguridad',
+  'Exportar o importar datos',
   'Cumpleaños',
 ]
 
@@ -190,6 +199,7 @@ function App() {
   const [grades, setGrades] = useStored<Grade[]>('nivra-grades', [])
   const [streak, setStreak] = useStored<Streak>('nivra-streak', { count: 0, last: '' })
   const [notepads, setNotepads] = useStored<Notepad[]>('nivra-notepads', [])
+  const [reminders, setReminders] = useStored<Reminder[]>('nivra-reminders', [])
   const [subs, setSubs] = useStored<Subscription[]>('nivra-subs', [])
   const [goals, setGoals] = useStored<Goal[]>('nivra-goals', [])
   const [profiles, setProfiles] = useStored<Profile[]>('nivra-profiles', [
@@ -206,28 +216,17 @@ function App() {
   const esCumple =
     cfg.birthday !== '' && monthDay(cfg.birthday) === monthDay(dateKey(new Date()))
 
-  const [general, ...pequenas] = countdowns
+  const general = countdowns[0]
   const diasEspeciales = useMemo(
     () => [...specialDays, ...countdowns.map((c) => c.target.slice(0, 10))],
     [specialDays, countdowns],
   )
   const diasSuscripcion = useMemo(() => subs.map((s) => s.day), [subs])
-
-  const crearCuenta = () => {
-    const id = crypto.randomUUID()
-    const ahora = new Date()
-    setCountdowns((prev) => [
-      ...prev,
-      {
-        id,
-        title: 'Nueva cuenta atrás',
-        target: `${dateKey(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 7))}T00:00`,
-        created: ahora.toISOString(),
-        units: { years: false, months: false, days: true, hours: true, minutes: true, seconds: true },
-      },
-    ])
-    irA(`cuenta:${id}`)
-  }
+  const todayKey = dateKey(new Date())
+  const remindersHoy = useMemo(
+    () => reminders.filter((r) => r.date === todayKey),
+    [reminders, todayKey],
+  )
 
   useEffect(() => {
     const pendientesDeCobro = cobrosPendientes(subs, new Date())
@@ -258,14 +257,14 @@ function App() {
   useEffect(() => {
     if (!cfg.notifs || notificadas.current) return
     notificadas.current = true
-    const lista = pendientes(new Date(), { countdowns, anniversaries, items, works })
+    const lista = pendientes(new Date(), { countdowns, anniversaries, items, works, reminders })
     if (lista.length === 0) return
     for (const p of lista) {
       lanzar(p.texto)
       avisar(p.texto)
     }
     marcarEnviadas(lista.map((p) => p.clave))
-  }, [cfg.notifs, countdowns, anniversaries, items, works, avisar])
+  }, [cfg.notifs, countdowns, anniversaries, items, works, reminders, avisar])
 
   const buscar = useCallback(
     (texto: string): Resultado[] => {
@@ -298,8 +297,9 @@ function App() {
       for (const g of grades) if (casa(g.desc)) add(g.id, g.desc ?? '', 'Nota', 'notas')
       for (const b of blocks) if (casa(b.title)) add(b.id, b.title, 'Bloque del horario', 'horario')
       for (const c of countdowns)
-        if (casa(c.title))
-          add(c.id, c.title, 'Cuenta atrás', c.id === general?.id ? 'dashboard' : `cuenta:${c.id}`)
+        if (casa(c.title)) add(c.id, c.title, 'Cuenta atrás', 'cuentas')
+      for (const r of reminders)
+        if (casa(r.title)) add(r.id, r.title, 'Recordatorio', 'recordatorios')
       for (const g of goals)
         if (casa(g.title))
           add(
@@ -340,11 +340,11 @@ function App() {
       grades,
       blocks,
       countdowns,
+      reminders,
       goals,
       profiles,
       movements,
       cfg.subjects,
-      general,
     ],
   )
 
@@ -390,10 +390,8 @@ function App() {
     )
   }
 
-  const cuentaAbierta = page.startsWith('cuenta:') ? page.slice(7) : null
   const grupoActual = GROUPS.find((g) => g.pages.some((p) => p.id === page))
   const actual = PAGES.find((p) => p.id === page)
-  const tituloCuenta = countdowns.find((c) => c.id === cuentaAbierta)?.title
 
   return (
     <>
@@ -411,9 +409,7 @@ function App() {
             bankTab={bankTab}
             setBankTab={setBankTab}
             bankInitial={bankInitial}
-            pequenas={pequenas}
             ocultarCuentas={cfg.hideCountdowns}
-            onCrearCuenta={crearCuenta}
           />
         </aside>
 
@@ -456,13 +452,9 @@ function App() {
                 Nivra
               </span>
               <p className="hidden min-w-0 items-center gap-2 text-sm md:flex">
-                <span className="text-neutral-400 dark:text-neutral-500">
-                  {grupoActual?.title ?? 'Cuentas atrás'}
-                </span>
+                <span className="text-neutral-400 dark:text-neutral-500">{grupoActual?.title}</span>
                 <Icon name="right" className="h-3 w-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
-                <span className="truncate font-medium">
-                  {actual?.label ?? tituloCuenta ?? 'Cuenta atrás'}
-                </span>
+                <span className="truncate font-medium">{actual?.label}</span>
               </p>
             </div>
 
@@ -510,6 +502,8 @@ function App() {
                 balance={balance}
                 countdowns={general ? [general] : []}
                 setCountdowns={setCountdowns}
+                hideCountdowns={cfg.hideCountdowns}
+                remindersHoy={remindersHoy}
                 streak={streak}
                 setStreak={setStreak}
                 profile={profile}
@@ -577,13 +571,13 @@ function App() {
                 setGoals={setGoals}
               />
             )}
-            {cuentaAbierta && (
-              <CountdownPage
-                id={cuentaAbierta}
-                countdowns={countdowns}
-                setCountdowns={setCountdowns}
-                onSalir={() => irA('dashboard')}
-              />
+            {page === 'cuentas' && (
+              <div className="mx-auto w-full max-w-4xl">
+                <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
+              </div>
+            )}
+            {page === 'recordatorios' && (
+              <Reminders reminders={reminders} setReminders={setReminders} works={works} />
             )}
           </main>
         </div>
@@ -619,9 +613,7 @@ function App() {
                   setMenuAbierto(false)
                 }}
                 bankInitial={bankInitial}
-                pequenas={pequenas}
                 ocultarCuentas={cfg.hideCountdowns}
-                onCrearCuenta={crearCuenta}
               />
             </div>
           </div>
@@ -649,6 +641,9 @@ function App() {
             onInstalado={() => setInstalador(null)}
             onClose={() => setSettingsOpen(false)}
             onAviso={avisar}
+            items={items}
+            anniversaries={anniversaries}
+            blocks={blocks}
           />
         )}
       </div>
@@ -662,18 +657,14 @@ function Navegacion({
   bankTab,
   setBankTab,
   bankInitial,
-  pequenas,
   ocultarCuentas,
-  onCrearCuenta,
 }: {
   page: PageId
   irA: (p: PageId) => void
   bankTab: BankTab
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
-  pequenas: Countdown[]
   ocultarCuentas: boolean
-  onCrearCuenta: () => void
 }) {
   const navItem = (activo: boolean) =>
     `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
@@ -690,7 +681,9 @@ function Navegacion({
                   {g.title}
                 </p>
                 <div className="flex flex-col gap-0.5">
-                  {g.pages.map((p) => (
+                  {g.pages
+                    .filter((p) => p.id !== 'cuentas' || !ocultarCuentas)
+                    .map((p) => (
                     <div key={p.id}>
                       <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
                         <Icon name={p.icon} className="h-[17px] w-[17px] shrink-0" />
@@ -720,80 +713,7 @@ function Navegacion({
                 </div>
               </div>
             ))}
-
-            {!ocultarCuentas && (
-              <GrupoCuentas
-                countdowns={pequenas}
-                page={page}
-                onIr={irA}
-                onCrear={onCrearCuenta}
-                navItem={navItem}
-              />
-            )}
           </nav>
-  )
-}
-
-function GrupoCuentas({
-  countdowns,
-  page,
-  onIr,
-  onCrear,
-  navItem,
-}: {
-  countdowns: Countdown[]
-  page: PageId
-  onIr: (p: PageId) => void
-  onCrear: () => void
-  navItem: (activo: boolean) => string
-}) {
-  const [abierto, setAbierto] = useState(true)
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center gap-1 px-3">
-        <button
-          type="button"
-          onClick={() => setAbierto(!abierto)}
-          aria-expanded={abierto}
-          className="flex min-w-0 flex-1 items-center gap-1 text-left text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500"
-        >
-          <Icon
-            name="chevron"
-            className={`h-3 w-3 shrink-0 transition-transform ${abierto ? '' : '-rotate-90'}`}
-          />
-          Cuentas atrás
-        </button>
-        <button
-          type="button"
-          onClick={onCrear}
-          aria-label="Nueva cuenta atrás"
-          className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-        >
-          <Icon name="plus" className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {abierto && (
-        <div className="flex flex-col gap-0.5">
-          {countdowns.length === 0 ? (
-            <p className="px-3 py-1 text-xs text-neutral-400 dark:text-neutral-500">Ninguna.</p>
-          ) : (
-            countdowns.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onIr(`cuenta:${c.id}`)}
-                className={navItem(page === `cuenta:${c.id}`)}
-              >
-                <Icon name="timer" className="h-[17px] w-[17px] shrink-0" />
-                <span className="min-w-0 truncate">{c.title}</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-    </div>
   )
 }
 
