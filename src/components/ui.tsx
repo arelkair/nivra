@@ -289,7 +289,7 @@ export type Aviso = { id: string; texto: string; deshacer?: () => void }
 
 export function Toasts({ avisos, onCerrar }: { avisos: Aviso[]; onCerrar: (id: string) => void }) {
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex flex-col gap-2">
+    <div className="nivra-scroll pointer-events-none fixed right-4 bottom-4 z-40 flex max-h-[80svh] flex-col gap-2 overflow-y-auto overscroll-contain">
       {avisos.map((a) => (
         <div
           key={a.id}

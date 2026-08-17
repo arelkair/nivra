@@ -29,7 +29,6 @@ type Props = {
   balance: number | null
   countdowns: Countdown[]
   setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
-  hideCountdowns: boolean
   remindersHoy: Reminder[]
   streak: Streak
   setStreak: (update: (prev: Streak) => Streak) => void
@@ -45,7 +44,6 @@ export function Dashboard({
   balance,
   countdowns,
   setCountdowns,
-  hideCountdowns,
   remindersHoy,
   streak,
   setStreak,
@@ -124,11 +122,9 @@ export function Dashboard({
         ))}
       </div>
 
-      {!hideCountdowns && (
-        <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
-          <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
-        </div>
-      )}
+      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
+        <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
+      </div>
 
       <div className="grid gap-4 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-3 xl:grid-cols-3 xl:grid-rows-2">
         <Panel title="Hoy" delay={0.1}>

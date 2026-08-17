@@ -60,7 +60,6 @@ const GROUPS: { title: string; pages: Page[] }[] = [
       { id: 'dashboard', label: 'Dashboard', short: 'Inicio', icon: 'dashboard' },
       { id: 'calendario', label: 'Calendario', short: 'Calend.', icon: 'calendar' },
       { id: 'horario', label: 'Horario', short: 'Horario', icon: 'schedule' },
-      { id: 'bloc', label: 'Bloc de Notas', short: 'Bloc', icon: 'pencil' },
     ],
   },
   {
@@ -82,6 +81,7 @@ const GROUPS: { title: string; pages: Page[] }[] = [
   {
     title: 'Utilidades',
     pages: [
+      { id: 'bloc', label: 'Bloc de Notas', short: 'Bloc', icon: 'pencil' },
       { id: 'cuentas', label: 'Cuentas atrás', short: 'Cuentas', icon: 'timer' },
       { id: 'recordatorios', label: 'Recordatorios', short: 'Avisos', icon: 'bell' },
     ],
@@ -104,7 +104,6 @@ const OPCIONES = [
   'Formato de 12 horas',
   'Buscador',
   'Botones de atrás y adelante',
-  'Ocultar cuentas atrás',
   'Color',
   'Asignaturas',
   'Notificaciones',
@@ -255,16 +254,28 @@ function App() {
 
   const notificadas = useRef(false)
   useEffect(() => {
-    if (!cfg.notifs || notificadas.current) return
+    if (notificadas.current) return
     notificadas.current = true
-    const lista = pendientes(new Date(), { countdowns, anniversaries, items, works, reminders })
-    if (lista.length === 0) return
-    for (const p of lista) {
-      lanzar(p.texto)
+    const lista = pendientes(new Date(), {
+      countdowns,
+      anniversaries,
+      items,
+      works,
+      reminders,
+      tasks,
+    })
+    // Sólo se marcan las que de verdad se enseñan, y de cinco en cinco para no
+    // tapar la pantalla: el resto sale en la siguiente visita.
+    const entregadas = lista
+      .filter((p) => cfg.toasts || (cfg.notifs && p.sistema))
+      .slice(0, 5)
+    if (entregadas.length === 0) return
+    for (const p of entregadas) {
+      if (cfg.notifs && p.sistema) lanzar(p.texto)
       avisar(p.texto)
     }
-    marcarEnviadas(lista.map((p) => p.clave))
-  }, [cfg.notifs, countdowns, anniversaries, items, works, reminders, avisar])
+    marcarEnviadas(entregadas.map((p) => p.clave))
+  }, [cfg.notifs, cfg.toasts, countdowns, anniversaries, items, works, reminders, tasks, avisar])
 
   const buscar = useCallback(
     (texto: string): Resultado[] => {
@@ -409,7 +420,6 @@ function App() {
             bankTab={bankTab}
             setBankTab={setBankTab}
             bankInitial={bankInitial}
-            ocultarCuentas={cfg.hideCountdowns}
           />
         </aside>
 
@@ -502,7 +512,6 @@ function App() {
                 balance={balance}
                 countdowns={general ? [general] : []}
                 setCountdowns={setCountdowns}
-                hideCountdowns={cfg.hideCountdowns}
                 remindersHoy={remindersHoy}
                 streak={streak}
                 setStreak={setStreak}
@@ -613,7 +622,6 @@ function App() {
                   setMenuAbierto(false)
                 }}
                 bankInitial={bankInitial}
-                ocultarCuentas={cfg.hideCountdowns}
               />
             </div>
           </div>
@@ -657,14 +665,12 @@ function Navegacion({
   bankTab,
   setBankTab,
   bankInitial,
-  ocultarCuentas,
 }: {
   page: PageId
   irA: (p: PageId) => void
   bankTab: BankTab
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
-  ocultarCuentas: boolean
 }) {
   const navItem = (activo: boolean) =>
     `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
@@ -681,9 +687,7 @@ function Navegacion({
                   {g.title}
                 </p>
                 <div className="flex flex-col gap-0.5">
-                  {g.pages
-                    .filter((p) => p.id !== 'cuentas' || !ocultarCuentas)
-                    .map((p) => (
+                  {g.pages.map((p) => (
                     <div key={p.id}>
                       <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
                         <Icon name={p.icon} className="h-[17px] w-[17px] shrink-0" />

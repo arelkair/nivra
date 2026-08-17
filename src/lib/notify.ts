@@ -1,10 +1,13 @@
 import {
+  TYPES,
   dateKey,
+  itemsDeDia,
   monthDay,
   type Anniversary,
   type CalItem,
   type Countdown,
   type Reminder,
+  type Task,
   type Work,
 } from './store'
 
@@ -27,7 +30,8 @@ export async function pedirPermiso() {
   return Notification.requestPermission()
 }
 
-export type Pendiente = { clave: string; texto: string }
+/** `sistema` marca las que además salen como notificación del sistema. */
+export type Pendiente = { clave: string; texto: string; sistema: boolean }
 
 /** Qué habría que avisar hoy, sin repetir lo ya avisado. */
 export function pendientes(
@@ -38,37 +42,54 @@ export function pendientes(
     items: CalItem[]
     works: Work[]
     reminders: Reminder[]
+    tasks: Task[]
   },
 ): Pendiente[] {
   const clave = dateKey(hoy)
   const mañana = dateKey(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1))
   const ya = new Set(leerEnviadas())
   const out: Pendiente[] = []
-  const añadir = (c: string, texto: string) => {
-    if (!ya.has(c)) out.push({ clave: c, texto })
+  const añadir = (c: string, texto: string, sistema: boolean) => {
+    if (!ya.has(c)) out.push({ clave: c, texto, sistema })
+  }
+
+  // ---- las cuatro del sistema ----
+
+  for (const r of datos.reminders) {
+    if (r.date !== clave) continue
+    const hora = r.time ? ` a las ${r.time}` : ''
+    añadir(`record:${r.id}:${clave}`, `Hoy${hora}: ${r.title}`, true)
+  }
+
+  for (const w of datos.works) {
+    if (w.date !== mañana) continue
+    añadir(`manana:${w.id}:${mañana}`, `Mañana tienes ${TYPES[w.kind].label.toLowerCase()} de ${w.title}`, true)
   }
 
   for (const c of datos.countdowns) {
     if (new Date(c.target).getTime() <= hoy.getTime()) {
-      añadir(`fin:${c.id}`, `Se ha acabado la cuenta atrás ${c.title}`)
+      añadir(`fin:${c.id}`, `Se ha acabado la cuenta atrás de ${c.title}`, true)
     }
   }
 
   for (const a of datos.anniversaries) {
     if (a.md === monthDay(clave)) {
-      añadir(`aniv:${a.id}:${clave}`, `Hoy es el aniversario de ${a.name || 'algo tuyo'}`)
+      añadir(`aniv:${a.id}:${clave}`, `Hoy es el aniversario de ${a.name || 'algo tuyo'}`, true)
     }
   }
 
-  const deHoy = datos.items.filter((i) => i.date === clave)
-  if (deHoy.length > 0) añadir(`hoy:${clave}`, 'Hoy hay alguna/s actividad/es')
+  // ---- el resto, sólo dentro de la web ----
 
-  if (datos.works.some((w) => w.date === mañana)) {
-    añadir(`manana:${mañana}`, 'Mañana hay algún examen/proyecto')
+  // itemsDeDia, y no i.date === clave, para que cuenten las que se repiten.
+  for (const i of itemsDeDia(datos.items, clave)) {
+    añadir(`hoy:${i.id}:${clave}`, `${TYPES[i.type].label} de hoy: ${i.title}`, false)
   }
 
-  for (const r of datos.reminders) {
-    if (r.date === clave) añadir(`record:${r.id}:${clave}`, r.title)
+  const atrasadas = datos.tasks.filter((t) => !t.done && t.date && t.date < clave)
+  if (atrasadas.length === 1) {
+    añadir(`tarde:${clave}`, `Tarea atrasada: ${atrasadas[0].title}`, false)
+  } else if (atrasadas.length > 1) {
+    añadir(`tarde:${clave}`, `Tienes ${atrasadas.length} tareas atrasadas`, false)
   }
 
   return out

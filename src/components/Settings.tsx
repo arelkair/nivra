@@ -71,12 +71,6 @@ export function Settings({
               onChange={cfg.setNavButtons}
               label="Botones de atrás y adelante"
             />
-            <Switch
-              checked={cfg.hideCountdowns}
-              onChange={cfg.setHideCountdowns}
-              label="Ocultar cuentas atrás"
-              hint="Las quita del menú y del dashboard."
-            />
           </div>
         </Collapsible>
 
