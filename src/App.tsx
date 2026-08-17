@@ -137,23 +137,42 @@ function App() {
   const [indice, setIndice] = useState(0)
   const page = historial[indice]
 
+  // La navegación se apoya en el historial del navegador, así que los botones
+  // laterales del ratón, los de atrás y adelante del navegador, Alt+flecha y el
+  // gesto del panel táctil mueven Nivra por sus apartados sin sacarte de ella.
+  const historialLargo = useRef(1)
+  historialLargo.current = historial.length
+
+  useEffect(() => {
+    history.replaceState({ nivra: 0 }, '')
+  }, [])
+
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const i = (e.state as { nivra?: number } | null)?.nivra
+      if (typeof i !== 'number') return
+      // Tras recargar, el navegador conserva entradas de antes: se recorta al
+      // historial que de verdad existe para no dejar la página en blanco.
+      setIndice(Math.min(Math.max(i, 0), historialLargo.current - 1))
+    }
+    addEventListener('popstate', onPop)
+    return () => removeEventListener('popstate', onPop)
+  }, [])
+
   const irA = useCallback(
     (destino: PageId) => {
       setMenuAbierto(false)
-      if (destino === 'banco' && historial[indice] !== 'banco') setBankTab('dinero')
-      setHistorial((prev) => {
-        if (prev[indice] === destino) return prev
-        return [...prev.slice(0, indice + 1), destino]
-      })
-      setIndice((prev) => (historial[prev] === destino ? prev : prev + 1))
+      if (historial[indice] === destino) return
+      if (destino === 'banco') setBankTab('dinero')
+      const siguiente = indice + 1
+      setHistorial((prev) => [...prev.slice(0, indice + 1), destino])
+      setIndice(siguiente)
+      history.pushState({ nivra: siguiente }, '')
     },
     [indice, historial],
   )
-  const atras = useCallback(() => setIndice((i) => Math.max(0, i - 1)), [])
-  const adelante = useCallback(
-    () => setIndice((i) => Math.min(historial.length - 1, i + 1)),
-    [historial.length],
-  )
+  const atras = useCallback(() => history.back(), [])
+  const adelante = useCallback(() => history.forward(), [])
 
   const avisar = useCallback(
     (texto: string, deshacer?: () => void) => {
@@ -383,22 +402,6 @@ function App() {
       cfg.subjects,
     ],
   )
-
-  useEffect(() => {
-    const onRaton = (e: MouseEvent) => {
-      if (e.button !== 3 && e.button !== 4) return
-      // Sin esto el navegador se lleva por delante la pestaña entera, que aquí
-      // saldría de Nivra en vez de moverse por sus apartados.
-      e.preventDefault()
-      if (e.type === 'mouseup') (e.button === 3 ? atras : adelante)()
-    }
-    addEventListener('mousedown', onRaton)
-    addEventListener('mouseup', onRaton)
-    return () => {
-      removeEventListener('mousedown', onRaton)
-      removeEventListener('mouseup', onRaton)
-    }
-  }, [atras, adelante])
 
   useEffect(() => {
     if (!cfg.shortcutsOn) return
