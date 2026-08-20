@@ -22,10 +22,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
 
-  // Sólo lo propio: la sincronización con el servidor nunca se cachea.
+  // Same-origin only: sync requests must never be cached.
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return
 
-  // La navegación va primero a la red y cae al índice guardado si no hay conexión.
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
@@ -39,7 +38,6 @@ self.addEventListener('fetch', (e) => {
     return
   }
 
-  // El resto: lo guardado primero, y se refresca por detrás.
   e.respondWith(
     caches.match(e.request).then((guardado) => {
       const red = fetch(e.request)

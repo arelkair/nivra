@@ -1,67 +1,98 @@
 # Nivra
 
-Organizador personal que guarda todo en tu navegador. Sin cuentas, sin servidor, sin salir de tu equipo.
+A privacy-first personal organizer for the browser. Calendar, timetable, tasks,
+exams, notes and personal finances, all stored on your own device.
 
-- **Dashboard** — resumen del día: dinero, actividades, tareas y lo que está por venir.
-- **Calendario** — vista mensual con festividades, tareas, exámenes y proyectos, cada uno con su color. Marca festivos y aniversarios anuales.
-- **Horario** — bloques semanales por día.
-- **Tareas** — descripción, subtareas y fecha opcional que las lleva al calendario.
-- **Exámenes y Proyectos** — con fecha obligatoria en exámenes y categoría en proyectos.
-- **Banco** — dinero actual, ingresos y gastos por categorías, con gráficas.
+No account, no tracking, no backend. Everything lives in `localStorage` unless
+you explicitly turn on the optional end-to-end encrypted sync.
 
-Tema claro y oscuro, diseño adaptado a móvil, tablet y escritorio, y ajustes para la animación de inicio.
+## Features
 
-## Instalación en el móvil
+| Area | What it does |
+| --- | --- |
+| **Dashboard** | Today at a glance: balance, activities, tasks, upcoming work and reminders. |
+| **Calendar** | Month and week views with holidays, tasks, exams and projects. Supports weekly, monthly and yearly recurrence, plus anniversaries and custom day marks. |
+| **Timetable** | Weekly blocks with multiple named profiles. Blocks can be dragged between days. |
+| **Tasks** | Subtasks, descriptions, subjects and an optional date that promotes them to the calendar. |
+| **Exams & projects** | Due dates, subjects, linked notepads and the grade obtained. |
+| **Grades** | Per subject and per term, with averages. |
+| **Bank** | Balance, income and expenses by category, savings goals and spending limits. |
+| **Wishlist** | Items with price and purchase link. |
+| **Subscriptions** | Recurring charges billed automatically on their renewal day. |
+| **Notepad** | Rich-text notes with pages, full-text search and word counts. |
+| **Countdowns** | Multiple countdowns with configurable units. |
+| **Reminders** | Date, time and optional link to an exam or project. |
 
-Nivra es una PWA: al abrirla en el navegador del móvil puedes darle a «Añadir a la pantalla de
-inicio» y queda como una aplicación más, a pantalla completa y con su icono. Un service worker
-guarda la aplicación en el dispositivo, así que **abre y funciona sin conexión**; sólo la
-sincronización entre dispositivos necesita internet.
+Also included: global search, configurable keyboard shortcuts, undo for
+deletions, light and dark themes with ten accent colours, an optional
+time-of-day theme, browser notifications, JSON/CSV backups and `.ics` export.
 
-## Sincronización entre dispositivos
+## Getting started
 
-Opcional y apagada por defecto: mientras no la actives, nada sale de tu navegador.
-
-Al crear tu código, del código se derivan dos cosas distintas:
-
-- un **identificador** (`SHA-256`), que es lo único que viaja como dirección del cajón;
-- una **clave** (`PBKDF2`, 200 000 iteraciones), que nunca sale del navegador.
-
-Los datos se cifran con `AES-GCM` antes de subirse, así que el servidor guarda algo que no puede
-leer. Pegar el código en otro dispositivo descarga esos datos y deja los dos conectados. Sin el
-código no hay forma de recuperarlos.
-
-Una vez conectados se puede trabajar en los dos a la vez: los cambios suben a a los pocos segundos
-y bajan cada cuatro, y se aplican en caliente, sin recargar. Cada sección lleva su propia marca de
-tiempo y se mezcla por separado, así que editar las tareas en un dispositivo y las notas en el otro
-no pisa nada. Si tocas lo mismo en los dos a la vez, gana la edición más reciente.
-
-## Desarrollo
+Requires Node.js 20 or newer.
 
 ```bash
 npm install
-```
-
-```bash
 npm run dev
 ```
 
-```bash
-npm run build
-```
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server. |
+| `npm run build` | Type-check and build for production. |
+| `npm run preview` | Serve the production build locally. |
+| `npm run lint` | Run the linter. |
 
-## Estructura
+## Data storage
+
+All application state is kept in `localStorage` under `nivra-*` keys. Clearing
+those keys resets the application to a clean state.
+
+Backups can be exported as JSON, which can be imported back, or as CSV for use
+in a spreadsheet. The calendar and timetable can also be exported as `.ics`
+files for Google Calendar or Apple Calendar.
+
+## Optional device sync
+
+Sync is disabled by default. Nothing leaves the browser until it is turned on.
+
+Creating a code derives two independent values from it:
+
+- an **identifier** (SHA-256), the only value sent to the server, used as the
+  address of the stored blob;
+- an **encryption key** (PBKDF2, 200 000 iterations), which never leaves the
+  device.
+
+Data is encrypted with AES-GCM before upload, so the server only ever holds
+ciphertext it cannot read. Entering the same code on another device downloads
+and decrypts that data and keeps both devices in sync. Without the code the
+data is unrecoverable.
+
+Both devices can be edited at the same time. Changes are pushed within a couple
+of seconds and pulled every four, then applied without a reload. Each section
+carries its own timestamp and is merged independently, so editing tasks on one
+device and notes on another preserves both. Simultaneous edits to the same
+section resolve to the most recent one.
+
+## Progressive web app
+
+Nivra ships a web app manifest and a service worker, so it can be installed to
+the home screen and opened full screen with its own icon. The application shell
+is cached and works offline; only sync requires a connection.
+
+## Project structure
 
 ```
+public/            Icons, manifest and service worker
 src/
-  App.tsx          Estructura, navegación y estado
-  components/      Piezas compartidas (interfaz e intro)
-  lib/             Datos, fechas y almacenamiento
-  pages/           Una por sección
+  App.tsx          Layout, navigation and shared state
+  main.tsx         Entry point
+  index.css        Theme tokens and global styles
+  components/      Reusable UI and cross-cutting panels
+  lib/             Domain model, persistence, sync and helpers
+  pages/           One module per section
 ```
 
-Los datos viven en `localStorage` bajo las claves `nivra-*`. Borrarlas reinicia la aplicación.
+## Tech stack
 
-## Tecnología
-
-React 19, TypeScript, Tailwind CSS 4 y Vite.
+React 19, TypeScript, Tailwind CSS 4 and Vite.

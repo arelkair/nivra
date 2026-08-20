@@ -28,7 +28,6 @@ export function exportarJson() {
 
 const escapa = (v: string) => `"${v.replace(/"/g, '""')}"`
 
-/** Una fila por elemento de cada lista, con sus campos aplanados. */
 export function exportarCsv() {
   const filas: string[] = ['seccion,campo,valor']
   for (const [clave, crudo] of Object.entries(datos())) {
@@ -114,7 +113,6 @@ export function exportarIcsHorario(blocks: Block[]) {
   descargar(`nivra-horario-${hoy()}.ics`, lineas.join('\r\n'), 'text/calendar;charset=utf-8')
 }
 
-/** Sólo acepta JSON: el CSV es para leerlo fuera, no para volver a entrar. */
 export async function importarJson(fichero: File) {
   const texto = await fichero.text()
   const datos = JSON.parse(texto) as Record<string, unknown>

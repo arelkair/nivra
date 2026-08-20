@@ -55,7 +55,6 @@ export type Goal =
 
 export const SUBSCRIPTION_CAT = 'Suscripción'
 
-/** Renovaciones que tocan y aún no se han cobrado, desde la última vez hasta hoy. */
 export function cobrosPendientes(subs: Subscription[], hoy: Date) {
   const pendientes: { sub: Subscription; date: string }[] = []
   for (const sub of subs) {
@@ -353,7 +352,7 @@ const FIXED_HOLIDAYS = [
   '12-25',
 ]
 
-export function easter(year: number): Date {
+function easter(year: number): Date {
   const a = year % 19
   const b = Math.floor(year / 100)
   const c = year % 100
@@ -400,8 +399,7 @@ export type CalItem = {
 
 const diaDelMes = (fecha: string) => Number(fecha.slice(8))
 
-/** Un elemento cae en esa fecha por su día propio o porque se repite. */
-export function ocurreEn(item: CalItem, fecha: string) {
+function ocurreEn(item: CalItem, fecha: string) {
   if (item.date === fecha) return true
   if (!item.repeat || fecha < item.date) return false
 
@@ -418,7 +416,6 @@ export function ocurreEn(item: CalItem, fecha: string) {
 export const itemsDeDia = (items: CalItem[], fecha: string) =>
   items.filter((i) => ocurreEn(i, fecha))
 
-/** Los próximos días con algo, mirando también las repeticiones. */
 export function proximos(items: CalItem[], desde: Date, dias: number) {
   const out: { date: string; item: CalItem }[] = []
   for (let i = 1; i <= dias; i++) {
@@ -491,7 +488,6 @@ export function useStored<T>(key: string, initial: T) {
         try {
           setValue(JSON.parse(raw) as T)
         } catch {
-          /* si llega algo ilegible se ignora y se conserva lo de aquí */
         }
       }),
     [key, value],

@@ -20,7 +20,6 @@ export function useSync() {
         const r = await sincronizar(actual)
         if (vivo) setEstado(r.estado)
       } catch {
-        /* sin conexión: se reintenta en la siguiente vuelta */
       }
       trabajando = false
     }

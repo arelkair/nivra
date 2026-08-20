@@ -447,23 +447,10 @@ const PATHS: Record<string, ReactNode> = {
   bell: <path d="M18 16v-5a6 6 0 10-12 0v5l-2 3h16zM10 22h4" />,
   download: <path d="M12 3v13M7 12l5 5 5-5M4 21h16" />,
   upload: <path d="M12 21V8M7 12l5-5 5 5M4 3h16" />,
-  keyboard: (
-    <>
-      <rect x="2" y="6" width="20" height="12" rx="3" />
-      <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
-    </>
-  ),
   subs: (
     <>
       <rect x="2.5" y="5" width="19" height="14" rx="3" />
       <path d="M2.5 10h19" />
-    </>
-  ),
-  goal: (
-    <>
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="12" cy="12" r="0.6" />
     </>
   ),
   drag: <path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01" />,

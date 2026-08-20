@@ -1,6 +1,6 @@
 import type { PageId } from './store'
 
-export type Accion =
+type Accion =
   | { tipo: 'ir'; page: PageId }
   | { tipo: 'atras' }
   | { tipo: 'adelante' }
@@ -9,7 +9,7 @@ export type Accion =
   | { tipo: 'tema' }
   | { tipo: 'nota' }
 
-export type Atajo = { id: string; label: string; tecla: string; accion: Accion }
+type Atajo = { id: string; label: string; tecla: string; accion: Accion }
 
 export const ATAJOS: Atajo[] = [
   { id: 'dashboard', label: 'Ir al dashboard', tecla: 'g d', accion: { tipo: 'ir', page: 'dashboard' } },

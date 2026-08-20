@@ -183,8 +183,8 @@ export function Editor({
   const buscarSiguiente = (atras: boolean) => {
     if (!query) return
     ref.current?.focus()
-    // ponytail: busca con window.find, nativo del navegador; puede saltar fuera
-    // del editor si no queda ninguna coincidencia más en esta página.
+    // Uses the browser's native window.find, which can move the selection outside
+    // the editor once no further match remains on this page.
     ;(window as Window & { find?: (s: string, c?: boolean, b?: boolean, w?: boolean) => boolean }).find?.(
       query,
       false,

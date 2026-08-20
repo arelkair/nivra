@@ -114,7 +114,6 @@ const OPCIONES = [
   'Cumpleaños',
 ]
 
-/** El tema automático va por reloj: claro de 7:00 a 20:00, oscuro el resto. */
 const DIA_DESDE = 7
 const DIA_HASTA = 20
 const esDeDia = (d: Date) => d.getHours() >= DIA_DESDE && d.getHours() < DIA_HASTA
@@ -137,9 +136,6 @@ function App() {
   const [indice, setIndice] = useState(0)
   const page = historial[indice]
 
-  // La navegación se apoya en el historial del navegador, así que los botones
-  // laterales del ratón, los de atrás y adelante del navegador, Alt+flecha y el
-  // gesto del panel táctil mueven Nivra por sus apartados sin sacarte de ella.
   const historialLargo = useRef(1)
   historialLargo.current = historial.length
 
@@ -151,8 +147,8 @@ function App() {
     const onPop = (e: PopStateEvent) => {
       const i = (e.state as { nivra?: number } | null)?.nivra
       if (typeof i !== 'number') return
-      // Tras recargar, el navegador conserva entradas de antes: se recorta al
-      // historial que de verdad existe para no dejar la página en blanco.
+      // A reload keeps browser entries from the previous session, so the index is
+      // clamped to the history that actually exists to avoid rendering a blank page.
       setIndice(Math.min(Math.max(i, 0), historialLargo.current - 1))
     }
     addEventListener('popstate', onPop)
@@ -211,8 +207,8 @@ function App() {
       tramoAplicado.current = null
       return
     }
-    // Sólo cambia al cruzar el amanecer o el anochecer, así un cambio a mano a
-    // media tarde aguanta hasta el siguiente tramo en vez de deshacerse solo.
+    // Only switches when crossing dawn or dusk, so a manual change made midway
+    // through a stretch survives until the next one instead of being undone.
     const aplicar = () => {
       const tramo = esDeDia(new Date()) ? 'light' : 'dark'
       if (tramo === tramoAplicado.current) return
@@ -308,8 +304,6 @@ function App() {
       reminders,
       tasks,
     })
-    // Sólo se marcan las que de verdad se enseñan, y de cinco en cinco para no
-    // tapar la pantalla: el resto sale en la siguiente visita.
     const entregadas = lista
       .filter((p) => cfg.toasts || (cfg.notifs && p.sistema))
       .slice(0, 5)

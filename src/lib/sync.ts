@@ -140,7 +140,6 @@ function comoPaquete(json: string): Paquete {
   return { v: 2, keys }
 }
 
-/** Gana la versión más reciente de cada clave, no el último dispositivo en escribir. */
 function mezclar(local: Paquete, remoto: Paquete) {
   const keys: Record<string, Entrada> = {}
   let cambiaLocal = false
@@ -205,7 +204,6 @@ async function leerRemoto(codigo: string) {
   }
 }
 
-/** Trae lo del servidor, lo mezcla con lo de aquí y devuelve lo que haya cambiado. */
 export async function sincronizar(estado: EstadoSync) {
   const codigo = normaliza(estado.code)
   const remoto = await leerRemoto(codigo)
@@ -244,8 +242,8 @@ export async function conectar(codigo: string) {
 
 let pendiente: ReturnType<typeof setTimeout> | null = null
 
-/** `inicial` marca los valores por defecto que crea la app al abrirse: no deben
- *  ganarle a lo que ya haya en el otro dispositivo, así que van con tiempo cero. */
+/** `inicial` flags the defaults created on startup. They must not win over data
+ *  already present on another device, so they are stamped with time zero. */
 export function avisarCambio(clave: string, inicial = false) {
   const tiempos = leerTiempos()
   tiempos[clave] = inicial ? 0 : Date.now()
