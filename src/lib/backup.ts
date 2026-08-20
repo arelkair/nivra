@@ -1,130 +1,130 @@
 import { dateKey, type Anniversary, type Block, type CalItem } from './store'
 
-const INTERNAS = ['nivra-sync', 'nivra-sync-times', 'nivra-notified']
+const INTERNAL_KEYS = ['nivra-sync', 'nivra-sync-times', 'nivra-notified']
 
-function datos() {
+function storedData() {
   const out: Record<string, string> = {}
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
-    if (k && k.startsWith('nivra-') && !INTERNAS.includes(k)) out[k] = localStorage.getItem(k) ?? ''
+    if (k && k.startsWith('nivra-') && !INTERNAL_KEYS.includes(k)) out[k] = localStorage.getItem(k) ?? ''
   }
   return out
 }
 
-const hoy = () => new Date().toISOString().slice(0, 10)
+const today = () => new Date().toISOString().slice(0, 10)
 
-function descargar(nombre: string, texto: string, tipo: string) {
-  const url = URL.createObjectURL(new Blob([texto], { type: tipo }))
+function download(name: string, text: string, goalKind: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: goalKind }))
   const a = document.createElement('a')
   a.href = url
-  a.download = nombre
+  a.download = name
   a.click()
   URL.revokeObjectURL(url)
 }
 
-export function exportarJson() {
-  descargar(`nivra-${hoy()}.json`, JSON.stringify(datos(), null, 2), 'application/json')
+export function exportJson() {
+  download(`nivra-${today()}.json`, JSON.stringify(storedData(), null, 2), 'application/json')
 }
 
-const escapa = (v: string) => `"${v.replace(/"/g, '""')}"`
+const csvEscape = (v: string) => `"${v.replace(/"/g, '""')}"`
 
-export function exportarCsv() {
-  const filas: string[] = ['seccion,campo,valor']
-  for (const [clave, crudo] of Object.entries(datos())) {
-    const seccion = clave.replace('nivra-', '')
-    let valor: unknown
+export function exportCsv() {
+  const rows: string[] = ['seccion,campo,valor']
+  for (const [key, raw] of Object.entries(storedData())) {
+    const section = key.replace('nivra-', '')
+    let value: unknown
     try {
-      valor = JSON.parse(crudo)
+      value = JSON.parse(raw)
     } catch {
-      valor = crudo
+      value = raw
     }
-    if (Array.isArray(valor)) {
-      valor.forEach((item, i) => {
-        if (item && typeof item === 'object') {
-          for (const [campo, v] of Object.entries(item as Record<string, unknown>)) {
-            filas.push([escapa(seccion), escapa(`${i}.${campo}`), escapa(String(v ?? ''))].join(','))
+    if (Array.isArray(value)) {
+      value.forEach((entry, i) => {
+        if (entry && typeof entry === 'object') {
+          for (const [field, v] of Object.entries(entry as Record<string, unknown>)) {
+            rows.push([csvEscape(section), csvEscape(`${i}.${field}`), csvEscape(String(v ?? ''))].join(','))
           }
         } else {
-          filas.push([escapa(seccion), escapa(String(i)), escapa(String(item))].join(','))
+          rows.push([csvEscape(section), csvEscape(String(i)), csvEscape(String(entry))].join(','))
         }
       })
-    } else if (valor && typeof valor === 'object') {
-      for (const [campo, v] of Object.entries(valor as Record<string, unknown>)) {
-        filas.push([escapa(seccion), escapa(campo), escapa(String(v ?? ''))].join(','))
+    } else if (value && typeof value === 'object') {
+      for (const [field, v] of Object.entries(value as Record<string, unknown>)) {
+        rows.push([csvEscape(section), csvEscape(field), csvEscape(String(v ?? ''))].join(','))
       }
     } else {
-      filas.push([escapa(seccion), escapa(''), escapa(String(valor))].join(','))
+      rows.push([csvEscape(section), csvEscape(''), csvEscape(String(value))].join(','))
     }
   }
-  descargar(`nivra-${hoy()}.csv`, filas.join('\n'), 'text/csv;charset=utf-8')
+  download(`nivra-${today()}.csv`, rows.join('\n'), 'text/csv;charset=utf-8')
 }
 
-const icsEscapa = (v: string) => v.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\n/g, '\\n')
-const REPEAT_FREQ: Record<string, string> = { semanal: 'WEEKLY', mensual: 'MONTHLY', anual: 'YEARLY' }
-const DIAS_ICS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+const icsEscape = (v: string) => v.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\n/g, '\\n')
+const REPEAT_FREQ: Record<string, string> = { weekly: 'WEEKLY', mensual: 'MONTHLY', anual: 'YEARLY' }
+const ICS_WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
 
-export function exportarIcsCalendario(items: CalItem[], anniversaries: Anniversary[]) {
-  const lineas = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nivra//ES']
+export function exportCalendarIcs(items: CalItem[], anniversaries: Anniversary[]) {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nivra//ES']
   for (const it of items) {
-    lineas.push(
+    lines.push(
       'BEGIN:VEVENT',
       `UID:${it.id}@nivra`,
       `DTSTART;VALUE=DATE:${it.date.replace(/-/g, '')}`,
-      `SUMMARY:${icsEscapa(it.title)}`,
-      ...(it.desc ? [`DESCRIPTION:${icsEscapa(it.desc)}`] : []),
+      `SUMMARY:${icsEscape(it.title)}`,
+      ...(it.desc ? [`DESCRIPTION:${icsEscape(it.desc)}`] : []),
       ...(it.repeat ? [`RRULE:FREQ=${REPEAT_FREQ[it.repeat]}`] : []),
       'END:VEVENT',
     )
   }
   for (const a of anniversaries) {
     const año = new Date().getFullYear()
-    lineas.push(
+    lines.push(
       'BEGIN:VEVENT',
       `UID:${a.id}@nivra`,
       `DTSTART;VALUE=DATE:${año}${a.md.replace('-', '')}`,
-      `SUMMARY:${icsEscapa(a.name || 'Aniversario')}`,
+      `SUMMARY:${icsEscape(a.name || 'Aniversario')}`,
       'RRULE:FREQ=YEARLY',
       'END:VEVENT',
     )
   }
-  lineas.push('END:VCALENDAR')
-  descargar(`nivra-calendario-${hoy()}.ics`, lineas.join('\r\n'), 'text/calendar;charset=utf-8')
+  lines.push('END:VCALENDAR')
+  download(`nivra-calendario-${today()}.ics`, lines.join('\r\n'), 'text/calendar;charset=utf-8')
 }
 
-export function exportarIcsHorario(blocks: Block[]) {
-  const hoyDate = new Date()
-  const actual = (hoyDate.getDay() + 6) % 7
-  const lineas = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nivra//ES']
+export function exportTimetableIcs(blocks: Block[]) {
+  const todayDate = new Date()
+  const current = (todayDate.getDay() + 6) % 7
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nivra//ES']
   for (const b of blocks) {
-    const delta = (b.day - actual + 7) % 7
-    const base = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate() + delta)
+    const delta = (b.day - current + 7) % 7
+    const base = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() + delta)
     const ymd = dateKey(base).replace(/-/g, '')
-    lineas.push(
+    lines.push(
       'BEGIN:VEVENT',
       `UID:${b.id}@nivra`,
       `DTSTART:${ymd}T${b.start.replace(':', '')}00`,
       `DTEND:${ymd}T${b.end.replace(':', '')}00`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${DIAS_ICS[b.day]}`,
-      `SUMMARY:${icsEscapa(b.title)}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${ICS_WEEKDAYS[b.day]}`,
+      `SUMMARY:${icsEscape(b.title)}`,
       'END:VEVENT',
     )
   }
-  lineas.push('END:VCALENDAR')
-  descargar(`nivra-horario-${hoy()}.ics`, lineas.join('\r\n'), 'text/calendar;charset=utf-8')
+  lines.push('END:VCALENDAR')
+  download(`nivra-horario-${today()}.ics`, lines.join('\r\n'), 'text/calendar;charset=utf-8')
 }
 
-export async function importarJson(fichero: File) {
-  const texto = await fichero.text()
-  const datos = JSON.parse(texto) as Record<string, unknown>
-  if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
+export async function importJson(fileInput: File) {
+  const text = await fileInput.text()
+  const storedData = JSON.parse(text) as Record<string, unknown>
+  if (!storedData || typeof storedData !== 'object' || Array.isArray(storedData)) {
     throw new Error('El fichero no tiene el formato de una copia de Nivra.')
   }
-  const claves = Object.keys(datos).filter((k) => k.startsWith('nivra-') && !INTERNAS.includes(k))
-  if (claves.length === 0) throw new Error('La copia no contiene datos de Nivra.')
+  const keys = Object.keys(storedData).filter((k) => k.startsWith('nivra-') && !INTERNAL_KEYS.includes(k))
+  if (keys.length === 0) throw new Error('La copia no contiene datos de Nivra.')
 
-  for (const k of claves) {
-    const v = datos[k]
+  for (const k of keys) {
+    const v = storedData[k]
     localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v))
   }
-  return claves.length
+  return keys.length
 }

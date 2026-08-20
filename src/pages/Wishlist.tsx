@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { eur, mover, type Wish } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { eur, reorder, type Wish } from '../lib/store'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
 
 type Props = {
@@ -53,7 +53,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                 <span className="flex shrink-0 flex-col">
                   <button
                     type="button"
-                    onClick={() => setWishes((prev) => mover(prev, i, -1))}
+                    onClick={() => setWishes((prev) => reorder(prev, i, -1))}
                     aria-label={`Subir ${w.title}`}
                     className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
                   >
@@ -61,7 +61,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setWishes((prev) => mover(prev, i, 1))}
+                    onClick={() => setWishes((prev) => reorder(prev, i, 1))}
                     aria-label={`Bajar ${w.title}`}
                     className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
                   >
@@ -85,9 +85,9 @@ export function Wishlist({ wishes, setWishes }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    const antes = wishes
+                    const before = wishes
                     setWishes((prev) => prev.filter((x) => x.id !== w.id))
-                    conDeshacer(`«${w.title}» eliminado`, () => setWishes(() => antes))
+                    notifyWithUndo(`«${w.title}» eliminado`, () => setWishes(() => before))
                   }}
                   aria-label={`Eliminar ${w.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -135,13 +135,13 @@ function WishDialog({
           const data = new FormData(ev.currentTarget)
           const title = String(data.get('title') ?? '').trim()
           if (!title) return
-          const precio = Number(String(data.get('price') ?? '').replace(',', '.'))
+          const price = Number(String(data.get('price') ?? '').replace(',', '.'))
           const url = String(data.get('url') ?? '').trim()
           onSave({
             id: wish?.id ?? crypto.randomUUID(),
             title,
             desc: String(data.get('desc') ?? '').trim() || undefined,
-            price: Number.isFinite(precio) && precio > 0 ? Math.round(precio * 100) / 100 : undefined,
+            price: Number.isFinite(price) && price > 0 ? Math.round(price * 100) / 100 : undefined,
             url: /^https?:\/\//i.test(url) ? url : undefined,
           })
         }}

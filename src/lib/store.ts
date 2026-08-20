@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { alSincronizar, avisarCambio } from './sync'
+import { onSyncApplied, markChanged } from './sync'
 
 export type PageId =
   | 'dashboard'
@@ -55,33 +55,33 @@ export type Goal =
 
 export const SUBSCRIPTION_CAT = 'Suscripción'
 
-export function cobrosPendientes(subs: Subscription[], hoy: Date) {
-  const pendientes: { sub: Subscription; date: string }[] = []
+export function duePayments(subs: Subscription[], today: Date) {
+  const pendingNotices: { sub: Subscription; date: string }[] = []
   for (const sub of subs) {
-    let año = hoy.getFullYear()
-    let mes = hoy.getMonth()
+    let año = today.getFullYear()
+    let month = today.getMonth()
     for (let i = 0; i < 12; i++) {
-      const ultimo = new Date(año, mes + 1, 0).getDate()
-      const fecha = dateKey(new Date(año, mes, Math.min(sub.day, ultimo)))
-      if (fecha > dateKey(hoy)) {
-        mes--
-        if (mes < 0) {
-          mes = 11
+      const lastDay = new Date(año, month + 1, 0).getDate()
+      const date = dateKey(new Date(año, month, Math.min(sub.day, lastDay)))
+      if (date > dateKey(today)) {
+        month--
+        if (month < 0) {
+          month = 11
           año--
         }
         continue
       }
-      if (sub.lastCharged && fecha <= sub.lastCharged) break
-      pendientes.push({ sub, date: fecha })
+      if (sub.lastCharged && date <= sub.lastCharged) break
+      pendingNotices.push({ sub, date: date })
       if (!sub.lastCharged) break
-      mes--
-      if (mes < 0) {
-        mes = 11
+      month--
+      if (month < 0) {
+        month = 11
         año--
       }
     }
   }
-  return pendientes
+  return pendingNotices
 }
 
 export const DEFAULT_PROFILE = 'principal'
@@ -111,22 +111,22 @@ export type NotepadPage = { id: string; html: string }
 
 export type Notepad = { id: string; title: string; html?: string; pages?: NotepadPage[] }
 
-export const paginasDe = (n: Notepad): NotepadPage[] =>
+export const pagesOf = (n: Notepad): NotepadPage[] =>
   n.pages?.length ? n.pages : [{ id: `${n.id}-1`, html: n.html ?? '' }]
 
-const HTML_PROHIBIDO = /^(script|style|iframe|object|embed|link|meta|form)$/i
+const FORBIDDEN_TAGS = /^(script|style|iframe|object|embed|link|savingGoal|form)$/i
 
 export function sanitize(html: string) {
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
-  for (const el of Array.from(doc.body.querySelectorAll('*'))) {
-    if (HTML_PROHIBIDO.test(el.tagName)) {
-      el.remove()
+  for (const element of Array.from(doc.body.querySelectorAll('*'))) {
+    if (FORBIDDEN_TAGS.test(element.tagName)) {
+      element.remove()
       continue
     }
-    for (const attr of Array.from(el.attributes)) {
-      const nombre = attr.name.toLowerCase()
-      const valor = attr.value.replace(/\s/g, '').toLowerCase()
-      if (nombre.startsWith('on') || valor.startsWith('javascript:')) el.removeAttribute(attr.name)
+    for (const attr of Array.from(element.attributes)) {
+      const attrName = attr.name.toLowerCase()
+      const value = attr.value.replace(/\s/g, '').toLowerCase()
+      if (attrName.startsWith('on') || value.startsWith('javascript:')) element.removeAttribute(attr.name)
     }
   }
   return doc.body.firstElementChild?.innerHTML ?? ''
@@ -195,9 +195,9 @@ export function progress(created: string, target: string, now: Date) {
 
 export type ItemType = 'festividad' | 'tarea' | 'examen' | 'proyecto'
 
-export type Repeticion = 'semanal' | 'mensual' | 'anual'
+export type Repeat = 'semanal' | 'mensual' | 'anual'
 
-export const REPETICIONES: { id: Repeticion; label: string }[] = [
+export const REPEATS: { id: Repeat; label: string }[] = [
   { id: 'semanal', label: 'Cada semana' },
   { id: 'mensual', label: 'Cada mes' },
   { id: 'anual', label: 'Cada año' },
@@ -209,7 +209,7 @@ export type NivraEvent = {
   title: string
   desc?: string
   type: ItemType
-  repeat?: Repeticion
+  repeat?: Repeat
 }
 
 export type SubTask = { id: string; title: string; done: boolean }
@@ -290,13 +290,13 @@ export const TYPES: Record<ItemType, { label: string; dot: string; chip: string 
   },
 }
 
-export function mover<T>(lista: T[], indice: number, salto: number): T[] {
-  const destino = indice + salto
-  if (destino < 0 || destino >= lista.length) return lista
-  const copia = [...lista]
-  const [item] = copia.splice(indice, 1)
-  copia.splice(destino, 0, item)
-  return copia
+export function reorder<T>(list: T[], index: number, step: number): T[] {
+  const destino = index + step
+  if (destino < 0 || destino >= list.length) return list
+  const copy = [...list]
+  const [item] = copy.splice(index, 1)
+  copy.splice(destino, 0, item)
+  return copy
 }
 
 export const INCOME_CATS = ['Regalo', 'Deuda', 'Venta', 'Otros']
@@ -394,34 +394,34 @@ export type CalItem = {
   desc?: string
   type: ItemType
   origin: 'evento' | 'tarea' | 'examen' | 'proyecto'
-  repeat?: Repeticion
+  repeat?: Repeat
 }
 
-const diaDelMes = (fecha: string) => Number(fecha.slice(8))
+const dayOfMonth = (date: string) => Number(date.slice(8))
 
-function ocurreEn(item: CalItem, fecha: string) {
-  if (item.date === fecha) return true
-  if (!item.repeat || fecha < item.date) return false
+function occursOn(item: CalItem, date: string) {
+  if (item.date === date) return true
+  if (!item.repeat || date < item.date) return false
 
-  const [y, m, d] = fecha.split('-').map(Number)
-  if (item.repeat === 'anual') return monthDay(item.date) === monthDay(fecha)
+  const [y, m, d] = date.split('-').map(Number)
+  if (item.repeat === 'anual') return monthDay(item.date) === monthDay(date)
   if (item.repeat === 'mensual') {
-    const ultimo = new Date(y, m, 0).getDate()
-    return diaDelMes(item.date) === d || (diaDelMes(item.date) > ultimo && d === ultimo)
+    const lastDay = new Date(y, m, 0).getDate()
+    return dayOfMonth(item.date) === d || (dayOfMonth(item.date) > lastDay && d === lastDay)
   }
   const [y2, m2, d2] = item.date.split('-').map(Number)
   return weekIndex(new Date(y, m - 1, d)) === weekIndex(new Date(y2, m2 - 1, d2))
 }
 
-export const itemsDeDia = (items: CalItem[], fecha: string) =>
-  items.filter((i) => ocurreEn(i, fecha))
+export const itemsOfDay = (items: CalItem[], date: string) =>
+  items.filter((i) => occursOn(i, date))
 
-export function proximos(items: CalItem[], desde: Date, dias: number) {
+export function upcomingItems(items: CalItem[], from: Date, dias: number) {
   const out: { date: string; item: CalItem }[] = []
   for (let i = 1; i <= dias; i++) {
-    const d = new Date(desde.getFullYear(), desde.getMonth(), desde.getDate() + i)
-    const fecha = dateKey(d)
-    for (const item of itemsDeDia(items, fecha)) out.push({ date: fecha, item })
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+    const date = dateKey(d)
+    for (const item of itemsOfDay(items, date)) out.push({ date: date, item })
   }
   return out
 }
@@ -474,15 +474,15 @@ export function useStored<T>(key: string, initial: T) {
   })
   useEffect(() => {
     const raw = JSON.stringify(value)
-    const previo = localStorage.getItem(key)
-    if (previo === raw) return
+    const previous = localStorage.getItem(key)
+    if (previous === raw) return
     localStorage.setItem(key, raw)
-    avisarCambio(key, previo === null)
+    markChanged(key, previous === null)
   }, [key, value])
 
   useEffect(
     () =>
-      alSincronizar(() => {
+      onSyncApplied(() => {
         const raw = localStorage.getItem(key)
         if (raw === null || raw === JSON.stringify(value)) return
         try {
@@ -507,15 +507,15 @@ if (import.meta.env.DEV) {
   console.assert(isOfficialHoliday('2026-07-25'), 'Santiago Apóstol es festivo en Galicia')
   console.assert(!isOfficialHoliday('2026-08-11'), '11 de agosto de 2026 es laborable')
 
-  const todos = Object.fromEntries(UNITS.map((u) => [u.id, true])) as Record<Unit, boolean>
-  const c = countdown(new Date(2026, 0, 1, 0, 0, 0), new Date(2027, 2, 10, 3, 4, 5), todos)
+  const all = Object.fromEntries(UNITS.map((u) => [u.id, true])) as Record<Unit, boolean>
+  const c = countdown(new Date(2026, 0, 1, 0, 0, 0), new Date(2027, 2, 10, 3, 4, 5), all)
   console.assert(c[0].value === 1 && c[1].value === 2, 'un año y dos meses hasta el 10/03/2027')
   console.assert(c[2].value === 9 && c[3].value === 3, 'y nueve días y tres horas')
-  const sinAnios = countdown(new Date(2026, 0, 1), new Date(2027, 0, 1), {
-    ...todos,
+  const withoutYears = countdown(new Date(2026, 0, 1), new Date(2027, 0, 1), {
+    ...all,
     years: false,
   })
-  console.assert(sinAnios[0].value === 12, 'sin años, el año pasa a contar como 12 meses')
+  console.assert(withoutYears[0].value === 12, 'sin años, el año pasa a contar como 12 meses')
 
   console.assert(
     sanitize('<b>hola</b><script>alert(1)</script>') === '<b>hola</b>',
@@ -526,7 +526,7 @@ if (import.meta.env.DEV) {
     'ni enlaces ni atributos ejecutables',
   )
 
-  const semanal: CalItem = {
+  const weekly: CalItem = {
     id: 'x',
     date: '2026-08-04',
     title: 'x',
@@ -534,15 +534,15 @@ if (import.meta.env.DEV) {
     origin: 'evento',
     repeat: 'semanal',
   }
-  console.assert(ocurreEn(semanal, '2026-08-11'), 'lo semanal cae el martes siguiente')
-  console.assert(!ocurreEn(semanal, '2026-08-12'), 'pero no el miércoles')
-  console.assert(!ocurreEn(semanal, '2026-07-28'), 'ni antes de empezar')
+  console.assert(occursOn(weekly, '2026-08-11'), 'lo semanal cae el martes siguiente')
+  console.assert(!occursOn(weekly, '2026-08-12'), 'pero no el miércoles')
+  console.assert(!occursOn(weekly, '2026-07-28'), 'ni antes de empezar')
   console.assert(
-    ocurreEn({ ...semanal, repeat: 'mensual' }, '2026-09-04'),
+    occursOn({ ...weekly, repeat: 'mensual' }, '2026-09-04'),
     'lo mensual cae el mismo día del mes',
   )
   console.assert(
-    ocurreEn({ ...semanal, date: '2026-01-31', repeat: 'mensual' }, '2026-02-28'),
+    occursOn({ ...weekly, date: '2026-01-31', repeat: 'mensual' }, '2026-02-28'),
     'y el 31 cae en el último día de febrero',
   )
 }

@@ -7,20 +7,20 @@ type Props = {
   setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
 }
 
-const dosDigitos = (n: number) => String(n).padStart(2, '0')
+const pad2 = (n: number) => String(n).padStart(2, '0')
 
-const fecha = (iso?: string) => {
+const dateOf = (iso?: string) => {
   const d = iso ? new Date(iso) : new Date()
-  return `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
-const hora = (iso?: string) => {
+const timeOf = (iso?: string) => {
   const d = iso ? new Date(iso) : new Date()
-  return `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 }
 
-const corta = (iso: string) =>
-  `${new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ${hora(iso)}`
+const shortDateTime = (iso: string) =>
+  `${new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ${timeOf(iso)}`
 
 const DEFAULT_UNITS: Record<Unit, boolean> = {
   years: false,
@@ -111,7 +111,7 @@ function Card({
   const target = new Date(item.target)
   const parts = countdown(now, target, item.units)
   const pct = progress(item.created, item.target, now)
-  const acabado = target.getTime() <= now.getTime()
+  const finished = target.getTime() <= now.getTime()
 
   return (
     <div className={`shrink-0 rounded-xl border ${big ? 'p-4' : 'p-3'} ${line}`}>
@@ -134,7 +134,7 @@ function Card({
         </button>
       </div>
 
-      {acabado ? (
+      {finished ? (
         <p className={`mt-1 font-mono font-medium ${big ? 'text-2xl' : 'text-lg'}`}>Se acabó</p>
       ) : (
         <div className={`mt-1.5 flex flex-wrap gap-y-1 ${big ? 'gap-x-5' : 'gap-x-3'}`}>
@@ -160,7 +160,7 @@ function Card({
       <p className="mt-1 flex justify-between gap-2 font-mono text-[0.6rem] text-neutral-400">
         <span>{Math.round(pct * 100)}%</span>
         <span className="truncate">
-          {corta(item.created)} → {corta(item.target)}
+          {shortDateTime(item.created)} → {shortDateTime(item.target)}
         </span>
       </p>
     </div>
@@ -187,10 +187,10 @@ function CountdownDialog({
           ev.preventDefault()
           const data = new FormData(ev.currentTarget)
           const title = String(data.get('title') ?? '').trim()
-          const desde = `${data.get('startDate')}T${String(data.get('startTime') || '00:00')}`
-          const hasta = `${data.get('date')}T${String(data.get('time') || '00:00')}`
+          const from = `${data.get('startDate')}T${String(data.get('startTime') || '00:00')}`
+          const to = `${data.get('date')}T${String(data.get('time') || '00:00')}`
           if (!title || !data.get('startDate') || !data.get('date')) return
-          const [created, target] = desde <= hasta ? [desde, hasta] : [hasta, desde]
+          const [created, target] = from <= to ? [from, to] : [to, from]
           onSave({
             id: item?.id ?? crypto.randomUUID(),
             title,
@@ -223,7 +223,7 @@ function CountdownDialog({
             <input
               name="startDate"
               type="date"
-              defaultValue={fecha(item?.created)}
+              defaultValue={dateOf(item?.created)}
               required
               aria-label="Día de inicio"
               className={input}
@@ -231,7 +231,7 @@ function CountdownDialog({
             <input
               name="startTime"
               type="time"
-              defaultValue={hora(item?.created)}
+              defaultValue={timeOf(item?.created)}
               aria-label="Hora de inicio"
               className={input}
             />
@@ -244,7 +244,7 @@ function CountdownDialog({
             <input
               name="date"
               type="date"
-              defaultValue={fecha(item?.target)}
+              defaultValue={dateOf(item?.target)}
               required
               aria-label="Día del final"
               className={input}
@@ -252,7 +252,7 @@ function CountdownDialog({
             <input
               name="time"
               type="time"
-              defaultValue={hora(item?.target)}
+              defaultValue={timeOf(item?.target)}
               aria-label="Hora del final"
               className={input}
             />

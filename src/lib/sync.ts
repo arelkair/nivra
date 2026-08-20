@@ -1,83 +1,83 @@
 const RPC = 'https://erfwpsvjbebfoeeexgrr.supabase.co/rest/v1/rpc'
 const PUBLIC_KEY = 'sb_publishable_yQ9Uk6CNHcbt4D05JmQVZw_d4Y5P_eh'
 
-const ALFA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-const ESTADO = 'nivra-sync'
-const TIEMPOS = 'nivra-sync-times'
-const EVENTO = 'nivra-sync'
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const STATE_KEY = 'nivra-sync'
+const TIMES_KEY = 'nivra-sync-times'
+const EVENT_NAME = 'nivra-sync'
 
-export type EstadoSync = {
+export type SyncState = {
   code: string
   lastSeen: string | null
   error?: string
 }
 
-type Entrada = { v: string; t: number }
-type Paquete = { v: 2; keys: Record<string, Entrada> }
+type StoredEntry = { v: string; t: number }
+type Payload = { v: 2; keys: Record<string, StoredEntry> }
 
-export function nuevoCodigo() {
+export function newCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
-  const texto = Array.from(bytes, (b) => ALFA[b & 31]).join('')
-  return texto.match(/.{4}/g)!.join('-')
+  const text = Array.from(bytes, (b) => ALPHABET[b & 31]).join('')
+  return text.match(/.{4}/g)!.join('-')
 }
 
-export const normaliza = (codigo: string) =>
-  codigo.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
+export const normalizeCode = (code: string) =>
+  code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16)
 
-export const conGuiones = (codigo: string) => normaliza(codigo).match(/.{1,4}/g)?.join('-') ?? ''
+export const withDashes = (code: string) => normalizeCode(code).match(/.{1,4}/g)?.join('-') ?? ''
 
-const leerJson = <T,>(clave: string, porDefecto: T): T => {
+const readJson = <T,>(storageKey: string, fallback: T): T => {
   try {
-    const raw = localStorage.getItem(clave)
-    return raw ? (JSON.parse(raw) as T) : porDefecto
+    const raw = localStorage.getItem(storageKey)
+    return raw ? (JSON.parse(raw) as T) : fallback
   } catch {
-    return porDefecto
+    return fallback
   }
 }
 
-export const leerEstado = () => leerJson<EstadoSync | null>(ESTADO, null)
+export const readSyncState = () => readJson<SyncState | null>(STATE_KEY, null)
 
-export function guardarEstado(estado: EstadoSync | null) {
-  if (estado) localStorage.setItem(ESTADO, JSON.stringify(estado))
-  else localStorage.removeItem(ESTADO)
+export function saveSyncState(state: SyncState | null) {
+  if (state) localStorage.setItem(STATE_KEY, JSON.stringify(state))
+  else localStorage.removeItem(STATE_KEY)
 }
 
-const leerTiempos = () => leerJson<Record<string, number>>(TIEMPOS, {})
-const guardarTiempos = (t: Record<string, number>) =>
-  localStorage.setItem(TIEMPOS, JSON.stringify(t))
+const readTimes = () => readJson<Record<string, number>>(TIMES_KEY, {})
+const saveTimes = (t: Record<string, number>) =>
+  localStorage.setItem(TIMES_KEY, JSON.stringify(t))
 
-const interna = (k: string) => k === ESTADO || k === TIEMPOS
+const internal = (k: string) => k === STATE_KEY || k === TIMES_KEY
 
-function valoresLocales() {
+function localValues() {
   const out: Record<string, string> = {}
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
-    if (k && k.startsWith('nivra-') && !interna(k)) out[k] = localStorage.getItem(k) ?? ''
+    if (k && k.startsWith('nivra-') && !internal(k)) out[k] = localStorage.getItem(k) ?? ''
   }
   return out
 }
 
-function paqueteLocal(): Paquete {
-  const valores = valoresLocales()
-  const tiempos = leerTiempos()
-  const keys: Record<string, Entrada> = {}
-  for (const k of Object.keys(valores).sort()) keys[k] = { v: valores[k], t: tiempos[k] ?? 0 }
+function localPayload(): Payload {
+  const values = localValues()
+  const times = readTimes()
+  const keys: Record<string, StoredEntry> = {}
+  for (const k of Object.keys(values).sort()) keys[k] = { v: values[k], t: times[k] ?? 0 }
   return { v: 2, keys }
 }
 
-const bytesAHex = (b: ArrayBuffer) =>
+const bytesToHex = (b: ArrayBuffer) =>
   Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('')
 
-async function hex(texto: string) {
-  return bytesAHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto)))
+async function hex(text: string) {
+  return bytesToHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))
 }
 
-const identificador = (codigo: string) => hex(`nivra-id-v1:${codigo}`)
+const identifier = (code: string) => hex(`nivra-id-v1:${code}`)
 
-async function clave(codigo: string) {
+async function storageKey(code: string) {
   const base = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(codigo),
+    new TextEncoder().encode(code),
     'PBKDF2',
     false,
     ['deriveKey'],
@@ -96,30 +96,30 @@ async function clave(codigo: string) {
   )
 }
 
-const aBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
-const deBase64 = (texto: string) => Uint8Array.from(atob(texto), (c) => c.charCodeAt(0))
+const toBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
+const fromBase64 = (text: string) => Uint8Array.from(atob(text), (c) => c.charCodeAt(0))
 
-async function cifrar(texto: string, k: CryptoKey) {
+async function encrypt(text: string, k: CryptoKey) {
   const iv = crypto.getRandomValues(new Uint8Array(12))
-  const cifrado = await crypto.subtle.encrypt(
+  const encrypted = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
     k,
-    new TextEncoder().encode(texto),
+    new TextEncoder().encode(text),
   )
-  const junto = new Uint8Array(iv.length + cifrado.byteLength)
-  junto.set(iv)
-  junto.set(new Uint8Array(cifrado), iv.length)
-  return aBase64(junto)
+  const joined = new Uint8Array(iv.length + encrypted.byteLength)
+  joined.set(iv)
+  joined.set(new Uint8Array(encrypted), iv.length)
+  return toBase64(joined)
 }
 
-async function descifrar(texto: string, k: CryptoKey) {
-  const junto = deBase64(texto)
-  const plano = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: junto.slice(0, 12) },
+async function decrypt(text: string, k: CryptoKey) {
+  const joined = fromBase64(text)
+  const flat = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: joined.slice(0, 12) },
     k,
-    junto.slice(12),
+    joined.slice(12),
   )
-  return new TextDecoder().decode(plano)
+  return new TextDecoder().decode(flat)
 }
 
 async function rpc(fn: string, body: Record<string, unknown>) {
@@ -132,134 +132,134 @@ async function rpc(fn: string, body: Record<string, unknown>) {
   return r.json()
 }
 
-function comoPaquete(json: string): Paquete {
-  const crudo = JSON.parse(json) as Paquete | Record<string, string>
-  if ((crudo as Paquete).v === 2) return crudo as Paquete
-  const keys: Record<string, Entrada> = {}
-  for (const [k, v] of Object.entries(crudo as Record<string, string>)) keys[k] = { v, t: 0 }
+function toPayload(json: string): Payload {
+  const raw = JSON.parse(json) as Payload | Record<string, string>
+  if ((raw as Payload).v === 2) return raw as Payload
+  const keys: Record<string, StoredEntry> = {}
+  for (const [k, v] of Object.entries(raw as Record<string, string>)) keys[k] = { v, t: 0 }
   return { v: 2, keys }
 }
 
-function mezclar(local: Paquete, remoto: Paquete) {
-  const keys: Record<string, Entrada> = {}
-  let cambiaLocal = false
-  let cambiaRemoto = false
+function mergeVaults(local: Payload, remote: Payload) {
+  const keys: Record<string, StoredEntry> = {}
+  let localChanged = false
+  let remoteChanged = false
 
-  for (const k of [...new Set([...Object.keys(local.keys), ...Object.keys(remoto.keys)])].sort()) {
+  for (const k of [...new Set([...Object.keys(local.keys), ...Object.keys(remote.keys)])].sort()) {
     const a = local.keys[k]
-    const b = remoto.keys[k]
+    const b = remote.keys[k]
     if (a && b) {
-      const gana = b.t > a.t ? b : a
-      keys[k] = gana
-      if (gana.v !== a.v) cambiaLocal = true
-      if (gana.v !== b.v) cambiaRemoto = true
+      const wins = b.t > a.t ? b : a
+      keys[k] = wins
+      if (wins.v !== a.v) localChanged = true
+      if (wins.v !== b.v) remoteChanged = true
     } else if (b) {
       keys[k] = b
-      cambiaLocal = true
+      localChanged = true
     } else {
       keys[k] = a
-      cambiaRemoto = true
+      remoteChanged = true
     }
   }
-  return { fusion: { v: 2, keys } as Paquete, cambiaLocal, cambiaRemoto }
+  return { merged: { v: 2, keys } as Payload, localChanged, remoteChanged }
 }
 
-function aplicar(paquete: Paquete) {
-  const tiempos = leerTiempos()
-  let tocado = false
+function apply(paquete: Payload) {
+  const times = readTimes()
+  let touched = false
   for (const [k, e] of Object.entries(paquete.keys)) {
     if (localStorage.getItem(k) !== e.v) {
       localStorage.setItem(k, e.v)
-      tocado = true
+      touched = true
     }
-    tiempos[k] = e.t
+    times[k] = e.t
   }
-  guardarTiempos(tiempos)
-  if (tocado) dispatchEvent(new Event(EVENTO))
-  return tocado
+  saveTimes(times)
+  if (touched) dispatchEvent(new Event(EVENT_NAME))
+  return touched
 }
 
-const texto = (p: Paquete) => JSON.stringify(p)
+const text = (p: Payload) => JSON.stringify(p)
 
-export async function subir(estado: EstadoSync, paquete = paqueteLocal()) {
-  const codigo = normaliza(estado.code)
+export async function pushChanges(state: SyncState, paquete = localPayload()) {
+  const code = normalizeCode(state.code)
   const ts = await rpc('vault_put', {
-    vault_id: await identificador(codigo),
-    vault_payload: await cifrar(texto(paquete), await clave(codigo)),
+    vault_id: await identifier(code),
+    vault_payload: await encrypt(text(paquete), await storageKey(code)),
   })
-  const nuevo = { ...estado, lastSeen: ts as string, error: undefined }
-  guardarEstado(nuevo)
-  return nuevo
+  const nextState = { ...state, lastSeen: ts as string, error: undefined }
+  saveSyncState(nextState)
+  return nextState
 }
 
-async function leerRemoto(codigo: string) {
-  const filas = (await rpc('vault_get', { vault_id: await identificador(codigo) })) as {
+async function readRemote(code: string) {
+  const rows = (await rpc('vault_get', { vault_id: await identifier(code) })) as {
     payload: string
     updated_at: string
   }[]
-  if (!filas[0]) return null
+  if (!rows[0]) return null
   return {
-    paquete: comoPaquete(await descifrar(filas[0].payload, await clave(codigo))),
-    updated_at: filas[0].updated_at,
+    paquete: toPayload(await decrypt(rows[0].payload, await storageKey(code))),
+    updated_at: rows[0].updated_at,
   }
 }
 
-export async function sincronizar(estado: EstadoSync) {
-  const codigo = normaliza(estado.code)
-  const remoto = await leerRemoto(codigo)
-  const local = paqueteLocal()
+export async function runSync(state: SyncState) {
+  const code = normalizeCode(state.code)
+  const remote = await readRemote(code)
+  const local = localPayload()
 
-  if (!remoto) {
-    const nuevo = await subir(estado, local)
-    return { estado: nuevo, cambio: false }
+  if (!remote) {
+    const nextState = await pushChanges(state, local)
+    return { state: nextState, change: false }
   }
 
-  const { fusion, cambiaLocal, cambiaRemoto } = mezclar(local, remoto.paquete)
-  const cambio = cambiaLocal ? aplicar(fusion) : false
+  const { merged, localChanged, remoteChanged } = mergeVaults(local, remote.paquete)
+  const change = localChanged ? apply(merged) : false
 
-  let siguiente = { ...estado, lastSeen: remoto.updated_at, error: undefined }
-  if (cambiaRemoto) siguiente = await subir(siguiente, fusion)
-  else guardarEstado(siguiente)
+  let next = { ...state, lastSeen: remote.updated_at, error: undefined }
+  if (remoteChanged) next = await pushChanges(next, merged)
+  else saveSyncState(next)
 
-  return { estado: siguiente, cambio }
+  return { state: next, change }
 }
 
-export async function conectar(codigo: string) {
-  const limpio = normaliza(codigo)
-  if (limpio.length !== 16) throw new Error('El código debe tener 16 caracteres.')
-  const inicial: EstadoSync = { code: limpio, lastSeen: null }
+export async function connect(code: string) {
+  const clean = normalizeCode(code)
+  if (clean.length !== 16) throw new Error('El código debe tener 16 caracteres.')
+  const inicial: SyncState = { code: clean, lastSeen: null }
 
-  const remoto = await leerRemoto(limpio)
-  if (!remoto) {
-    guardarEstado(await subir(inicial))
-    return { creado: true, cambio: false }
+  const remote = await readRemote(clean)
+  if (!remote) {
+    saveSyncState(await pushChanges(inicial))
+    return { created: true, change: false }
   }
 
-  const cambio = aplicar(remoto.paquete)
-  guardarEstado({ ...inicial, lastSeen: remoto.updated_at })
-  return { creado: false, cambio }
+  const change = apply(remote.paquete)
+  saveSyncState({ ...inicial, lastSeen: remote.updated_at })
+  return { created: false, change }
 }
 
 let pendiente: ReturnType<typeof setTimeout> | null = null
 
 /** `inicial` flags the defaults created on startup. They must not win over data
  *  already present on another device, so they are stamped with time zero. */
-export function avisarCambio(clave: string, inicial = false) {
-  const tiempos = leerTiempos()
-  tiempos[clave] = inicial ? 0 : Date.now()
-  guardarTiempos(tiempos)
+export function markChanged(storageKey: string, inicial = false) {
+  const times = readTimes()
+  times[storageKey] = inicial ? 0 : Date.now()
+  saveTimes(times)
 
-  const estado = leerEstado()
-  if (!estado) return
+  const state = readSyncState()
+  if (!state) return
   if (pendiente) clearTimeout(pendiente)
   pendiente = setTimeout(() => {
-    sincronizar(leerEstado() ?? estado).catch((e) =>
-      guardarEstado({ ...(leerEstado() ?? estado), error: String(e.message ?? e) }),
+    runSync(readSyncState() ?? state).catch((e) =>
+      saveSyncState({ ...(readSyncState() ?? state), error: String(e.message ?? e) }),
     )
   }, 1200)
 }
 
-export const alSincronizar = (fn: () => void) => {
-  addEventListener(EVENTO, fn)
-  return () => removeEventListener(EVENTO, fn)
+export const onSyncApplied = (fn: () => void) => {
+  addEventListener(EVENT_NAME, fn)
+  return () => removeEventListener(EVENT_NAME, fn)
 }

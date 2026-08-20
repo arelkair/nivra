@@ -1,69 +1,69 @@
 import { useState } from 'react'
 import {
-  conGuiones,
-  conectar,
-  guardarEstado,
-  leerEstado,
-  normaliza,
-  nuevoCodigo,
-  subir,
-  type EstadoSync,
+  withDashes,
+  connect,
+  saveSyncState,
+  readSyncState,
+  normalizeCode,
+  newCode,
+  pushChanges,
+  type SyncState,
 } from '../lib/sync'
 import { Icon, Label, button, input, line } from './ui'
 
 export function SyncPanel({
-  estado,
-  setEstado,
+  status,
+  setStatus,
 }: {
-  estado: EstadoSync | null
-  setEstado: (e: EstadoSync | null) => void
+  status: SyncState | null
+  setStatus: (e: SyncState | null) => void
 }) {
   const [visible, setVisible] = useState(false)
-  const [trabajando, setTrabajando] = useState(false)
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [working, setWorking] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
-  const crear = async () => {
-    setTrabajando(true)
-    setAviso(null)
+  const create = async () => {
+    setWorking(true)
+    setToast(null)
     try {
-      const nuevo = await subir({ code: normaliza(nuevoCodigo()), lastSeen: null })
-      setEstado(nuevo)
+      const generated = await pushChanges({ code: normalizeCode(newCode()), lastSeen: null })
+      setStatus(generated)
       setVisible(true)
-      setAviso('Listo. Copia el código y pégalo en el otro dispositivo.')
+      setToast('Listo. Copia el código y pégalo en el otro dispositivo.')
     } catch (e) {
-      setAviso(`No se pudo activar: ${(e as Error).message}`)
+      setToast(`No se pudo activar: ${(e as Error).message}`)
     }
-    setTrabajando(false)
+    setWorking(false)
   }
 
-  const unir = async (codigo: string) => {
-    setTrabajando(true)
-    setAviso(null)
+  const linkDevice = async (code: string) => {
+    setWorking(true)
+    setToast(null)
     try {
-      const r = await conectar(codigo)
-      setEstado(leerEstado())
-      setAviso(
-        r.creado
+      const r = await connect(code)
+      setStatus(readSyncState())
+      setToast(
+        r.created
           ? 'Código nuevo: se han subido tus datos.'
-          : r.cambio
+          : r.change
             ? 'Conectado. Datos del otro dispositivo descargados.'
             : 'Conectado. Ya estabais igual.',
       )
     } catch (e) {
-      setAviso(`No se pudo conectar: ${(e as Error).message}`)
+      setToast(`No se pudo conectar: ${(e as Error).message}`)
     }
-    setTrabajando(false)
+    setWorking(false)
   }
 
   return (
     <div>
       <Label>Sincronización</Label>
 
-      {estado ? (
+      {status ? (
         <div className="flex flex-col gap-2">
           <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${line}`}>
             <span className="min-w-0 flex-1 truncate font-mono text-sm tracking-wider">
-              {visible ? conGuiones(estado.code) : '••••-••••-••••-••••'}
+              {visible ? withDashes(status.code) : '••••-••••-••••-••••'}
             </span>
             <button
               type="button"
@@ -75,8 +75,8 @@ export function SyncPanel({
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard.writeText(conGuiones(estado.code))
-                setAviso('Código copiado.')
+                navigator.clipboard.writeText(withDashes(status.code))
+                setToast('Código copiado.')
               }}
               aria-label="Copiar código"
               className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
@@ -86,19 +86,19 @@ export function SyncPanel({
           </div>
 
           <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-            {estado.error
-              ? `Último intento fallido: ${estado.error}`
-              : estado.lastSeen
-                ? `Al día · ${new Date(estado.lastSeen).toLocaleTimeString('es-ES')} · se comprueba cada 4 s`
+            {status.error
+              ? `Último intento fallido: ${status.error}`
+              : status.lastSeen
+                ? `Al día · ${new Date(status.lastSeen).toLocaleTimeString('es-ES')} · se comprueba cada 4 s`
                 : 'Sin sincronizar todavía.'}
           </p>
 
           <button
             type="button"
             onClick={() => {
-              guardarEstado(null)
-              setEstado(null)
-              setAviso('Este dispositivo ya no se sincroniza. Tus datos siguen aquí.')
+              saveSyncState(null)
+              setStatus(null)
+              setToast('Este dispositivo ya no se sincroniza. Tus datos siguen aquí.')
             }}
             className="w-fit text-xs text-neutral-400 transition-colors hover:text-red-500"
           >
@@ -106,8 +106,8 @@ export function SyncPanel({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={crear} disabled={trabajando} className={`${button} w-full`}>
-          {trabajando ? 'Activando…' : 'Crear mi código'}
+        <button type="button" onClick={create} disabled={working} className={`${button} w-full`}>
+          {working ? 'Activando…' : 'Crear mi código'}
         </button>
       )}
 
@@ -115,12 +115,12 @@ export function SyncPanel({
         onSubmit={(ev) => {
           ev.preventDefault()
           const form = ev.currentTarget
-          const codigo = String(new FormData(form).get('codigo') ?? '')
-          if (normaliza(codigo).length !== 16) {
-            setAviso('El código tiene 16 caracteres.')
+          const code = String(new FormData(form).get('codigo') ?? '')
+          if (normalizeCode(code).length !== 16) {
+            setToast('El código tiene 16 caracteres.')
             return
           }
-          unir(codigo)
+          linkDevice(code)
           form.reset()
         }}
         className="mt-3 flex gap-2"
@@ -131,16 +131,16 @@ export function SyncPanel({
           aria-label="Código de otro dispositivo"
           className={`${input} font-mono tracking-wider`}
         />
-        <button type="submit" disabled={trabajando} className={`${button} shrink-0`}>
+        <button type="submit" disabled={working} className={`${button} shrink-0`}>
           Unir
         </button>
       </form>
 
-      {aviso && <p className="mt-2 text-[0.7rem] text-neutral-500 dark:text-neutral-400">{aviso}</p>}
+      {toast && <p className="mt-2 text-[0.7rem] text-neutral-500 dark:text-neutral-400">{toast}</p>}
 
       <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
         Los datos se cifran en tu navegador con el código antes de salir. El servidor guarda algo que
-        no puede leer, y sin el código no hay forma de recuperarlo.
+        no puede leer, y sin element código no hay forma de recuperarlo.
       </p>
     </div>
   )

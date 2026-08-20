@@ -14,8 +14,8 @@ export function useSettings() {
   const [animations, setAnimations] = useStored('nivra-animations', true)
   const [navButtons, setNavButtons] = useStored('nivra-nav-buttons', true)
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
-  const [atajos, setAtajos] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
-  const [teclas, setTeclas] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
+  const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
+  const [customKeys, setCustomKeys] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
 
   return {
     intro,
@@ -44,10 +44,10 @@ export function useSettings() {
     setNavButtons,
     shortcutsOn,
     setShortcutsOn,
-    atajos,
-    setAtajos,
-    teclas,
-    setTeclas,
+    enabledShortcuts,
+    setEnabledShortcuts,
+    customKeys,
+    setCustomKeys,
   }
 }
 

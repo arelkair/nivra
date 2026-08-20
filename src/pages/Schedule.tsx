@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { DAYS, DEFAULT_PROFILE, blockProfile, weekIndex, type Block, type Profile } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -14,24 +14,24 @@ type Props = {
 
 export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, setActive }: Props) {
   const [adding, setAdding] = useState<number | null>(null)
-  const [editando, setEditando] = useState<Block | null>(null)
-  const [arrastrando, setArrastrando] = useState<string | null>(null)
-  const [encima, setEncima] = useState<number | null>(null)
+  const [editingItem, setEditingItem] = useState<Block | null>(null)
+  const [dragging, setDragging] = useState<string | null>(null)
+  const [over, setOver] = useState<number | null>(null)
 
-  const soltarEn = (dia: number) => {
-    const id = arrastrando
-    setArrastrando(null)
-    setEncima(null)
+  const dropOn = (dayIndex: number) => {
+    const id = dragging
+    setDragging(null)
+    setOver(null)
     if (!id) return
-    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, day: dia } : b)))
+    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, day: dayIndex } : b)))
   }
 
-  const duplicar = (b: Block) =>
+  const duplicate = (b: Block) =>
     setBlocks((prev) => [...prev, { ...b, id: crypto.randomUUID() }])
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
   const [creatingProfile, setCreatingProfile] = useState(false)
   const todayIndex = weekIndex(new Date())
-  const visibles = blocks.filter((b) => blockProfile(b) === active)
+  const visible = blocks.filter((b) => blockProfile(b) === active)
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -67,7 +67,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         {DAYS.map((day, i) => {
-          const dayBlocks = visibles
+          const dayBlocks = visible
             .filter((b) => b.day === i)
             .sort((a, b) => a.start.localeCompare(b.start))
           return (
@@ -76,12 +76,12 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               style={{ animationDelay: `${i * 0.04}s` }}
               onDragOver={(e) => {
                 e.preventDefault()
-                setEncima(i)
+                setOver(i)
               }}
-              onDragLeave={() => setEncima((prev) => (prev === i ? null : prev))}
-              onDrop={() => soltarEn(i)}
+              onDragLeave={() => setOver((prev) => (prev === i ? null : prev))}
+              onDrop={() => dropOn(i)}
               className={`${card} animate-[fade-in_0.35s_ease-out_both] flex flex-col p-4 transition-colors ${
-                encima === i ? 'border-neutral-400 dark:border-neutral-500' : ''
+                over === i ? 'border-neutral-400 dark:border-neutral-500' : ''
               }`}
             >
               <div className="mb-3 flex items-center justify-between gap-2">
@@ -107,13 +107,13 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                     <li
                       key={b.id}
                       draggable
-                      onDragStart={() => setArrastrando(b.id)}
+                      onDragStart={() => setDragging(b.id)}
                       onDragEnd={() => {
-                        setArrastrando(null)
-                        setEncima(null)
+                        setDragging(null)
+                        setOver(null)
                       }}
                       className={`group cursor-grab rounded-xl bg-black/[0.04] px-3 py-2.5 active:cursor-grabbing dark:bg-white/[0.06] ${
-                        arrastrando === b.id ? 'opacity-40' : ''
+                        dragging === b.id ? 'opacity-40' : ''
                       }`}
                     >
                       <div className="flex items-start justify-between gap-1">
@@ -123,7 +123,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                         <span className="flex shrink-0 gap-1">
                           <button
                             type="button"
-                            onClick={() => duplicar(b)}
+                            onClick={() => duplicate(b)}
                             aria-label={`Duplicar ${b.title}`}
                             className="text-neutral-300 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
                           >
@@ -132,9 +132,9 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                           <button
                             type="button"
                             onClick={() => {
-                              const antes = blocks
+                              const before = blocks
                               setBlocks((prev) => prev.filter((x) => x.id !== b.id))
-                              conDeshacer(`«${b.title}» eliminado`, () => setBlocks(() => antes))
+                              notifyWithUndo(`«${b.title}» eliminado`, () => setBlocks(() => before))
                             }}
                             aria-label={`Eliminar ${b.title}`}
                             className="text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -145,7 +145,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                       </div>
                       <button
                         type="button"
-                        onClick={() => setEditando(b)}
+                        onClick={() => setEditingItem(b)}
                         className="mt-0.5 w-full truncate text-left text-sm"
                         title="Editar"
                       >
@@ -200,8 +200,8 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
         </Modal>
       )}
 
-      {editando && (
-        <Modal title="Bloque" onClose={() => setEditando(null)}>
+      {editingItem && (
+        <Modal title="Bloque" onClose={() => setEditingItem(null)}>
           <form
             onSubmit={(ev) => {
               ev.preventDefault()
@@ -211,17 +211,17 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const b = String(data.get('end') ?? '')
               if (!title || !a || !b) return
               const [start, end] = a <= b ? [a, b] : [b, a]
-              const dia = Number(data.get('day'))
+              const dayIndex = Number(data.get('day'))
               setBlocks((prev) =>
-                prev.map((x) => (x.id === editando.id ? { ...x, title, start, end, day: dia } : x)),
+                prev.map((x) => (x.id === editingItem.id ? { ...x, title, start, end, day: dayIndex } : x)),
               )
-              setEditando(null)
+              setEditingItem(null)
             }}
             className="flex flex-col gap-2"
           >
             <input
               name="title"
-              defaultValue={editando.title}
+              defaultValue={editingItem.title}
               maxLength={60}
               required
               className={input}
@@ -230,7 +230,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               <input
                 name="start"
                 type="time"
-                defaultValue={editando.start}
+                defaultValue={editingItem.start}
                 required
                 aria-label="Inicio"
                 className={input}
@@ -238,13 +238,13 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               <input
                 name="end"
                 type="time"
-                defaultValue={editando.end}
+                defaultValue={editingItem.end}
                 required
                 aria-label="Fin"
                 className={input}
               />
             </div>
-            <select name="day" defaultValue={editando.day} aria-label="Día" className={input}>
+            <select name="day" defaultValue={editingItem.day} aria-label="Día" className={input}>
               {DAYS.map((d, i) => (
                 <option key={d} value={i}>
                   {d}
@@ -299,10 +299,10 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                 <button
                   type="button"
                   onClick={() => {
-                    const resto = profiles.filter((p) => p.id !== editingProfile.id)
+                    const rest = profiles.filter((p) => p.id !== editingProfile.id)
                     setBlocks((prev) => prev.filter((b) => blockProfile(b) !== editingProfile.id))
-                    setProfiles(() => resto)
-                    setActive(resto[0]?.id ?? DEFAULT_PROFILE)
+                    setProfiles(() => rest)
+                    setActive(rest[0]?.id ?? DEFAULT_PROFILE)
                     setEditingProfile(null)
                   }}
                   className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"

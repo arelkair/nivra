@@ -2,43 +2,43 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PageId } from '../lib/store'
 import { Icon, card, input, line } from './ui'
 
-export type Destino = PageId | 'ajustes'
+export type Destination = PageId | 'ajustes'
 
-export type Resultado = { id: string; titulo: string; tipo: string; page: Destino }
+export type SearchResult = { id: string; title: string; kind: string; page: Destination }
 
 export function Search({
-  buscar,
+  search,
   onIr,
 }: {
-  buscar: (texto: string) => Resultado[]
-  onIr: (page: Destino) => void
+  search: (text: string) => SearchResult[]
+  onIr: (page: Destination) => void
 }) {
-  const [texto, setTexto] = useState('')
-  const [abierto, setAbierto] = useState(false)
-  const caja = useRef<HTMLDivElement>(null)
+  const [text, setText] = useState('')
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!abierto) return
-    const fuera = (e: PointerEvent) => {
-      if (!caja.current?.contains(e.target as Node)) setAbierto(false)
+    if (!open) return
+    const outside = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
     }
-    addEventListener('pointerdown', fuera)
-    return () => removeEventListener('pointerdown', fuera)
-  }, [abierto])
-  const resultados = useMemo(() => (texto.trim() ? buscar(texto.trim()) : []), [texto, buscar])
+    addEventListener('pointerdown', outside)
+    return () => removeEventListener('pointerdown', outside)
+  }, [open])
+  const results = useMemo(() => (text.trim() ? search(text.trim()) : []), [text, search])
 
-  const elegir = (r: Resultado) => {
+  const choose = (r: SearchResult) => {
     onIr(r.page)
-    setTexto('')
-    setAbierto(false)
+    setText('')
+    setOpen(false)
   }
 
   return (
-    <div ref={caja} className="relative">
+    <div ref={box} className="relative">
       <div className="flex items-center">
         <button
           type="button"
-          onClick={() => setAbierto(!abierto)}
+          onClick={() => setOpen(!open)}
           aria-label="Buscar"
           className={`grid h-10 w-10 place-items-center rounded-xl border text-neutral-500 transition-colors hover:text-neutral-900 sm:hidden ${line} dark:text-neutral-400 dark:hover:text-white`}
         >
@@ -52,19 +52,19 @@ export function Search({
           />
           <input
             id="nivra-buscador"
-            value={texto}
+            value={text}
             onChange={(e) => {
-              setTexto(e.target.value)
-              setAbierto(true)
+              setText(e.target.value)
+              setOpen(true)
             }}
-            onFocus={() => setAbierto(true)}
+            onFocus={() => setOpen(true)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
-                setTexto('')
-                setAbierto(false)
+                setText('')
+                setOpen(false)
                 e.currentTarget.blur()
               }
-              if (e.key === 'Enter' && resultados[0]) elegir(resultados[0])
+              if (e.key === 'Enter' && results[0]) choose(results[0])
             }}
             placeholder="Buscar…"
             aria-label="Buscar"
@@ -73,39 +73,39 @@ export function Search({
         </div>
       </div>
 
-      {abierto && (
+      {open && (
         <>
           <div
             className={`${card} fixed inset-x-3 top-[4.2rem] z-30 overflow-hidden p-2 shadow-xl sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-[22rem]`}
           >
             <input
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
               autoFocus
               placeholder="Buscar…"
               aria-label="Buscar"
               className={`${input} mb-2 sm:hidden`}
             />
-            {texto.trim() === '' ? (
+            {text.trim() === '' ? (
               <p className="px-2 py-3 text-sm text-neutral-400 dark:text-neutral-500">
                 Escribe para buscar en todos los apartados.
               </p>
-            ) : resultados.length === 0 ? (
+            ) : results.length === 0 ? (
               <p className="px-2 py-3 text-sm text-neutral-400 dark:text-neutral-500">
-                Nada coincide con «{texto}».
+                Nada coincide con «{text}».
               </p>
             ) : (
               <ul className="max-h-80 overflow-y-auto overscroll-contain">
-                {resultados.map((r) => (
+                {results.map((r) => (
                   <li key={`${r.page}-${r.id}`}>
                     <button
                       type="button"
-                      onClick={() => elegir(r)}
+                      onClick={() => choose(r)}
                       className="w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
                     >
-                      <span className="block truncate text-sm">{r.titulo}</span>
+                      <span className="block truncate text-sm">{r.title}</span>
                       <span className="block text-[0.65rem] text-neutral-400 dark:text-neutral-500">
-                        {r.tipo}
+                        {r.kind}
                       </span>
                     </button>
                   </li>

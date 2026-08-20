@@ -1,7 +1,7 @@
 import { dateKey, type Streak } from '../lib/store'
 import { Icon, card } from './ui'
 
-const DIAS_HASTA_ROJO = 120
+const DAYS_TO_RED = 120
 
 export function Flame({
   streak,
@@ -10,12 +10,12 @@ export function Flame({
   streak: Streak
   setStreak: (update: (prev: Streak) => Streak) => void
 }) {
-  const hoy = dateKey(new Date())
-  const ayer = dateKey(new Date(Date.now() - 86400000))
-  const yaHoy = streak.last === hoy
+  const today = dateKey(new Date())
+  const yesterday = dateKey(new Date(Date.now() - 86400000))
+  const doneToday = streak.last === today
 
-  const mezcla = Math.min(1, streak.count / DIAS_HASTA_ROJO)
-  const color = `color-mix(in oklab, #9ca3af, #ef4444 ${Math.round(mezcla * 100)}%)`
+  const blend = Math.min(1, streak.count / DAYS_TO_RED)
+  const color = `color-mix(in oklab, #9ca3af, #ef4444 ${Math.round(blend * 100)}%)`
 
   return (
     <section
@@ -23,20 +23,20 @@ export function Flame({
     >
       <button
         type="button"
-        disabled={yaHoy}
+        disabled={doneToday}
         onClick={() =>
-          setStreak((prev) => ({ count: prev.last === ayer ? prev.count + 1 : 1, last: hoy }))
+          setStreak((prev) => ({ count: prev.last === yesterday ? prev.count + 1 : 1, last: today }))
         }
-        aria-label={yaHoy ? 'Racha ya marcada hoy' : 'Marcar día'}
+        aria-label={doneToday ? 'Racha ya marcada hoy' : 'Marcar día'}
         title={
-          yaHoy
+          doneToday
             ? `${streak.count} ${streak.count === 1 ? 'día seguido' : 'días seguidos'}. Ya has marcado hoy.`
             : 'Marca tu día'
         }
         className={`flex items-center gap-2 transition-transform ${
-          yaHoy ? 'cursor-default' : 'hover:scale-105 active:scale-95'
+          doneToday ? 'cursor-default' : 'hover:scale-105 active:scale-95'
         }`}
-        style={{ color, opacity: yaHoy ? 1 : 0.55 }}
+        style={{ color, opacity: doneToday ? 1 : 0.55 }}
       >
         <Icon name="flame" className="h-6 w-6 shrink-0" />
         <span className="font-mono text-xl font-medium tabular-nums">{streak.count}</span>

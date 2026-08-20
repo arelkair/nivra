@@ -4,8 +4,8 @@ import {
   blockProfile,
   dateKey,
   eur,
-  itemsDeDia,
-  proximos,
+  itemsOfDay,
+  upcomingItems,
   shortDate,
   weekIndex,
   type Block,
@@ -52,8 +52,8 @@ export function Dashboard({
 }: Props) {
   const today = new Date()
   const todayKey = dateKey(today)
-  const todayItems = itemsDeDia(items, todayKey)
-  const upcoming = proximos(items, today, 60).slice(0, 5)
+  const todayItems = itemsOfDay(items, todayKey)
+  const upcoming = upcomingItems(items, today, 60).slice(0, 5)
   const pending = tasks.filter((t) => !t.done)
   const todayBlocks = blocks
     .filter((b) => b.day === weekIndex(today) && blockProfile(b) === profile)

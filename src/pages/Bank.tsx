@@ -9,7 +9,7 @@ import {
   type Goal,
   type Movement,
 } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Goals } from './Goals'
 import {
   CatChart,
@@ -222,9 +222,9 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           onAdd={(m) => setMovements((prev) => [m, ...prev])}
           onEdit={(m) => setMovements((prev) => prev.map((x) => (x.id === m.id ? m : x)))}
           onRemove={(id) => {
-            const antes = movements
+            const before = movements
             setMovements((prev) => prev.filter((m) => m.id !== id))
-            conDeshacer('Movimiento eliminado', () => setMovements(() => antes))
+            notifyWithUndo('Movimiento eliminado', () => setMovements(() => before))
           }}
         />
       )}
@@ -249,7 +249,7 @@ function MovementPanel({
 }) {
   const positive = kind === 'ingreso'
   const total = movements.reduce((s, m) => s + m.amount, 0)
-  const [editando, setEditando] = useState<Movement | null>(null)
+  const [editingItem, setEditingItem] = useState<Movement | null>(null)
 
   return (
     <>
@@ -333,7 +333,7 @@ function MovementPanel({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setEditando(m)}
+                  onClick={() => setEditingItem(m)}
                   className="min-w-0 flex-1 text-left"
                   title="Editar"
                 >
@@ -361,8 +361,8 @@ function MovementPanel({
         )}
       </section>
 
-      {editando && (
-        <Modal title={positive ? 'Ingreso' : 'Gasto'} onClose={() => setEditando(null)}>
+      {editingItem && (
+        <Modal title={positive ? 'Ingreso' : 'Gasto'} onClose={() => setEditingItem(null)}>
           <form
             onSubmit={(ev) => {
               ev.preventDefault()
@@ -370,19 +370,19 @@ function MovementPanel({
               const amount = readAmount(data.get('amount'))
               if (amount === null) return
               onEdit({
-                ...editando,
+                ...editingItem,
                 amount,
                 category: String(data.get('category')),
-                date: String(data.get('date')) || editando.date,
+                date: String(data.get('date')) || editingItem.date,
                 note: String(data.get('note') ?? '').trim() || undefined,
               })
-              setEditando(null)
+              setEditingItem(null)
             }}
             className="flex flex-col gap-2"
           >
             <input
               name="note"
-              defaultValue={editando.note}
+              defaultValue={editingItem.note}
               maxLength={60}
               placeholder="Concepto"
               aria-label="Concepto"
@@ -393,7 +393,7 @@ function MovementPanel({
               type="number"
               step="0.01"
               min="0.01"
-              defaultValue={editando.amount}
+              defaultValue={editingItem.amount}
               required
               aria-label="Importe"
               className={`${input} font-mono`}
@@ -401,11 +401,11 @@ function MovementPanel({
             <div className="flex gap-2">
               <select
                 name="category"
-                defaultValue={editando.category}
+                defaultValue={editingItem.category}
                 aria-label="Categoría"
                 className={select}
               >
-                {[...new Set([...cats, editando.category])].map((c) => (
+                {[...new Set([...cats, editingItem.category])].map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -414,7 +414,7 @@ function MovementPanel({
               <input
                 name="date"
                 type="date"
-                defaultValue={editando.date}
+                defaultValue={editingItem.date}
                 aria-label="Fecha"
                 className={input}
               />

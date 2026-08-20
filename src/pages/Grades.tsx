@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { dateKey, shortDate, type Grade, type Subject, type Work } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
 
 type Props = {
@@ -16,7 +16,7 @@ const KINDS: { id: Grade['kind']; label: string }[] = [
   { id: 'otro', label: 'Otro' },
 ]
 
-const tono = (v: number) =>
+const tone = (v: number) =>
   v >= 9
     ? 'text-green-600 dark:text-green-500'
     : v >= 5
@@ -24,15 +24,15 @@ const tono = (v: number) =>
       : 'text-red-500'
 
 export function Grades({ grades, setGrades, subjects, works }: Props) {
-  const [filtro, setFiltro] = useState<'todos' | '1' | '2' | '3'>('todos')
-  const visibles =
-    filtro === 'todos' ? grades : grades.filter((g) => String(g.term ?? '') === filtro)
-  const media = visibles.length
-    ? visibles.reduce((s, g) => s + g.value, 0) / visibles.length
+  const [filter, setFilter] = useState<'todos' | '1' | '2' | '3'>('todos')
+  const visible =
+    filter === 'todos' ? grades : grades.filter((g) => String(g.term ?? '') === filter)
+  const average = visible.length
+    ? visible.reduce((s, g) => s + g.value, 0) / visible.length
     : null
-  const ordenadas = [...visibles].sort((a, b) => b.value - a.value)
-  const mejores = ordenadas.slice(0, 3)
-  const peores = ordenadas.slice(Math.max(3, ordenadas.length - 3)).reverse()
+  const sorted = [...visible].sort((a, b) => b.value - a.value)
+  const best = sorted.slice(0, 3)
+  const worst = sorted.slice(Math.max(3, sorted.length - 3)).reverse()
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -118,8 +118,8 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
 
       <div className="flex justify-center">
         <Segmented
-          value={filtro}
-          onChange={setFiltro}
+          value={filter}
+          onChange={setFilter}
           options={[
             { id: '1', label: '1º Trimestre' },
             { id: '2', label: '2º Trimestre' },
@@ -129,36 +129,36 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
         />
       </div>
 
-      {media !== null && (
+      {average !== null && (
         <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
           <Label>
-            Media · {visibles.length} {visibles.length === 1 ? 'nota' : 'notas'}
+            Media · {visible.length} {visible.length === 1 ? 'nota' : 'notas'}
           </Label>
-          <p className={`font-mono text-4xl font-medium tabular-nums ${tono(media)}`}>
-            {media.toFixed(2)}
+          <p className={`font-mono text-4xl font-medium tabular-nums ${tone(average)}`}>
+            {average.toFixed(2)}
           </p>
         </section>
       )}
 
-      {visibles.length > 0 && (
+      {visible.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Top title="Mejores" items={mejores} />
-          {peores.length > 0 && <Top title="Peores" items={peores} />}
+          <Top title="Mejores" items={best} />
+          {worst.length > 0 && <Top title="Peores" items={worst} />}
         </div>
       )}
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out_0.05s_both] p-5 sm:p-6`}>
         <Label>Todas</Label>
-        {visibles.length === 0 ? (
+        {visible.length === 0 ? (
           <Empty>Sin notas.</Empty>
         ) : (
           <ul className="flex flex-col">
-            {visibles.map((g) => (
+            {visible.map((g) => (
               <li
                 key={g.id}
                 className="flex items-center gap-3 border-b border-black/[0.06] py-3 text-sm last:border-0 dark:border-white/[0.08]"
               >
-                <span className={`w-12 shrink-0 font-mono font-medium tabular-nums ${tono(g.value)}`}>
+                <span className={`w-12 shrink-0 font-mono font-medium tabular-nums ${tone(g.value)}`}>
                   {g.value}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{g.desc || KINDS.find((k) => k.id === g.kind)?.label}</span>
@@ -169,9 +169,9 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    const antes = grades
+                    const before = grades
                     setGrades((prev) => prev.filter((x) => x.id !== g.id))
-                    conDeshacer(`Nota ${g.value} eliminada`, () => setGrades(() => antes))
+                    notifyWithUndo(`Nota ${g.value} eliminada`, () => setGrades(() => before))
                   }}
                   aria-label={`Eliminar nota ${g.value}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -194,7 +194,7 @@ function Top({ title, items }: { title: string; items: Grade[] }) {
       <ul className="flex flex-col gap-2">
         {items.map((g) => (
           <li key={g.id} className="flex items-center gap-3 text-sm">
-            <span className={`w-10 shrink-0 font-mono font-medium tabular-nums ${tono(g.value)}`}>
+            <span className={`w-10 shrink-0 font-mono font-medium tabular-nums ${tone(g.value)}`}>
               {g.value}
             </span>
             <span className="min-w-0 flex-1 truncate">

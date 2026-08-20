@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { eur, type Subscription } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -9,14 +9,14 @@ type Props = {
 }
 
 export function Subscriptions({ subs, setSubs }: Props) {
-  const [editandoId, setEditandoId] = useState<string | null>(null)
-  const [creando, setCreando] = useState(false)
-  const editando = subs.find((s) => s.id === editandoId)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const editingItem = subs.find((s) => s.id === editingId)
   const total = subs.reduce((s, x) => s + x.price, 0)
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <button type="button" onClick={() => setCreando(true)} className={`${button} w-fit`}>
+      <button type="button" onClick={() => setCreating(true)} className={`${button} w-fit`}>
         <span className="flex items-center gap-2">
           <Icon name="plus" className="h-4 w-4" />
           Nueva suscripción
@@ -36,7 +36,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
               <li key={s.id} className={`flex items-center gap-3 border-b py-3 last:border-0 ${line}`}>
                 <button
                   type="button"
-                  onClick={() => setEditandoId(s.id)}
+                  onClick={() => setEditingId(s.id)}
                   className="min-w-0 flex-1 text-left"
                   title="Editar"
                 >
@@ -63,9 +63,9 @@ export function Subscriptions({ subs, setSubs }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    const antes = subs
+                    const before = subs
                     setSubs((prev) => prev.filter((x) => x.id !== s.id))
-                    conDeshacer(`«${s.title}» eliminada`, () => setSubs(() => antes))
+                    notifyWithUndo(`«${s.title}» eliminada`, () => setSubs(() => before))
                   }}
                   aria-label={`Eliminar ${s.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -81,17 +81,17 @@ export function Subscriptions({ subs, setSubs }: Props) {
         </p>
       </section>
 
-      {(creando || editando) && (
+      {(creating || editingItem) && (
         <SubDialog
-          sub={editando}
+          sub={editingItem}
           onClose={() => {
-            setCreando(false)
-            setEditandoId(null)
+            setCreating(false)
+            setEditingId(null)
           }}
           onSave={(s) => {
-            setSubs((prev) => (editando ? prev.map((x) => (x.id === s.id ? s : x)) : [...prev, s]))
-            setCreando(false)
-            setEditandoId(null)
+            setSubs((prev) => (editingItem ? prev.map((x) => (x.id === s.id ? s : x)) : [...prev, s]))
+            setCreating(false)
+            setEditingId(null)
           }}
         />
       )}
@@ -115,16 +115,16 @@ function SubDialog({
           ev.preventDefault()
           const data = new FormData(ev.currentTarget)
           const title = String(data.get('title') ?? '').trim()
-          const precio = Number(String(data.get('price') ?? '').replace(',', '.'))
-          const dia = Number(data.get('day'))
-          if (!title || !Number.isFinite(precio) || precio <= 0) return
-          if (!Number.isInteger(dia) || dia < 1 || dia > 31) return
+          const price = Number(String(data.get('price') ?? '').replace(',', '.'))
+          const dayNumber = Number(data.get('day'))
+          if (!title || !Number.isFinite(price) || price <= 0) return
+          if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 31) return
           const url = String(data.get('url') ?? '').trim()
           onSave({
             id: sub?.id ?? crypto.randomUUID(),
             title,
-            price: Math.round(precio * 100) / 100,
-            day: dia,
+            price: Math.round(price * 100) / 100,
+            day: dayNumber,
             url: /^https?:\/\//i.test(url) ? url : undefined,
             lastCharged: sub?.lastCharged,
           })

@@ -94,14 +94,14 @@ export function BarChart({
     <div>
       <div className="flex h-40 items-end gap-[3px]">
         {data.map((d, i) => {
-          const quieto = d.income === 0 && d.expense === 0
+          const idle = d.income === 0 && d.expense === 0
           return (
             <div
               key={i}
               title={`${d.label} · entra ${d.income.toFixed(2)} € · sale ${d.expense.toFixed(2)} €`}
               className="flex h-full flex-1 items-end gap-px"
             >
-              {quieto ? (
+              {idle ? (
                 <span className="h-1 w-full rounded-md bg-black/[0.08] dark:bg-white/[0.12]" />
               ) : (
                 <>
@@ -245,13 +245,13 @@ export function Confetti() {
 
 export function Collapsible({
   title,
-  abierto,
+  open,
   onToggle,
   animar = true,
   children,
 }: {
   title: string
-  abierto: boolean
+  open: boolean
   onToggle: () => void
   animar?: boolean
   children: ReactNode
@@ -261,7 +261,7 @@ export function Collapsible({
       <button
         type="button"
         onClick={onToggle}
-        aria-expanded={abierto}
+        aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
       >
         <span className="text-[0.68rem] font-medium tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
@@ -269,12 +269,12 @@ export function Collapsible({
         </span>
         <Icon
           name="chevron"
-          className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${abierto ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
       <div
         className={`grid ${animar ? 'transition-[grid-template-rows] duration-300 ease-out' : ''} ${
-          abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
@@ -285,23 +285,23 @@ export function Collapsible({
   )
 }
 
-export type Aviso = { id: string; texto: string; deshacer?: () => void }
+export type Toast = { id: string; text: string; undo?: () => void }
 
-export function Toasts({ avisos, onCerrar }: { avisos: Aviso[]; onCerrar: (id: string) => void }) {
+export function Toasts({ toasts, onClose }: { toasts: Toast[]; onClose: (id: string) => void }) {
   return (
     <div className="nivra-scroll pointer-events-none fixed right-4 bottom-4 z-40 flex max-h-[80svh] flex-col gap-2 overflow-y-auto overscroll-contain">
-      {avisos.map((a) => (
+      {toasts.map((a) => (
         <div
           key={a.id}
           className={`animate-[fade-in_0.25s_ease-out] pointer-events-auto flex max-w-xs items-center gap-3 rounded-xl border bg-[var(--surface)] py-2 pr-2 pl-4 text-sm shadow-lg ${line}`}
         >
-          <span className="min-w-0 flex-1 py-1">{a.texto}</span>
-          {a.deshacer && (
+          <span className="min-w-0 flex-1 py-1">{a.text}</span>
+          {a.undo && (
             <button
               type="button"
               onClick={() => {
-                a.deshacer?.()
-                onCerrar(a.id)
+                a.undo?.()
+                onClose(a.id)
               }}
               className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium underline underline-offset-2 transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
             >
@@ -310,7 +310,7 @@ export function Toasts({ avisos, onCerrar }: { avisos: Aviso[]; onCerrar: (id: s
           )}
           <button
             type="button"
-            onClick={() => onCerrar(a.id)}
+            onClick={() => onClose(a.id)}
             aria-label="Cerrar aviso"
             className="shrink-0 rounded-lg p-1 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
           >

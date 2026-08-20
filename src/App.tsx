@@ -12,22 +12,22 @@ import { Subscriptions } from './pages/Subscriptions'
 import { Tasks } from './pages/Tasks'
 import { Wishlist } from './pages/Wishlist'
 import { Intro } from './components/Intro'
-import { Search, type Destino, type Resultado } from './components/Search'
+import { Search, type Destination, type SearchResult } from './components/Search'
 import { Settings } from './components/Settings'
 import { FloatingNote } from './components/FloatingNote'
 import { Countdowns } from './components/Countdowns'
-import { Clock, Confetti, Icon, Toasts, line, type Aviso } from './components/ui'
+import { Clock, Confetti, Icon, Toasts, line, type Toast } from './components/ui'
 import { useSettings } from './lib/settings'
-import { lanzar, marcarEnviadas, pendientes } from './lib/notify'
-import { ATAJOS, escribiendo, teclaDe } from './lib/shortcuts'
+import { showSystemNotice, markNoticesSent, pendingNotices } from './lib/notify'
+import { SHORTCUTS, isTyping, keyOf } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
-import { registrarAvisos } from './lib/undo'
+import { registerNotifier } from './lib/undo'
 import {
   EXPENSE_CATS,
   INCOME_CATS,
   SUBSCRIPTION_CAT,
   calendarItems,
-  cobrosPendientes,
+  duePayments,
   dateKey,
   monthDay,
   useStored,
@@ -97,7 +97,7 @@ const BANK_TABS: { id: BankTab; label: string }[] = [
   { id: 'objetivos', label: 'Objetivos' },
 ]
 
-const OPCIONES = [
+const SETTING_LABELS = [
   'Animación de inicio',
   'Animaciones al cambiar de apartado',
   'Tema según la hora',
@@ -114,9 +114,9 @@ const OPCIONES = [
   'Cumpleaños',
 ]
 
-const DIA_DESDE = 7
-const DIA_HASTA = 20
-const esDeDia = (d: Date) => d.getHours() >= DIA_DESDE && d.getHours() < DIA_HASTA
+const DAY_START = 7
+const DAY_END = 20
+const isDaytime = (d: Date) => d.getHours() >= DAY_START && d.getHours() < DAY_END
 
 const headerButton =
   'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-black/[0.07] text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 disabled:opacity-30 disabled:hover:bg-transparent dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
@@ -125,19 +125,19 @@ function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
   const [introDone, setIntroDone] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [menuAbierto, setMenuAbierto] = useState(false)
-  const [notaFlotante, setNotaFlotante] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [floatingNote, setFloatingNote] = useState(false)
   const [bankTab, setBankTab] = useState<BankTab>('dinero')
-  const [avisos, setAvisos] = useState<Aviso[]>([])
+  const [toasts, setToasts] = useState<Toast[]>([])
   const [sync, setSync] = useSync()
   const cfg = useSettings()
 
-  const [historial, setHistorial] = useState<PageId[]>(['dashboard'])
-  const [indice, setIndice] = useState(0)
-  const page = historial[indice]
+  const [pageHistory, setPageHistory] = useState<PageId[]>(['dashboard'])
+  const [index, setIndex] = useState(0)
+  const page = pageHistory[index]
 
-  const historialLargo = useRef(1)
-  historialLargo.current = historial.length
+  const historyLength = useRef(1)
+  historyLength.current = pageHistory.length
 
   useEffect(() => {
     history.replaceState({ nivra: 0 }, '')
@@ -149,7 +149,7 @@ function App() {
       if (typeof i !== 'number') return
       // A reload keeps browser entries from the previous session, so the index is
       // clamped to the history that actually exists to avoid rendering a blank page.
-      setIndice(Math.min(Math.max(i, 0), historialLargo.current - 1))
+      setIndex(Math.min(Math.max(i, 0), historyLength.current - 1))
     }
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
@@ -157,40 +157,40 @@ function App() {
 
   const irA = useCallback(
     (destino: PageId) => {
-      setMenuAbierto(false)
-      if (historial[indice] === destino) return
+      setMenuOpen(false)
+      if (pageHistory[index] === destino) return
       if (destino === 'banco') setBankTab('dinero')
-      const siguiente = indice + 1
-      setHistorial((prev) => [...prev.slice(0, indice + 1), destino])
-      setIndice(siguiente)
-      history.pushState({ nivra: siguiente }, '')
+      const next = index + 1
+      setPageHistory((prev) => [...prev.slice(0, index + 1), destino])
+      setIndex(next)
+      history.pushState({ nivra: next }, '')
     },
-    [indice, historial],
+    [index, pageHistory],
   )
-  const atras = useCallback(() => history.back(), [])
-  const adelante = useCallback(() => history.forward(), [])
+  const back = useCallback(() => history.back(), [])
+  const forward = useCallback(() => history.forward(), [])
 
-  const avisar = useCallback(
-    (texto: string, deshacer?: () => void) => {
+  const notify = useCallback(
+    (text: string, undo?: () => void) => {
       if (!cfg.toasts) return
       const id = crypto.randomUUID()
-      setAvisos((prev) => [...prev, { id, texto, deshacer }])
-      setTimeout(() => setAvisos((prev) => prev.filter((a) => a.id !== id)), deshacer ? 8000 : 6000)
+      setToasts((prev) => [...prev, { id, text, undo }])
+      setTimeout(() => setToasts((prev) => prev.filter((a) => a.id !== id)), undo ? 8000 : 6000)
     },
     [cfg.toasts],
   )
 
-  useEffect(() => registrarAvisos(avisar), [avisar])
+  useEffect(() => registerNotifier(notify), [notify])
 
-  const [instalador, setInstalador] = useState<Event | null>(null)
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null)
   useEffect(() => {
-    const guardar = (e: Event) => {
+    const save = (e: Event) => {
       e.preventDefault()
-      setInstalador(e)
+      setInstallPrompt(e)
     }
-    addEventListener('beforeinstallprompt', guardar)
-    addEventListener('appinstalled', () => setInstalador(null))
-    return () => removeEventListener('beforeinstallprompt', guardar)
+    addEventListener('beforeinstallprompt', save)
+    addEventListener('appinstalled', () => setInstallPrompt(null))
+    return () => removeEventListener('beforeinstallprompt', save)
   }, [])
 
   const [theme, setTheme] = useStored<'light' | 'dark'>(
@@ -201,22 +201,22 @@ function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
-  const tramoAplicado = useRef<'light' | 'dark' | null>(null)
+  const appliedStretch = useRef<'light' | 'dark' | null>(null)
   useEffect(() => {
     if (!cfg.autoTheme) {
-      tramoAplicado.current = null
+      appliedStretch.current = null
       return
     }
     // Only switches when crossing dawn or dusk, so a manual change made midway
     // through a stretch survives until the next one instead of being undone.
-    const aplicar = () => {
-      const tramo = esDeDia(new Date()) ? 'light' : 'dark'
-      if (tramo === tramoAplicado.current) return
-      tramoAplicado.current = tramo
-      setTheme(tramo)
+    const apply = () => {
+      const stretch = isDaytime(new Date()) ? 'light' : 'dark'
+      if (stretch === appliedStretch.current) return
+      appliedStretch.current = stretch
+      setTheme(stretch)
     }
-    aplicar()
-    const id = setInterval(aplicar, 60000)
+    apply()
+    const id = setInterval(apply, 60000)
     return () => clearInterval(id)
   }, [cfg.autoTheme, setTheme])
   useEffect(() => {
@@ -252,15 +252,15 @@ function App() {
       ? null
       : bankInitial + movements.reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0)
 
-  const esCumple =
+  const isBirthday =
     cfg.birthday !== '' && monthDay(cfg.birthday) === monthDay(dateKey(new Date()))
 
-  const general = countdowns[0]
-  const diasEspeciales = useMemo(
+  const mainCountdown = countdowns[0]
+  const allSpecialDays = useMemo(
     () => [...specialDays, ...countdowns.map((c) => c.target.slice(0, 10))],
     [specialDays, countdowns],
   )
-  const diasSuscripcion = useMemo(() => subs.map((s) => s.day), [subs])
+  const subscriptionDays = useMemo(() => subs.map((s) => s.day), [subs])
   const todayKey = dateKey(new Date())
   const remindersHoy = useMemo(
     () => reminders.filter((r) => r.date === todayKey),
@@ -268,10 +268,10 @@ function App() {
   )
 
   useEffect(() => {
-    const pendientesDeCobro = cobrosPendientes(subs, new Date())
-    if (pendientesDeCobro.length === 0) return
+    const dueCharges = duePayments(subs, new Date())
+    if (dueCharges.length === 0) return
     setMovements((prev) => [
-      ...pendientesDeCobro
+      ...dueCharges
         .filter(({ sub, date }) => !prev.some((m) => m.id === `sub-${sub.id}-${date}`))
         .map(({ sub, date }) => ({
         id: `sub-${sub.id}-${date}`,
@@ -284,19 +284,19 @@ function App() {
     ])
     setSubs((prev) =>
       prev.map((s) => {
-        const suyos = pendientesDeCobro.filter((p) => p.sub.id === s.id)
-        if (suyos.length === 0) return s
-        return { ...s, lastCharged: suyos.map((p) => p.date).sort().pop() }
+        const own = dueCharges.filter((p) => p.sub.id === s.id)
+        if (own.length === 0) return s
+        return { ...s, lastCharged: own.map((p) => p.date).sort().pop() }
       }),
     )
-    avisar(`Se han cobrado ${pendientesDeCobro.length} suscripción/es.`)
-  }, [subs, setMovements, setSubs, avisar])
+    notify(`Se han cobrado ${dueCharges.length} suscripción/es.`)
+  }, [subs, setMovements, setSubs, notify])
 
-  const notificadas = useRef(false)
+  const alreadyNotified = useRef(false)
   useEffect(() => {
-    if (notificadas.current) return
-    notificadas.current = true
-    const lista = pendientes(new Date(), {
+    if (alreadyNotified.current) return
+    alreadyNotified.current = true
+    const list = pendingNotices(new Date(), {
       countdowns,
       anniversaries,
       items,
@@ -304,77 +304,77 @@ function App() {
       reminders,
       tasks,
     })
-    const entregadas = lista
-      .filter((p) => cfg.toasts || (cfg.notifs && p.sistema))
+    const delivered = list
+      .filter((p) => cfg.toasts || (cfg.notifs && p.isSystem))
       .slice(0, 5)
-    if (entregadas.length === 0) return
-    for (const p of entregadas) {
-      if (cfg.notifs && p.sistema) lanzar(p.texto)
-      avisar(p.texto)
+    if (delivered.length === 0) return
+    for (const p of delivered) {
+      if (cfg.notifs && p.isSystem) showSystemNotice(p.text)
+      notify(p.text)
     }
-    marcarEnviadas(entregadas.map((p) => p.clave))
-  }, [cfg.notifs, cfg.toasts, countdowns, anniversaries, items, works, reminders, tasks, avisar])
+    markNoticesSent(delivered.map((p) => p.key))
+  }, [cfg.notifs, cfg.toasts, countdowns, anniversaries, items, works, reminders, tasks, notify])
 
-  const buscar = useCallback(
-    (texto: string): Resultado[] => {
-      const q = texto
+  const search = useCallback(
+    (text: string): SearchResult[] => {
+      const q = text
         .toLowerCase()
         .normalize('NFD')
         .replace(/\p{Diacritic}/gu, '')
-      const casa = (s?: string) =>
+      const matches = (s?: string) =>
         !!s &&
         s
           .toLowerCase()
           .normalize('NFD')
           .replace(/\p{Diacritic}/gu, '')
           .includes(q)
-      const out: Resultado[] = []
-      const add = (id: string, titulo: string, tipo: string, page: Destino) =>
-        out.push({ id, titulo, tipo, page })
+      const out: SearchResult[] = []
+      const add = (id: string, title: string, kind: string, page: Destination) =>
+        out.push({ id, title, kind, page })
 
-      for (const t of tasks) if (casa(t.title)) add(t.id, t.title, 'Tarea', 'tareas')
+      for (const t of tasks) if (matches(t.title)) add(t.id, t.title, 'Tarea', 'tareas')
       for (const w of works)
-        if (casa(w.title))
+        if (matches(w.title))
           add(w.id, w.title, w.kind === 'examen' ? 'Examen' : 'Proyecto', 'examenes')
       for (const e of events)
-        if (casa(e.title)) add(e.id, e.title, 'Actividad del calendario', 'calendario')
+        if (matches(e.title)) add(e.id, e.title, 'Actividad del calendario', 'calendario')
       for (const a of anniversaries)
-        if (casa(a.name)) add(a.id, a.name, 'Aniversario', 'calendario')
-      for (const w of wishes) if (casa(w.title)) add(w.id, w.title, 'Deseo', 'deseos')
-      for (const x of subs) if (casa(x.title)) add(x.id, x.title, 'Suscripción', 'suscripciones')
-      for (const n of notepads) if (casa(n.title)) add(n.id, n.title, 'Bloc de notas', 'bloc')
-      for (const g of grades) if (casa(g.desc)) add(g.id, g.desc ?? '', 'Nota', 'notas')
-      for (const b of blocks) if (casa(b.title)) add(b.id, b.title, 'Bloque del horario', 'horario')
+        if (matches(a.name)) add(a.id, a.name, 'Aniversario', 'calendario')
+      for (const w of wishes) if (matches(w.title)) add(w.id, w.title, 'Deseo', 'deseos')
+      for (const x of subs) if (matches(x.title)) add(x.id, x.title, 'Suscripción', 'suscripciones')
+      for (const n of notepads) if (matches(n.title)) add(n.id, n.title, 'Bloc de notas', 'bloc')
+      for (const g of grades) if (matches(g.desc)) add(g.id, g.desc ?? '', 'Nota', 'notas')
+      for (const b of blocks) if (matches(b.title)) add(b.id, b.title, 'Bloque del horario', 'horario')
       for (const c of countdowns)
-        if (casa(c.title)) add(c.id, c.title, 'Cuenta atrás', 'cuentas')
+        if (matches(c.title)) add(c.id, c.title, 'Cuenta atrás', 'cuentas')
       for (const r of reminders)
-        if (casa(r.title)) add(r.id, r.title, 'Recordatorio', 'recordatorios')
+        if (matches(r.title)) add(r.id, r.title, 'Recordatorio', 'recordatorios')
       for (const g of goals)
-        if (casa(g.title))
+        if (matches(g.title))
           add(
             g.id,
             g.title,
             g.kind === 'meta' ? 'Meta de ahorro' : g.kind === 'limite' ? 'Límite de gasto' : 'Idea',
             'banco',
           )
-      for (const p of profiles) if (casa(p.name)) add(p.id, p.name, 'Perfil de horario', 'horario')
-      for (const a of cfg.subjects) if (casa(a.name)) add(a.id, a.name, 'Asignatura', 'ajustes')
+      for (const p of profiles) if (matches(p.name)) add(p.id, p.name, 'Perfil de horario', 'horario')
+      for (const a of cfg.subjects) if (matches(a.name)) add(a.id, a.name, 'Asignatura', 'ajustes')
 
       for (const c of [...new Set([...EXPENSE_CATS, SUBSCRIPTION_CAT])])
-        if (casa(c)) add(`gasto-${c}`, c, 'Categoría de gasto', 'banco')
+        if (matches(c)) add(`gasto-${c}`, c, 'Categoría de gasto', 'banco')
       for (const c of INCOME_CATS)
-        if (casa(c)) add(`ingreso-${c}`, c, 'Categoría de ingreso', 'banco')
+        if (matches(c)) add(`ingreso-${c}`, c, 'Categoría de ingreso', 'banco')
 
-      const vistos = new Set<string>()
+      const seen = new Set<string>()
       for (const m of movements) {
-        const etiqueta = `${m.category} · ${m.amount.toFixed(2)} €`
-        if (casa(m.category) && !vistos.has(m.id)) {
-          vistos.add(m.id)
-          add(m.id, etiqueta, m.kind === 'gasto' ? 'Gasto' : 'Ingreso', 'banco')
+        const label = `${m.category} · ${m.amount.toFixed(2)} €`
+        if (matches(m.category) && !seen.has(m.id)) {
+          seen.add(m.id)
+          add(m.id, label, m.kind === 'gasto' ? 'Gasto' : 'Ingreso', 'banco')
         }
       }
 
-      for (const o of OPCIONES) if (casa(o)) add(`op-${o}`, o, 'Ajustes', 'ajustes')
+      for (const o of SETTING_LABELS) if (matches(o)) add(`op-${o}`, o, 'Ajustes', 'ajustes')
 
       return out.slice(0, 12)
     },
@@ -399,30 +399,30 @@ function App() {
 
   useEffect(() => {
     if (!cfg.shortcutsOn) return
-    let anterior = ''
+    let previous = ''
     const onKey = (e: KeyboardEvent) => {
-      if (escribiendo(e.target)) return
-      const tecla = teclaDe(e)
-      const combo = anterior === 'g' ? `g ${tecla}` : tecla
-      anterior = tecla === 'g' ? 'g' : ''
+      if (isTyping(e.target)) return
+      const pressedKey = keyOf(e)
+      const combo = previous === 'g' ? `g ${pressedKey}` : pressedKey
+      previous = pressedKey === 'g' ? 'g' : ''
 
-      const atajo = ATAJOS.find(
-        (a) => (cfg.teclas[a.id] ?? a.tecla) === combo && cfg.atajos[a.id] !== false,
+      const shortcut = SHORTCUTS.find(
+        (a) => (cfg.customKeys[a.id] ?? a.key) === combo && cfg.enabledShortcuts[a.id] !== false,
       )
-      if (!atajo) return
+      if (!shortcut) return
       e.preventDefault()
-      const a = atajo.accion
-      if (a.tipo === 'ir') irA(a.page)
-      else if (a.tipo === 'atras') atras()
-      else if (a.tipo === 'adelante') adelante()
-      else if (a.tipo === 'ajustes') setSettingsOpen(true)
-      else if (a.tipo === 'tema') setTheme(theme === 'dark' ? 'light' : 'dark')
-      else if (a.tipo === 'nota') setNotaFlotante((v) => !v)
-      else if (a.tipo === 'buscar') document.getElementById('nivra-buscador')?.focus()
+      const a = shortcut.action
+      if (a.kind === 'ir') irA(a.page)
+      else if (a.kind === 'atras') back()
+      else if (a.kind === 'adelante') forward()
+      else if (a.kind === 'ajustes') setSettingsOpen(true)
+      else if (a.kind === 'tema') setTheme(theme === 'dark' ? 'light' : 'dark')
+      else if (a.kind === 'nota') setFloatingNote((v) => !v)
+      else if (a.kind === 'buscar') document.getElementById('nivra-buscador')?.focus()
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [cfg.shortcutsOn, cfg.atajos, cfg.teclas, irA, atras, adelante, theme, setTheme])
+  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, irA, back, forward, theme, setTheme])
 
   if (!setupDone) {
     return (
@@ -439,8 +439,8 @@ function App() {
     )
   }
 
-  const grupoActual = GROUPS.find((g) => g.pages.some((p) => p.id === page))
-  const actual = PAGES.find((p) => p.id === page)
+  const currentGroup = GROUPS.find((g) => g.pages.some((p) => p.id === page))
+  const currentPage = PAGES.find((p) => p.id === page)
 
   return (
     <>
@@ -452,7 +452,7 @@ function App() {
         >
           <span className="font-display mb-7 px-3 text-2xl font-semibold tracking-tight">Nivra</span>
 
-          <Navegacion
+          <Navigation
             page={page}
             irA={irA}
             bankTab={bankTab}
@@ -468,7 +468,7 @@ function App() {
             <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
-                onClick={() => setMenuAbierto(true)}
+                onClick={() => setMenuOpen(true)}
                 aria-label="Menú"
                 className={`${headerButton} md:hidden`}
               >
@@ -478,8 +478,8 @@ function App() {
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    onClick={atras}
-                    disabled={indice === 0}
+                    onClick={back}
+                    disabled={index === 0}
                     aria-label="Atrás"
                     className={headerButton}
                   >
@@ -487,8 +487,8 @@ function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={adelante}
-                    disabled={indice >= historial.length - 1}
+                    onClick={forward}
+                    disabled={index >= pageHistory.length - 1}
                     aria-label="Adelante"
                     className={headerButton}
                   >
@@ -500,16 +500,16 @@ function App() {
                 Nivra
               </span>
               <p className="hidden min-w-0 items-center gap-2 text-sm md:flex">
-                <span className="text-neutral-400 dark:text-neutral-500">{grupoActual?.title}</span>
+                <span className="text-neutral-400 dark:text-neutral-500">{currentGroup?.title}</span>
                 <Icon name="right" className="h-3 w-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
-                <span className="truncate font-medium">{actual?.label}</span>
+                <span className="truncate font-medium">{currentPage?.label}</span>
               </p>
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
               {cfg.searchOn && (
                 <Search
-                  buscar={buscar}
+                  search={search}
                   onIr={(destino) =>
                     destino === 'ajustes' ? setSettingsOpen(true) : irA(destino as PageId)
                   }
@@ -548,7 +548,7 @@ function App() {
                 blocks={blocks}
                 works={works}
                 balance={balance}
-                countdowns={general ? [general] : []}
+                countdowns={mainCountdown ? [mainCountdown] : []}
                 setCountdowns={setCountdowns}
                 remindersHoy={remindersHoy}
                 streak={streak}
@@ -565,8 +565,8 @@ function App() {
                 setFreeDays={setFreeDays}
                 specialDays={specialDays}
                 setSpecialDays={setSpecialDays}
-                autoSpecial={diasEspeciales}
-                subDays={diasSuscripcion}
+                autoSpecial={allSpecialDays}
+                subDays={subscriptionDays}
                 anniversaries={anniversaries}
                 setAnniversaries={setAnniversaries}
               />
@@ -629,12 +629,12 @@ function App() {
           </main>
         </div>
 
-        {menuAbierto && (
+        {menuOpen && (
           <div className="fixed inset-0 z-30 md:hidden">
             <button
               type="button"
               aria-label="Cerrar menú"
-              onClick={() => setMenuAbierto(false)}
+              onClick={() => setMenuOpen(false)}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <div
@@ -644,20 +644,20 @@ function App() {
                 <span className="font-display text-2xl font-semibold tracking-tight">Nivra</span>
                 <button
                   type="button"
-                  onClick={() => setMenuAbierto(false)}
+                  onClick={() => setMenuOpen(false)}
                   aria-label="Cerrar"
                   className="text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
                 >
                   <Icon name="close" className="h-5 w-5" />
                 </button>
               </div>
-              <Navegacion
+              <Navigation
                 page={page}
                 irA={irA}
                 bankTab={bankTab}
                 setBankTab={(t) => {
                   setBankTab(t)
-                  setMenuAbierto(false)
+                  setMenuOpen(false)
                 }}
                 bankInitial={bankInitial}
               />
@@ -665,17 +665,17 @@ function App() {
           </div>
         )}
 
-        {notaFlotante && (
+        {floatingNote && (
           <FloatingNote
             notepads={notepads}
             setNotepads={setNotepads}
-            onCerrar={() => setNotaFlotante(false)}
+            onClose={() => setFloatingNote(false)}
           />
         )}
 
-        {esCumple && <Confetti />}
+        {isBirthday && <Confetti />}
         {cfg.toasts && (
-          <Toasts avisos={avisos} onCerrar={(id) => setAvisos((prev) => prev.filter((a) => a.id !== id))} />
+          <Toasts toasts={toasts} onClose={(id) => setToasts((prev) => prev.filter((a) => a.id !== id))} />
         )}
 
         {settingsOpen && (
@@ -683,10 +683,10 @@ function App() {
             cfg={cfg}
             sync={sync}
             setSync={setSync}
-            instalador={instalador}
-            onInstalado={() => setInstalador(null)}
+            installPrompt={installPrompt}
+            onInstalled={() => setInstallPrompt(null)}
             onClose={() => setSettingsOpen(false)}
-            onAviso={avisar}
+            onNotify={notify}
             items={items}
             anniversaries={anniversaries}
             blocks={blocks}
@@ -697,7 +697,7 @@ function App() {
   )
 }
 
-function Navegacion({
+function Navigation({
   page,
   irA,
   bankTab,

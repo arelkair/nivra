@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { dateKey, shortDate, type Reminder, type Work } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
@@ -13,7 +13,7 @@ export function Reminders({ reminders, setReminders, works }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const editing = reminders.find((r) => r.id === editingId)
-  const ordenados = [...reminders].sort((a, b) =>
+  const sorted = [...reminders].sort((a, b) =>
     `${a.date}T${a.time ?? '00:00'}`.localeCompare(`${b.date}T${b.time ?? '00:00'}`),
   )
   const todayKey = dateKey(new Date())
@@ -29,11 +29,11 @@ export function Reminders({ reminders, setReminders, works }: Props) {
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
         <Label>Recordatorios · {reminders.length}</Label>
-        {ordenados.length === 0 ? (
+        {sorted.length === 0 ? (
           <Empty>Sin recordatorios.</Empty>
         ) : (
           <ul className="flex flex-col">
-            {ordenados.map((r) => {
+            {sorted.map((r) => {
               const work = works.find((w) => w.id === r.work)
               return (
                 <li
@@ -65,9 +65,9 @@ export function Reminders({ reminders, setReminders, works }: Props) {
                   <button
                     type="button"
                     onClick={() => {
-                      const antes = reminders
+                      const before = reminders
                       setReminders((prev) => prev.filter((x) => x.id !== r.id))
-                      conDeshacer(`«${r.title}» eliminado`, () => setReminders(() => antes))
+                      notifyWithUndo(`«${r.title}» eliminado`, () => setReminders(() => before))
                     }}
                     aria-label={`Eliminar ${r.title}`}
                     className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"

@@ -1,14 +1,14 @@
-type Emisor = (texto: string, deshacer?: () => void) => void
+type Listener = (text: string, undo?: () => void) => void
 
-let emisor: Emisor | null = null
+let listener: Listener | null = null
 
-export function registrarAvisos(fn: Emisor) {
-  emisor = fn
+export function registerNotifier(fn: Listener) {
+  listener = fn
   return () => {
-    if (emisor === fn) emisor = null
+    if (listener === fn) listener = null
   }
 }
 
-export const avisar = (texto: string) => emisor?.(texto)
+export const notify = (text: string) => listener?.(text)
 
-export const conDeshacer = (texto: string, deshacer: () => void) => emisor?.(texto, deshacer)
+export const notifyWithUndo = (text: string, undo: () => void) => listener?.(text, undo)

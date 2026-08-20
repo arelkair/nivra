@@ -1,7 +1,7 @@
 import {
   TYPES,
   dateKey,
-  itemsDeDia,
+  itemsOfDay,
   monthDay,
   type Anniversary,
   type CalItem,
@@ -11,29 +11,29 @@ import {
   type Work,
 } from './store'
 
-const ENVIADAS = 'nivra-notified'
+const SENT_KEY = 'nivra-notified'
 
-const leerEnviadas = (): string[] => {
+const readSent = (): string[] => {
   try {
-    return JSON.parse(localStorage.getItem(ENVIADAS) ?? '[]') as string[]
+    return JSON.parse(localStorage.getItem(SENT_KEY) ?? '[]') as string[]
   } catch {
     return []
   }
 }
 
-export const soportadas = () => typeof Notification !== 'undefined'
+export const notificationsSupported = () => typeof Notification !== 'undefined'
 
-export const permiso = () => (soportadas() ? Notification.permission : 'denied')
+export const notificationPermission = () => (notificationsSupported() ? Notification.permission : 'denied')
 
-export async function pedirPermiso() {
-  if (!soportadas()) return 'denied'
+export async function askNotificationPermission() {
+  if (!notificationsSupported()) return 'denied'
   return Notification.requestPermission()
 }
 
-export type Pendiente = { clave: string; texto: string; sistema: boolean }
+export type PendingNotice = { key: string; text: string; isSystem: boolean }
 
-export function pendientes(
-  hoy: Date,
+export function pendingNotices(
+  today: Date,
   datos: {
     countdowns: Countdown[]
     anniversaries: Anniversary[]
@@ -42,19 +42,19 @@ export function pendientes(
     reminders: Reminder[]
     tasks: Task[]
   },
-): Pendiente[] {
-  const clave = dateKey(hoy)
-  const mañana = dateKey(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1))
-  const ya = new Set(leerEnviadas())
-  const out: Pendiente[] = []
-  const añadir = (c: string, texto: string, sistema: boolean) => {
-    if (!ya.has(c)) out.push({ clave: c, texto, sistema })
+): PendingNotice[] {
+  const key = dateKey(today)
+  const mañana = dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1))
+  const alreadySent = new Set(readSent())
+  const out: PendingNotice[] = []
+  const añadir = (c: string, text: string, isSystem: boolean) => {
+    if (!alreadySent.has(c)) out.push({ key: c, text, isSystem })
   }
 
   for (const r of datos.reminders) {
-    if (r.date !== clave) continue
-    const hora = r.time ? ` a las ${r.time}` : ''
-    añadir(`record:${r.id}:${clave}`, `Hoy${hora}: ${r.title}`, true)
+    if (r.date !== key) continue
+    const time = r.time ? ` a las ${r.time}` : ''
+    añadir(`record:${r.id}:${key}`, `Hoy${time}: ${r.title}`, true)
   }
 
   for (const w of datos.works) {
@@ -63,46 +63,46 @@ export function pendientes(
   }
 
   for (const c of datos.countdowns) {
-    if (new Date(c.target).getTime() <= hoy.getTime()) {
+    if (new Date(c.target).getTime() <= today.getTime()) {
       añadir(`fin:${c.id}`, `Se ha acabado la cuenta atrás de ${c.title}`, true)
     }
   }
 
   for (const a of datos.anniversaries) {
-    if (a.md === monthDay(clave)) {
-      añadir(`aniv:${a.id}:${clave}`, `Hoy es el aniversario de ${a.name || 'algo tuyo'}`, true)
+    if (a.md === monthDay(key)) {
+      añadir(`aniv:${a.id}:${key}`, `Hoy es el aniversario de ${a.name || 'algo tuyo'}`, true)
     }
   }
 
   // itemsDeDia rather than i.date === clave so recurring entries are counted.
-  for (const i of itemsDeDia(datos.items, clave)) {
-    añadir(`hoy:${i.id}:${clave}`, `${TYPES[i.type].label} de hoy: ${i.title}`, false)
+  for (const i of itemsOfDay(datos.items, key)) {
+    añadir(`hoy:${i.id}:${key}`, `${TYPES[i.type].label} de hoy: ${i.title}`, false)
   }
 
-  const atrasadas = datos.tasks.filter((t) => !t.done && t.date && t.date < clave)
-  if (atrasadas.length === 1) {
-    añadir(`tarde:${clave}`, `Tarea atrasada: ${atrasadas[0].title}`, false)
-  } else if (atrasadas.length > 1) {
-    añadir(`tarde:${clave}`, `Tienes ${atrasadas.length} tareas atrasadas`, false)
+  const overdue = datos.tasks.filter((t) => !t.done && t.date && t.date < key)
+  if (overdue.length === 1) {
+    añadir(`tarde:${key}`, `Tarea atrasada: ${overdue[0].title}`, false)
+  } else if (overdue.length > 1) {
+    añadir(`tarde:${key}`, `Tienes ${overdue.length} tareas atrasadas`, false)
   }
 
   return out
 }
 
-export function marcarEnviadas(claves: string[]) {
-  const todas = [...new Set([...leerEnviadas(), ...claves])]
-  localStorage.setItem(ENVIADAS, JSON.stringify(todas.slice(-200)))
+export function markNoticesSent(keys: string[]) {
+  const all = [...new Set([...readSent(), ...keys])]
+  localStorage.setItem(SENT_KEY, JSON.stringify(all.slice(-200)))
 }
 
-export async function lanzar(texto: string) {
-  if (permiso() !== 'granted') return false
+export async function showSystemNotice(text: string) {
+  if (notificationPermission() !== 'granted') return false
   // With an active service worker some browsers (Android Chrome) only allow
   // registration.showNotification and reject the `new Notification` constructor.
   const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined
   if (reg) {
-    await reg.showNotification('Nivra', { body: texto, icon: '/favicon.svg' })
+    await reg.showNotification('Nivra', { body: text, icon: '/favicon.svg' })
   } else {
-    new Notification('Nivra', { body: texto, icon: '/favicon.svg' })
+    new Notification('Nivra', { body: text, icon: '/favicon.svg' })
   }
   return true
 }

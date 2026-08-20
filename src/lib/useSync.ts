@@ -1,40 +1,40 @@
 import { useEffect, useState } from 'react'
-import { leerEstado, sincronizar, type EstadoSync } from './sync'
+import { readSyncState, runSync, type SyncState } from './sync'
 
-const CADA = 4000
+const POLL_INTERVAL = 4000
 
 export function useSync() {
-  const [estado, setEstado] = useState<EstadoSync | null>(() => leerEstado())
-  const code = estado?.code
+  const [status, setStatus] = useState<SyncState | null>(() => readSyncState())
+  const code = status?.code
 
   useEffect(() => {
     if (!code) return
-    let vivo = true
-    let trabajando = false
+    let alive = true
+    let working = false
 
-    const vuelta = async () => {
-      const actual = leerEstado()
-      if (!actual || trabajando) return
-      trabajando = true
+    const tick = async () => {
+      const current = readSyncState()
+      if (!current || working) return
+      working = true
       try {
-        const r = await sincronizar(actual)
-        if (vivo) setEstado(r.estado)
+        const r = await runSync(current)
+        if (alive) setStatus(r.state)
       } catch {
       }
-      trabajando = false
+      working = false
     }
 
-    vuelta()
-    const id = setInterval(vuelta, CADA)
-    addEventListener('focus', vuelta)
-    document.addEventListener('visibilitychange', vuelta)
+    tick()
+    const id = setInterval(tick, POLL_INTERVAL)
+    addEventListener('focus', tick)
+    document.addEventListener('visibilitychange', tick)
     return () => {
-      vivo = false
+      alive = false
       clearInterval(id)
-      removeEventListener('focus', vuelta)
-      document.removeEventListener('visibilitychange', vuelta)
+      removeEventListener('focus', tick)
+      document.removeEventListener('visibilitychange', tick)
     }
   }, [code])
 
-  return [estado, setEstado] as const
+  return [status, setStatus] as const
 }

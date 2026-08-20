@@ -2,11 +2,11 @@ import { useState } from 'react'
 import {
   DAYS,
   MONTHS,
-  REPETICIONES,
+  REPEATS,
   TYPES,
   WEEKDAYS,
   dateKey,
-  itemsDeDia,
+  itemsOfDay,
   isFreeDay,
   isOfficialHoliday,
   isWeekend,
@@ -17,9 +17,9 @@ import {
   type CalItem,
   type ItemType,
   type NivraEvent,
-  type Repeticion,
+  type Repeat,
 } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, input, select } from '../components/ui'
 
 type Props = {
@@ -35,7 +35,7 @@ type Props = {
   setAnniversaries: (update: (prev: Anniversary[]) => Anniversary[]) => void
 }
 
-const GRADIENTE =
+const GRADIENT =
   'bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)]'
 
 export function Calendar({
@@ -53,17 +53,17 @@ export function Calendar({
   const today = new Date()
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [selected, setSelected] = useState<string | null>(null)
-  const [vista, setVista] = useState<'mes' | 'semana'>('mes')
-  const [lunes, setLunes] = useState(
+  const [view, setView] = useState<'mes' | 'semana'>('mes')
+  const [monday, setMonday] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), today.getDate() - weekIndex(today)),
   )
 
-  const diasSemana = Array.from(
+  const weekDays = Array.from(
     { length: 7 },
-    (_, i) => new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i),
+    (_, i) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i),
   )
-  const moverSemana = (delta: number) =>
-    setLunes((prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + delta * 7))
+  const moveWeek = (delta: number) =>
+    setMonday((prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + delta * 7))
 
   const cells = monthGrid(cursor.y, cursor.m)
   const todayKey = dateKey(today)
@@ -79,23 +79,23 @@ export function Calendar({
     <div className="mx-auto w-full max-w-4xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold tracking-tight first-letter:uppercase sm:text-3xl">
-          {vista === 'mes' ? (
+          {view === 'mes' ? (
             <>
               {MONTHS[cursor.m]}{' '}
               <span className="text-neutral-300 dark:text-neutral-600">{cursor.y}</span>
             </>
           ) : (
             <>
-              {diasSemana[0].getDate()} {MONTHS[diasSemana[0].getMonth()].slice(0, 3)}
+              {weekDays[0].getDate()} {MONTHS[weekDays[0].getMonth()].slice(0, 3)}
               <span className="text-neutral-300 dark:text-neutral-600"> — </span>
-              {diasSemana[6].getDate()} {MONTHS[diasSemana[6].getMonth()].slice(0, 3)}
+              {weekDays[6].getDate()} {MONTHS[weekDays[6].getMonth()].slice(0, 3)}
             </>
           )}
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           <Segmented
-            value={vista}
-            onChange={setVista}
+            value={view}
+            onChange={setView}
             options={[
               { id: 'mes', label: 'Mes' },
               { id: 'semana', label: 'Semana' },
@@ -105,7 +105,7 @@ export function Calendar({
             type="button"
             onClick={() => {
               setCursor({ y: today.getFullYear(), m: today.getMonth() })
-              setLunes(
+              setMonday(
                 new Date(today.getFullYear(), today.getMonth(), today.getDate() - weekIndex(today)),
               )
             }}
@@ -115,16 +115,16 @@ export function Calendar({
           </button>
           <button
             type="button"
-            onClick={() => (vista === 'mes' ? move(-1) : moverSemana(-1))}
-            aria-label={vista === 'mes' ? 'Mes anterior' : 'Semana anterior'}
+            onClick={() => (view === 'mes' ? move(-1) : moveWeek(-1))}
+            aria-label={view === 'mes' ? 'Mes anterior' : 'Semana anterior'}
             className={navButton}
           >
             <Icon name="left" className="h-4 w-4" />
           </button>
           <button
             type="button"
-            onClick={() => (vista === 'mes' ? move(1) : moverSemana(1))}
-            aria-label={vista === 'mes' ? 'Mes siguiente' : 'Semana siguiente'}
+            onClick={() => (view === 'mes' ? move(1) : moveWeek(1))}
+            aria-label={view === 'mes' ? 'Mes siguiente' : 'Semana siguiente'}
             className={navButton}
           >
             <Icon name="right" className="h-4 w-4" />
@@ -132,22 +132,22 @@ export function Calendar({
         </div>
       </div>
 
-      {vista === 'semana' && (
+      {view === 'semana' && (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          {diasSemana.map((d) => {
+          {weekDays.map((d) => {
             const key = dateKey(d)
-            const suyos = itemsDeDia(items, key)
-            const aniv = anniversaries.find((a) => a.md === monthDay(key))
-            const libre = isFreeDay(key, freeDays)
-            const espec = specialDays.includes(key) || autoSpecial.includes(key)
-            const esHoy = key === todayKey
+            const own = itemsOfDay(items, key)
+            const isAnniversary = anniversaries.find((a) => a.md === monthDay(key))
+            const isFree = isFreeDay(key, freeDays)
+            const isSpecial = specialDays.includes(key) || autoSpecial.includes(key)
+            const isCurrentDay = key === todayKey
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => setSelected(key)}
                 className={`flex min-h-40 flex-col rounded-2xl border p-4 text-left transition-colors hover:border-neutral-400 lg:min-h-56 ${
-                  esHoy ? 'border-neutral-900 dark:border-white' : 'border-black/[0.07] dark:border-white/[0.08]'
+                  isCurrentDay ? 'border-neutral-900 dark:border-white' : 'border-black/[0.07] dark:border-white/[0.08]'
                 }`}
               >
                 <span className="flex items-baseline justify-between gap-2">
@@ -156,11 +156,11 @@ export function Calendar({
                   </span>
                   <span
                     className={`font-mono text-2xl tabular-nums ${
-                      libre
+                      isFree
                         ? 'text-red-500'
-                        : espec
-                          ? `${GRADIENTE} bg-clip-text text-transparent`
-                          : aniv
+                        : isSpecial
+                          ? `${GRADIENT} bg-clip-text text-transparent`
+                          : isAnniversary
                             ? 'text-yellow-600 dark:text-yellow-500'
                             : ''
                     }`}
@@ -170,24 +170,24 @@ export function Calendar({
                 </span>
 
                 <span className="mt-2 flex min-w-0 flex-col gap-1">
-                  {aniv && (
+                  {isAnniversary && (
                     <span className="truncate rounded-md bg-yellow-100 px-1.5 py-0.5 text-[0.65rem] text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-200">
-                      {aniv.name || 'Aniversario'}
+                      {isAnniversary.name || 'Aniversario'}
                     </span>
                   )}
-                  {espec && (
+                  {isSpecial && (
                     <span
-                      className={`truncate rounded-md ${GRADIENTE} px-1.5 py-0.5 text-[0.65rem] text-white`}
+                      className={`truncate rounded-md ${GRADIENT} px-1.5 py-0.5 text-[0.65rem] text-white`}
                     >
                       Día especial
                     </span>
                   )}
-                  {suyos.length === 0 && !aniv && !espec ? (
+                  {own.length === 0 && !isAnniversary && !isSpecial ? (
                     <span className="text-[0.7rem] text-neutral-300 dark:text-neutral-600">
                       Nada
                     </span>
                   ) : (
-                    suyos.map((e) => (
+                    own.map((e) => (
                       <span
                         key={e.id}
                         className={`truncate rounded-md px-1.5 py-0.5 text-[0.65rem] ${TYPES[e.type].chip}`}
@@ -203,7 +203,7 @@ export function Calendar({
         </div>
       )}
 
-      {vista === 'mes' && (
+      {view === 'mes' && (
       <>
 
       <div className="mb-2 grid grid-cols-7 text-center text-[0.7rem] font-semibold tracking-wider text-neutral-300 dark:text-neutral-600">
@@ -221,11 +221,11 @@ export function Calendar({
         {cells.map((day, i) => {
           if (day === null) return <span key={`empty-${i}`} />
           const key = dateKey(new Date(cursor.y, cursor.m, day))
-          const dayItems = itemsDeDia(items, key)
+          const dayItems = itemsOfDay(items, key)
           const anniversary = anniversaries.find((a) => a.md === monthDay(key))
           const free = isFreeDay(key, freeDays)
-          const especial = specialDays.includes(key) || autoSpecial.includes(key)
-          const haySub = subDays.includes(day)
+          const special = specialDays.includes(key) || autoSpecial.includes(key)
+          const hasSubscription = subDays.includes(day)
           const isToday = key === todayKey
 
           const numberClass = isToday
@@ -238,7 +238,7 @@ export function Calendar({
               }`
             : free
               ? 'text-red-500'
-              : especial
+              : special
                 ? 'bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)] bg-clip-text text-transparent'
                 : anniversary
                   ? 'text-yellow-600 dark:text-yellow-500'
@@ -252,7 +252,7 @@ export function Calendar({
               aria-label={`${day} de ${MONTHS[cursor.m]}`}
               className="relative flex aspect-square flex-col items-center gap-1 rounded-xl border border-transparent p-1 transition-colors hover:border-black/[0.07] hover:bg-[var(--surface)] sm:aspect-auto sm:min-h-24 sm:rounded-2xl sm:p-2 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.04]"
             >
-              {haySub && (
+              {hasSubscription && (
                 <span
                   title="Ese día se renueva una suscripción"
                   className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-neutral-400 ring-2 ring-[var(--paper)] dark:bg-neutral-500"
@@ -303,12 +303,12 @@ export function Calendar({
         <DayDialog
           key={selected}
           date={selected}
-          items={itemsDeDia(items, selected)}
+          items={itemsOfDay(items, selected)}
           anniversary={anniversaries.find((a) => a.md === monthDay(selected))}
           free={isFreeDay(selected, freeDays)}
           locked={isWeekend(selected) || isOfficialHoliday(selected)}
-          especial={specialDays.includes(selected) || autoSpecial.includes(selected)}
-          onToggleEspecial={() =>
+          special={specialDays.includes(selected) || autoSpecial.includes(selected)}
+          onToggleSpecial={() =>
             setSpecialDays((prev) =>
               prev.includes(selected) ? prev.filter((d) => d !== selected) : [...prev, selected],
             )
@@ -344,10 +344,10 @@ export function Calendar({
               },
             ])
           }
-          onDelete={(id, titulo) => {
+          onDelete={(id, title) => {
             setEvents((prev) => {
-              const antes = prev
-              conDeshacer(`«${titulo}» eliminada`, () => setEvents(() => antes))
+              const before = prev
+              notifyWithUndo(`«${title}» eliminada`, () => setEvents(() => before))
               return prev.filter((e) => e.id !== id)
             })
           }}
@@ -363,14 +363,14 @@ type DialogProps = {
   anniversary?: Anniversary
   free: boolean
   locked: boolean
-  especial: boolean
-  onToggleEspecial: () => void
+  special: boolean
+  onToggleSpecial: () => void
   onClose: () => void
   onToggleFree: () => void
   onToggleAnniversary: () => void
   onRenameAnniversary: (name: string) => void
-  onAdd: (title: string, type: ItemType, desc: string, repeat?: Repeticion) => void
-  onDelete: (id: string, titulo: string) => void
+  onAdd: (title: string, type: ItemType, desc: string, repeat?: Repeat) => void
+  onDelete: (id: string, title: string) => void
 }
 
 function DayDialog({
@@ -379,8 +379,8 @@ function DayDialog({
   anniversary,
   free,
   locked,
-  especial,
-  onToggleEspecial,
+  special,
+  onToggleSpecial,
   onClose,
   onToggleFree,
   onToggleAnniversary,
@@ -420,12 +420,12 @@ function DayDialog({
           </button>
           <button
             type="button"
-            onClick={onToggleEspecial}
-            aria-pressed={especial}
+            onClick={onToggleSpecial}
+            aria-pressed={special}
             title="Marcar como día especial"
             aria-label="Día especial"
             className={`${square} ${
-              especial
+              special
                 ? 'border-transparent bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)] text-white'
                 : 'border-black/[0.07] text-neutral-300 hover:border-fuchsia-400 dark:border-white/[0.08] dark:text-neutral-600'
             }`}
@@ -478,7 +478,7 @@ function DayDialog({
                 )}
                 <p className="mt-1 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
                   {TYPES[e.type].label}
-                  {e.repeat && ` · ${REPETICIONES.find((r) => r.id === e.repeat)?.label.toLowerCase()}`}
+                  {e.repeat && ` · ${REPEATS.find((r) => r.id === e.repeat)?.label.toLowerCase()}`}
                   {e.origin !== 'evento' && ' · desde su apartado'}
                 </p>
               </div>
@@ -508,7 +508,7 @@ function DayDialog({
             title,
             String(data.get('type')) as ItemType,
             String(data.get('desc') ?? '').trim(),
-            (String(data.get('repeat')) || undefined) as Repeticion | undefined,
+            (String(data.get('repeat')) || undefined) as Repeat | undefined,
           )
           form.reset()
         }}
@@ -526,7 +526,7 @@ function DayDialog({
           </select>
           <select name="repeat" defaultValue="" className={select} aria-label="Repetición">
             <option value="">No se repite</option>
-            {REPETICIONES.map((r) => (
+            {REPEATS.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.label}
               </option>

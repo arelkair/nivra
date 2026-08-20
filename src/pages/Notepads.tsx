@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { paginasDe, sanitize, type Notepad, type NotepadPage } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { pagesOf, sanitize, type Notepad, type NotepadPage } from '../lib/store'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
   setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
 }
 
-const COLORES = ['#1a1a1a', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
+const COLORS = ['#1a1a1a', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
 
 export function Notepads({ notepads, setNotepads }: Props) {
   const [activeId, setActiveId] = useState<string | null>(notepads[0]?.id ?? null)
@@ -16,10 +16,10 @@ export function Notepads({ notepads, setNotepads }: Props) {
   const [creating, setCreating] = useState(false)
   const active = notepads.find((n) => n.id === activeId) ?? notepads[0]
 
-  const crear = (title: string) => {
+  const create = (title: string) => {
     const id = crypto.randomUUID()
-    const nuevo: Notepad = { id, title, pages: [{ id: id + '-1', html: '' }] }
-    setNotepads((prev) => [...prev, nuevo])
+    const newNotepad: Notepad = { id, title, pages: [{ id: id + '-1', html: '' }] }
+    setNotepads((prev) => [...prev, newNotepad])
     setActiveId(id)
   }
 
@@ -54,7 +54,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
       {active ? (
         <Editor
           notepad={active}
-          onPaginas={(pages) =>
+          onPages={(pages) =>
             setNotepads((prev) =>
               prev.map((n) => (n.id === active.id ? { ...n, pages, html: undefined } : n)),
             )
@@ -85,7 +85,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
                 )
                 setRenaming(null)
               } else {
-                crear(title)
+                create(title)
                 setCreating(false)
               }
             }}
@@ -105,11 +105,11 @@ export function Notepads({ notepads, setNotepads }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    const antes = notepads
+                    const before = notepads
                     setNotepads((prev) => prev.filter((n) => n.id !== renaming.id))
                     setActiveId(null)
                     setRenaming(null)
-                    conDeshacer(`«${renaming.title}» eliminado`, () => setNotepads(() => antes))
+                    notifyWithUndo(`«${renaming.title}» eliminado`, () => setNotepads(() => before))
                   }}
                   className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"
                 >
@@ -127,60 +127,60 @@ export function Notepads({ notepads, setNotepads }: Props) {
   )
 }
 
-const textoPlano = (html: string) => {
+const plainText = (html: string) => {
   const div = document.createElement('div')
   div.innerHTML = html
   return div.textContent ?? ''
 }
 
-const contarPalabras = (html: string) => {
-  const m = textoPlano(html).match(/\S+/g)
+const countWords = (html: string) => {
+  const m = plainText(html).match(/\S+/g)
   return m ? m.length : 0
 }
 
 export function Editor({
   notepad,
-  onPaginas,
+  onPages,
   compacto,
 }: {
   notepad: Notepad
-  onPaginas: (pages: NotepadPage[]) => void
+  onPages: (pages: NotepadPage[]) => void
   compacto?: boolean
 }) {
-  const paginas = paginasDe(notepad)
-  const [indice, setIndice] = useState(0)
-  const actual = paginas[Math.min(indice, paginas.length - 1)]
+  const pageList = pagesOf(notepad)
+  const [index, setIndex] = useState(0)
+  const currentPage = pageList[Math.min(index, pageList.length - 1)]
   const ref = useRef<HTMLDivElement>(null)
-  const [buscando, setBuscando] = useState(false)
+  const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
 
-  const ultimo = useRef<string | null>(null)
+  const last = useRef<string | null>(null)
 
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const limpio = sanitize(actual.html)
-    if (limpio === ultimo.current) return
-    if (el.innerHTML === limpio) {
-      ultimo.current = limpio
+    const element = ref.current
+    if (!element) return
+    const clean = sanitize(currentPage.html)
+    if (clean === last.current) return
+    if (element.innerHTML === clean) {
+      last.current = clean
       return
     }
-    el.innerHTML = limpio
-    ultimo.current = limpio
+    element.innerHTML = clean
+    last.current = clean
   })
 
   const onChange = (html: string) => {
-    ultimo.current = html
-    onPaginas(paginas.map((p) => (p.id === actual.id ? { ...p, html } : p)))
+    last.current = html
+    onPages(pageList.map((p) => (p.id === currentPage.id ? { ...p, html } : p)))
   }
 
-  const aplicar = (comando: string, valor?: string) => {
+  const apply = (command: string, value?: string) => {
     ref.current?.focus()
-    document.execCommand(comando, false, valor)
+    document.execCommand(command, false, value)
     if (ref.current) onChange(sanitize(ref.current.innerHTML))
   }
 
-  const buscarSiguiente = (atras: boolean) => {
+  const findNext = (back: boolean) => {
     if (!query) return
     ref.current?.focus()
     // Uses the browser's native window.find, which can move the selection outside
@@ -188,15 +188,15 @@ export function Editor({
     ;(window as Window & { find?: (s: string, c?: boolean, b?: boolean, w?: boolean) => boolean }).find?.(
       query,
       false,
-      atras,
+      back,
       true,
     )
   }
 
-  const palabrasPagina = contarPalabras(actual.html)
-  const palabrasTotal = paginas.reduce((s, p) => s + contarPalabras(p.html), 0)
+  const palabrasPagina = countWords(currentPage.html)
+  const palabrasTotal = pageList.reduce((s, p) => s + countWords(p.html), 0)
 
-  const boton =
+  const btnClass =
     'grid h-9 w-9 place-items-center rounded-lg border text-sm transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
 
   return (
@@ -204,44 +204,44 @@ export function Editor({
       <div className={`flex flex-wrap items-center gap-1.5 border-b p-2 ${line}`}>
         <button
           type="button"
-          onClick={() => aplicar('bold')}
+          onClick={() => apply('bold')}
           aria-label="Negrita"
-          className={`${boton} ${line} font-bold`}
+          className={`${btnClass} ${line} font-bold`}
         >
           B
         </button>
         <button
           type="button"
-          onClick={() => aplicar('italic')}
+          onClick={() => apply('italic')}
           aria-label="Cursiva"
-          className={`${boton} ${line} font-serif italic`}
+          className={`${btnClass} ${line} font-serif italic`}
         >
           I
         </button>
         <button
           type="button"
-          onClick={() => aplicar('underline')}
+          onClick={() => apply('underline')}
           aria-label="Subrayado"
-          className={`${boton} ${line} underline`}
+          className={`${btnClass} ${line} underline`}
         >
           U
         </button>
         <button
           type="button"
-          onClick={() => aplicar('strikeThrough')}
+          onClick={() => apply('strikeThrough')}
           aria-label="Tachado"
-          className={`${boton} ${line} line-through`}
+          className={`${btnClass} ${line} line-through`}
         >
           S
         </button>
 
         <span className={`mx-1 h-6 w-px ${'bg-black/10 dark:bg-white/15'}`} />
 
-        {COLORES.map((c) => (
+        {COLORS.map((c) => (
           <button
             key={c}
             type="button"
-            onClick={() => aplicar('foreColor', c)}
+            onClick={() => apply('foreColor', c)}
             aria-label={`Color ${c}`}
             className="h-6 w-6 rounded-full border border-black/10 transition-transform hover:scale-110 dark:border-white/20"
             style={{ background: c }}
@@ -252,40 +252,40 @@ export function Editor({
 
         <button
           type="button"
-          onClick={() => aplicar('insertUnorderedList')}
+          onClick={() => apply('insertUnorderedList')}
           aria-label="Lista"
-          className={`${boton} ${line}`}
+          className={`${btnClass} ${line}`}
         >
           <Icon name="tasks" className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => aplicar('removeFormat')}
+          onClick={() => apply('removeFormat')}
           aria-label="Quitar formato"
-          className={`${boton} ${line} text-neutral-400`}
+          className={`${btnClass} ${line} text-neutral-400`}
         >
           <Icon name="close" className="h-4 w-4" />
         </button>
 
         <button
           type="button"
-          onClick={() => setBuscando((v) => !v)}
+          onClick={() => setSearching((v) => !v)}
           aria-label="Buscar en el bloc"
-          aria-pressed={buscando}
-          className={`${boton} ${line} ml-auto ${buscando ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
+          aria-pressed={searching}
+          className={`${btnClass} ${line} ml-auto ${searching ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
         >
           <Icon name="search" className="h-4 w-4" />
         </button>
       </div>
 
-      {buscando && (
+      {searching && (
         <div className={`flex items-center gap-2 border-b p-2 ${line}`}>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') buscarSiguiente(e.shiftKey)
-              if (e.key === 'Escape') setBuscando(false)
+              if (e.key === 'Enter') findNext(e.shiftKey)
+              if (e.key === 'Escape') setSearching(false)
             }}
             autoFocus
             placeholder="Buscar en esta página…"
@@ -294,17 +294,17 @@ export function Editor({
           />
           <button
             type="button"
-            onClick={() => buscarSiguiente(true)}
+            onClick={() => findNext(true)}
             aria-label="Coincidencia anterior"
-            className={`${boton} ${line} h-8 w-8`}
+            className={`${btnClass} ${line} h-8 w-8`}
           >
             <Icon name="up" className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
-            onClick={() => buscarSiguiente(false)}
+            onClick={() => findNext(false)}
             aria-label="Siguiente coincidencia"
-            className={`${boton} ${line} h-8 w-8`}
+            className={`${btnClass} ${line} h-8 w-8`}
           >
             <Icon name="down" className="h-3.5 w-3.5" />
           </button>
@@ -312,7 +312,7 @@ export function Editor({
       )}
 
       <div
-        key={notepad.id + actual.id}
+        key={notepad.id + currentPage.id}
         ref={ref}
         contentEditable
         suppressContentEditableWarning
@@ -325,31 +325,31 @@ export function Editor({
 
       <p className={`border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
         {palabrasPagina} palabra{palabrasPagina === 1 ? '' : 's'} en esta página
-        {paginas.length > 1 && ` · ${palabrasTotal} en el bloc`}
+        {pageList.length > 1 && ` · ${palabrasTotal} en el bloc`}
       </p>
 
       <div className={`flex items-center justify-between gap-2 border-t p-2 ${line}`}>
         <button
           type="button"
-          onClick={() => setIndice((i) => Math.max(0, i - 1))}
-          disabled={indice === 0}
+          onClick={() => setIndex((i) => Math.max(0, i - 1))}
+          disabled={index === 0}
           aria-label="Página anterior"
-          className={boton + ' ' + line + ' disabled:opacity-30'}
+          className={btnClass + ' ' + line + ' disabled:opacity-30'}
         >
           <Icon name="left" className="h-4 w-4" />
         </button>
 
         <div className="flex flex-wrap items-center justify-center gap-1">
-          {paginas.map((p, i) => (
+          {pageList.map((p, i) => (
             <button
               key={p.id}
               type="button"
-              onClick={() => setIndice(i)}
+              onClick={() => setIndex(i)}
               aria-label={'Página ' + (i + 1)}
-              aria-current={i === indice}
+              aria-current={i === index}
               className={
                 'h-7 min-w-7 rounded-lg px-2 font-mono text-xs transition-colors ' +
-                (i === indice
+                (i === index
                   ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                   : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white')
               }
@@ -360,24 +360,24 @@ export function Editor({
           <button
             type="button"
             onClick={() => {
-              const nueva = { id: crypto.randomUUID(), html: '' }
-              onPaginas([...paginas, nueva])
-              setIndice(paginas.length)
+              const newPage = { id: crypto.randomUUID(), html: '' }
+              onPages([...pageList, newPage])
+              setIndex(pageList.length)
             }}
             aria-label="Nueva página"
-            className={boton + ' ' + line + ' ml-1'}
+            className={btnClass + ' ' + line + ' ml-1'}
           >
             <Icon name="plus" className="h-3.5 w-3.5" />
           </button>
-          {paginas.length > 1 && (
+          {pageList.length > 1 && (
             <button
               type="button"
               onClick={() => {
-                onPaginas(paginas.filter((p) => p.id !== actual.id))
-                setIndice((i) => Math.max(0, i - 1))
+                onPages(pageList.filter((p) => p.id !== currentPage.id))
+                setIndex((i) => Math.max(0, i - 1))
               }}
               aria-label="Eliminar esta página"
-              className={boton + ' ' + line + ' text-neutral-400 hover:text-red-500'}
+              className={btnClass + ' ' + line + ' text-neutral-400 hover:text-red-500'}
             >
               <Icon name="trash" className="h-3.5 w-3.5" />
             </button>
@@ -386,10 +386,10 @@ export function Editor({
 
         <button
           type="button"
-          onClick={() => setIndice((i) => Math.min(paginas.length - 1, i + 1))}
-          disabled={indice >= paginas.length - 1}
+          onClick={() => setIndex((i) => Math.min(pageList.length - 1, i + 1))}
+          disabled={index >= pageList.length - 1}
           aria-label="Página siguiente"
-          className={boton + ' ' + line + ' disabled:opacity-30'}
+          className={btnClass + ' ' + line + ' disabled:opacity-30'}
         >
           <Icon name="right" className="h-4 w-4" />
         </button>

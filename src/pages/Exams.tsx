@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { TYPES, mover, shortDate, type Grade, type Notepad, type Subject, type Work } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { TYPES, reorder, shortDate, type Grade, type Notepad, type Subject, type Work } from '../lib/store'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
@@ -20,16 +20,16 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
   const patch = (id: string, changes: Partial<Work>) =>
     setWorks((prev) => prev.map((w) => (w.id === id ? { ...w, ...changes } : w)))
   const remove = (id: string) => {
-    const antes = works
-    const titulo = works.find((w) => w.id === id)?.title ?? ''
+    const before = works
+    const title = works.find((w) => w.id === id)?.title ?? ''
     setWorks((prev) => prev.filter((w) => w.id !== id))
-    conDeshacer(`«${titulo}» eliminado`, () => setWorks(() => antes))
+    notifyWithUndo(`«${title}» eliminado`, () => setWorks(() => before))
   }
 
   const exams = works.filter((w) => w.kind === 'examen')
   const projects = works.filter((w) => w.kind === 'proyecto')
-  const moverWork = (id: string, salto: number) =>
-    setWorks((prev) => mover(prev, prev.findIndex((w) => w.id === id), salto))
+  const moveWork = (id: string, step: number) =>
+    setWorks((prev) => reorder(prev, prev.findIndex((w) => w.id === id), step))
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 sm:gap-8">
@@ -118,10 +118,10 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
                 key={w.id}
                 work={w}
                 subjects={subjects}
-                nota={grades.find((g) => g.work === w.id)?.value}
+                grade={grades.find((g) => g.work === w.id)?.value}
                 onOpen={setEditingId}
                 onRemove={remove}
-                onMover={(salto) => moverWork(w.id, salto)}
+                onMove={(step) => moveWork(w.id, step)}
               />
             ))}
           </ul>
@@ -139,10 +139,10 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
                 key={w.id}
                 work={w}
                 subjects={subjects}
-                nota={grades.find((g) => g.work === w.id)?.value}
+                grade={grades.find((g) => g.work === w.id)?.value}
                 onOpen={setEditingId}
                 onRemove={remove}
-                onMover={(salto) => moverWork(w.id, salto)}
+                onMove={(step) => moveWork(w.id, step)}
               />
             ))}
           </ul>
@@ -166,19 +166,19 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
 function Row({
   work,
   subjects,
-  nota,
+  grade,
   onOpen,
   onRemove,
-  onMover,
+  onMove,
 }: {
   work: Work
   subjects: Subject[]
-  nota?: number
+  grade?: number
   onOpen: (id: string) => void
   onRemove: (id: string) => void
-  onMover: (salto: number) => void
+  onMove: (step: number) => void
 }) {
-  const asignatura = subjects.find((s) => s.id === work.subject)
+  const subject = subjects.find((s) => s.id === work.subject)
   return (
     <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
       <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[work.kind].dot}`} />
@@ -190,9 +190,9 @@ function Row({
           ) : (
             <span>Sin fecha</span>
           )}
-          {asignatura && (
-            <span className="rounded px-1.5 text-white" style={{ background: asignatura.color }}>
-              {asignatura.name}
+          {subject && (
+            <span className="rounded px-1.5 text-white" style={{ background: subject.color }}>
+              {subject.name}
             </span>
           )}
           {work.notepad && <span>Con bloc</span>}
@@ -200,23 +200,23 @@ function Row({
           {work.desc && <span className="truncate">{work.desc}</span>}
         </span>
       </button>
-      {nota !== undefined && (
+      {grade !== undefined && (
         <span
           title="Nota obtenida"
           className={`shrink-0 rounded-md px-2 py-0.5 font-mono text-sm font-medium tabular-nums ${
-            nota >= 5
+            grade >= 5
               ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200'
               : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200'
           }`}
         >
-          {nota}
+          {grade}
         </span>
       )}
 
       <span className="flex shrink-0 flex-col">
         <button
           type="button"
-          onClick={() => onMover(-1)}
+          onClick={() => onMove(-1)}
           aria-label={`Subir ${work.title}`}
           className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
         >
@@ -224,7 +224,7 @@ function Row({
         </button>
         <button
           type="button"
-          onClick={() => onMover(1)}
+          onClick={() => onMove(1)}
           aria-label={`Bajar ${work.title}`}
           className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
         >
@@ -259,7 +259,7 @@ function WorkDialog({
   onClose: () => void
   onPatch: (changes: Partial<Work>) => void
 }) {
-  const crearBloc = () => {
+  const createNotepad = () => {
     const id = crypto.randomUUID()
     setNotepads((prev) => [...prev, { id, title: work.title, pages: [{ id: id + '-1', html: '' }] }])
     onPatch({ notepad: id })
@@ -323,7 +323,7 @@ function WorkDialog({
               </option>
             ))}
           </select>
-          <button type="button" onClick={crearBloc} className={button + ' shrink-0'}>
+          <button type="button" onClick={createNotepad} className={button + ' shrink-0'}>
             Nuevo
           </button>
         </div>

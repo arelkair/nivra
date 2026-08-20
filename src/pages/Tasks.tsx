@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { mover, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { reorder, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 
 type Props = {
@@ -20,10 +20,10 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
   const patch = (id: string, changes: Partial<Task>) =>
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...changes } : t)))
   const remove = (id: string) => {
-    const antes = tasks
-    const titulo = tasks.find((t) => t.id === id)?.title ?? ''
+    const before = tasks
+    const title = tasks.find((t) => t.id === id)?.title ?? ''
     setTasks((prev) => prev.filter((t) => t.id !== id))
-    conDeshacer(`«${titulo}» eliminada`, () => setTasks(() => antes))
+    notifyWithUndo(`«${title}» eliminada`, () => setTasks(() => before))
   }
 
   return (
@@ -62,8 +62,8 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
                 onPatch={patch}
                 onRemove={remove}
                 onOpen={setEditingId}
-                onMover={(salto) =>
-                  setTasks((prev) => mover(prev, prev.findIndex((x) => x.id === t.id), salto))
+                onMove={(step) =>
+                  setTasks((prev) => reorder(prev, prev.findIndex((x) => x.id === t.id), step))
                 }
               />
             ))}
@@ -83,8 +83,8 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
                 onPatch={patch}
                 onRemove={remove}
                 onOpen={setEditingId}
-                onMover={(salto) =>
-                  setTasks((prev) => mover(prev, prev.findIndex((x) => x.id === t.id), salto))
+                onMove={(step) =>
+                  setTasks((prev) => reorder(prev, prev.findIndex((x) => x.id === t.id), step))
                 }
               />
             ))}
@@ -92,9 +92,9 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
           <button
             type="button"
             onClick={() => {
-              const antes = tasks
+              const before = tasks
               setTasks((prev) => prev.filter((t) => !t.done))
-              conDeshacer(`${done.length} tareas hechas eliminadas`, () => setTasks(() => antes))
+              notifyWithUndo(`${done.length} tareas hechas eliminadas`, () => setTasks(() => before))
             }}
             className="mt-4 text-xs text-neutral-400 transition-colors hover:text-red-500"
           >
@@ -123,16 +123,16 @@ function Row({
   onPatch,
   onRemove,
   onOpen,
-  onMover,
+  onMove,
 }: {
   task: Task
   subjects: Subject[]
   onPatch: (id: string, changes: Partial<Task>) => void
   onRemove: (id: string) => void
   onOpen: (id: string) => void
-  onMover: (salto: number) => void
+  onMove: (step: number) => void
 }) {
-  const asignatura = subjects.find((s) => s.id === task.subject)
+  const subject = subjects.find((s) => s.id === task.subject)
   const subDone = task.subtasks.filter((s) => s.done).length
   return (
     <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
@@ -164,9 +164,9 @@ function Row({
           {task.title}
         </span>
         <span className="mt-0.5 flex gap-2 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
-          {asignatura && (
-            <span className="rounded px-1.5 text-white" style={{ background: asignatura.color }}>
-              {asignatura.name}
+          {subject && (
+            <span className="rounded px-1.5 text-white" style={{ background: subject.color }}>
+              {subject.name}
             </span>
           )}
           {task.notepad && <span>Con bloc</span>}
@@ -187,7 +187,7 @@ function Row({
       <span className="flex shrink-0 flex-col">
         <button
           type="button"
-          onClick={() => onMover(-1)}
+          onClick={() => onMove(-1)}
           aria-label={`Subir ${task.title}`}
           className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
         >
@@ -195,7 +195,7 @@ function Row({
         </button>
         <button
           type="button"
-          onClick={() => onMover(1)}
+          onClick={() => onMove(1)}
           aria-label={`Bajar ${task.title}`}
           className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
         >
@@ -232,7 +232,7 @@ function TaskDialog({
 }) {
   const setSubs = (subtasks: SubTask[]) => onPatch({ subtasks })
 
-  const crearBloc = () => {
+  const createNotepad = () => {
     const id = crypto.randomUUID()
     setNotepads((prev) => [...prev, { id, title: task.title, pages: [{ id: id + '-1', html: '' }] }])
     onPatch({ notepad: id })
@@ -276,7 +276,7 @@ function TaskDialog({
           )}
         </div>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          Con fecha aparece en el calendario como Tarea, en azul.
+          Con date aparece en element calendario como Tarea, en azul.
         </p>
 
         <select
@@ -307,7 +307,7 @@ function TaskDialog({
               </option>
             ))}
           </select>
-          <button type="button" onClick={crearBloc} className={button + ' shrink-0'}>
+          <button type="button" onClick={createNotepad} className={button + ' shrink-0'}>
             Nuevo
           </button>
         </div>
@@ -347,7 +347,7 @@ function TaskDialog({
                 <button
                   type="button"
                   onClick={() =>
-                    setSubs(mover(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), -1))
+                    setSubs(reorder(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), -1))
                   }
                   aria-label={`Subir ${s.title}`}
                   className="shrink-0 text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
@@ -357,7 +357,7 @@ function TaskDialog({
                 <button
                   type="button"
                   onClick={() =>
-                    setSubs(mover(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), 1))
+                    setSubs(reorder(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), 1))
                   }
                   aria-label={`Bajar ${s.title}`}
                   className="shrink-0 text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"

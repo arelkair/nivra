@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { dateKey, eur, shortDate, weekIndex, type Goal, type Movement } from '../lib/store'
-import { conDeshacer } from '../lib/undo'
+import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, Segmented, button, card, input, line } from '../components/ui'
 
 type Props = {
@@ -10,42 +10,42 @@ type Props = {
   movements: Movement[]
 }
 
-const TIPOS = [
+const GOAL_KINDS = [
   { id: 'meta' as const, label: 'Meta' },
   { id: 'limite' as const, label: 'Límite' },
   { id: 'idea' as const, label: 'Idea' },
 ]
 
-function gastadoEn(movements: Movement[], period: 'semana' | 'mes') {
-  const hoy = new Date()
-  const desde =
+function spentOn(movements: Movement[], period: 'semana' | 'mes') {
+  const today = new Date()
+  const from =
     period === 'semana'
-      ? new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - weekIndex(hoy))
-      : new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-  const clave = dateKey(desde)
+      ? new Date(today.getFullYear(), today.getMonth(), today.getDate() - weekIndex(today))
+      : new Date(today.getFullYear(), today.getMonth(), 1)
+  const since = dateKey(from)
   return movements
-    .filter((m) => m.kind === 'gasto' && m.date >= clave)
+    .filter((m) => m.kind === 'gasto' && m.date >= since)
     .reduce((s, m) => s + m.amount, 0)
 }
 
 export function Goals({ goals, setGoals, balance, movements }: Props) {
-  const [tipo, setTipo] = useState<Goal['kind']>('meta')
-  const [creando, setCreando] = useState(false)
+  const [goalKind, setGoalKind] = useState<Goal['kind']>('meta')
+  const [creating, setCreating] = useState(false)
 
-  const metas = goals.filter((g) => g.kind === 'meta')
-  const limites = goals.filter((g) => g.kind === 'limite')
+  const savingGoals = goals.filter((g) => g.kind === 'meta')
+  const limits = goals.filter((g) => g.kind === 'limite')
   const ideas = goals.filter((g) => g.kind === 'idea')
 
-  const borrar = (id: string) => {
-    const antes = goals
-    const titulo = goals.find((g) => g.id === id)?.title ?? ''
+  const remove = (id: string) => {
+    const before = goals
+    const title = goals.find((g) => g.id === id)?.title ?? ''
     setGoals((prev) => prev.filter((g) => g.id !== id))
-    conDeshacer(`«${titulo}» eliminado`, () => setGoals(() => antes))
+    notifyWithUndo(`«${title}» eliminado`, () => setGoals(() => before))
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <button type="button" onClick={() => setCreando(true)} className={`${button} w-fit`}>
+      <button type="button" onClick={() => setCreating(true)} className={`${button} w-fit`}>
         <span className="flex items-center gap-2">
           <Icon name="plus" className="h-4 w-4" />
           Nuevo objetivo
@@ -54,24 +54,24 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
 
       <section className={`${card} p-5 sm:p-6`}>
         <Label>Metas de dinero</Label>
-        {metas.length === 0 ? (
+        {savingGoals.length === 0 ? (
           <Empty>Sin metas.</Empty>
         ) : (
           <ul className="flex flex-col gap-4">
-            {metas.map((g) => {
-              const meta = g as Extract<Goal, { kind: 'meta' }>
-              const pct = Math.min(1, Math.max(0, balance / meta.amount))
+            {savingGoals.map((g) => {
+              const savingGoal = g as Extract<Goal, { kind: 'meta' }>
+              const pct = Math.min(1, Math.max(0, balance / savingGoal.amount))
               return (
                 <li key={g.id}>
                   <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="min-w-0 flex-1 truncate">{meta.title}</span>
+                    <span className="min-w-0 flex-1 truncate">{savingGoal.title}</span>
                     <span className="shrink-0 font-mono tabular-nums">
-                      {eur(Math.max(0, balance))} / {eur(meta.amount)}
+                      {eur(Math.max(0, balance))} / {eur(savingGoal.amount)}
                     </span>
                     <button
                       type="button"
-                      onClick={() => borrar(g.id)}
-                      aria-label={`Eliminar ${meta.title}`}
+                      onClick={() => remove(g.id)}
+                      aria-label={`Eliminar ${savingGoal.title}`}
                       className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                     >
                       <Icon name="trash" className="h-4 w-4" />
@@ -84,7 +84,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                     />
                   </div>
                   <p className="mt-1 font-mono text-[0.65rem] text-neutral-400">
-                    {Math.round(pct * 100)}% · para el {shortDate(meta.date)}
+                    {Math.round(pct * 100)}% · para element {shortDate(savingGoal.date)}
                   </p>
                 </li>
               )
@@ -95,28 +95,28 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
 
       <section className={`${card} p-5 sm:p-6`}>
         <Label>Límites de gasto</Label>
-        {limites.length === 0 ? (
+        {limits.length === 0 ? (
           <Empty>Sin límites.</Empty>
         ) : (
           <ul className="flex flex-col gap-4">
-            {limites.map((g) => {
-              const lim = g as Extract<Goal, { kind: 'limite' }>
-              const gastado = gastadoEn(movements, lim.period)
-              const pct = Math.min(1, gastado / lim.amount)
-              const pasado = gastado > lim.amount
+            {limits.map((g) => {
+              const limit = g as Extract<Goal, { kind: 'limite' }>
+              const spent = spentOn(movements, limit.period)
+              const pct = Math.min(1, spent / limit.amount)
+              const past = spent > limit.amount
               return (
                 <li key={g.id}>
                   <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="min-w-0 flex-1 truncate">{lim.title}</span>
+                    <span className="min-w-0 flex-1 truncate">{limit.title}</span>
                     <span
-                      className={`shrink-0 font-mono tabular-nums ${pasado ? 'text-red-500' : ''}`}
+                      className={`shrink-0 font-mono tabular-nums ${past ? 'text-red-500' : ''}`}
                     >
-                      {eur(gastado)} / {eur(lim.amount)}
+                      {eur(spent)} / {eur(limit.amount)}
                     </span>
                     <button
                       type="button"
-                      onClick={() => borrar(g.id)}
-                      aria-label={`Eliminar ${lim.title}`}
+                      onClick={() => remove(g.id)}
+                      aria-label={`Eliminar ${limit.title}`}
                       className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                     >
                       <Icon name="trash" className="h-4 w-4" />
@@ -124,13 +124,13 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
                     <div
-                      className={`h-full rounded-full ${pasado ? 'bg-red-500' : 'bg-neutral-900 dark:bg-white'}`}
+                      className={`h-full rounded-full ${past ? 'bg-red-500' : 'bg-neutral-900 dark:bg-white'}`}
                       style={{ width: `${pct * 100}%` }}
                     />
                   </div>
                   <p className="mt-1 font-mono text-[0.65rem] text-neutral-400">
-                    esta {lim.period === 'semana' ? 'semana' : 'mes'} · queda{' '}
-                    {eur(Math.max(0, lim.amount - gastado))}
+                    esta {limit.period === 'semana' ? 'semana' : 'mes'} · queda{' '}
+                    {eur(Math.max(0, limit.amount - spent))}
                   </p>
                 </li>
               )
@@ -159,7 +159,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => borrar(g.id)}
+                    onClick={() => remove(g.id)}
                     aria-label={`Eliminar ${idea.title}`}
                     className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                   >
@@ -172,10 +172,10 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
         )}
       </section>
 
-      {creando && (
-        <Modal title="Nuevo objetivo" onClose={() => setCreando(false)}>
+      {creating && (
+        <Modal title="Nuevo objetivo" onClose={() => setCreating(false)}>
           <div className="mb-4 flex justify-center">
-            <Segmented value={tipo} onChange={setTipo} options={TIPOS} />
+            <Segmented value={goalKind} onChange={setGoalKind} options={GOAL_KINDS} />
           </div>
           <form
             onSubmit={(ev) => {
@@ -185,7 +185,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
               if (!title) return
               const id = crypto.randomUUID()
 
-              if (tipo === 'idea') {
+              if (goalKind === 'idea') {
                 setGoals((prev) => [
                   ...prev,
                   { id, kind: 'idea', title, desc: String(data.get('desc') ?? '').trim() || undefined },
@@ -193,7 +193,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
               } else {
                 const amount = Number(String(data.get('amount') ?? '').replace(',', '.'))
                 if (!Number.isFinite(amount) || amount <= 0) return
-                if (tipo === 'meta') {
+                if (goalKind === 'meta') {
                   const date = String(data.get('date') ?? '')
                   if (!date) return
                   setGoals((prev) => [
@@ -213,34 +213,34 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                   ])
                 }
               }
-              setCreando(false)
+              setCreating(false)
             }}
             className="flex flex-col gap-2"
           >
             <input name="title" maxLength={60} required placeholder="Nombre" className={input} />
 
-            {tipo === 'idea' && (
+            {goalKind === 'idea' && (
               <textarea name="desc" maxLength={200} rows={3} placeholder="Detalles" className={input} />
             )}
 
-            {tipo !== 'idea' && (
+            {goalKind !== 'idea' && (
               <input
                 name="amount"
                 type="number"
                 step="0.01"
                 min="0.01"
                 required
-                placeholder={tipo === 'meta' ? '¿Cuánto quieres tener?' : '¿Cuánto puedes gastar?'}
+                placeholder={goalKind === 'meta' ? '¿Cuánto quieres tener?' : '¿Cuánto puedes gastar?'}
                 aria-label="Cantidad"
                 className={`${input} font-mono`}
               />
             )}
 
-            {tipo === 'meta' && (
+            {goalKind === 'meta' && (
               <input name="date" type="date" required aria-label="Para cuándo" className={input} />
             )}
 
-            {tipo === 'limite' && (
+            {goalKind === 'limite' && (
               <select name="period" defaultValue="semana" aria-label="Periodo" className={input}>
                 <option value="semana">Por semana</option>
                 <option value="mes">Por mes</option>

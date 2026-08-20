@@ -6,68 +6,68 @@ import { Icon, card, line, select } from './ui'
 type Props = {
   notepads: Notepad[]
   setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
-  onCerrar: () => void
+  onClose: () => void
 }
 
-const ANCHO = 400
-const ALTO = 440
+const WIDTH = 400
+const HEIGHT = 440
 
-export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
+export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
   const [pos, setPos] = useState(() => ({
-    x: Math.max(12, innerWidth - ANCHO - 24),
-    y: Math.max(12, innerHeight - ALTO - 24),
+    x: Math.max(12, innerWidth - WIDTH - 24),
+    y: Math.max(12, innerHeight - HEIGHT - 24),
   }))
-  const [activaId, setActivaId] = useState<string | null>(notepads[0]?.id ?? null)
-  const arrastre = useRef<{ dx: number; dy: number } | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(notepads[0]?.id ?? null)
+  const drag = useRef<{ dx: number; dy: number } | null>(null)
 
-  const activa = notepads.find((n) => n.id === activaId) ?? notepads[0]
+  const active = notepads.find((n) => n.id === activeId) ?? notepads[0]
 
   useEffect(() => {
-    const mover = (e: PointerEvent) => {
-      if (!arrastre.current) return
+    const reorder = (e: PointerEvent) => {
+      if (!drag.current) return
       setPos({
-        x: Math.min(Math.max(0, e.clientX - arrastre.current.dx), innerWidth - 120),
-        y: Math.min(Math.max(0, e.clientY - arrastre.current.dy), innerHeight - 60),
+        x: Math.min(Math.max(0, e.clientX - drag.current.dx), innerWidth - 120),
+        y: Math.min(Math.max(0, e.clientY - drag.current.dy), innerHeight - 60),
       })
     }
-    const soltar = () => {
-      arrastre.current = null
+    const drop = () => {
+      drag.current = null
     }
-    addEventListener('pointermove', mover)
-    addEventListener('pointerup', soltar)
+    addEventListener('pointermove', reorder)
+    addEventListener('pointerup', drop)
     return () => {
-      removeEventListener('pointermove', mover)
-      removeEventListener('pointerup', soltar)
+      removeEventListener('pointermove', reorder)
+      removeEventListener('pointerup', drop)
     }
   }, [])
 
-  const crear = () => {
+  const create = () => {
     const id = crypto.randomUUID()
     setNotepads((prev) => [...prev, { id, title: 'Nota rápida', pages: [{ id: id + '-1', html: '' }] }])
-    setActivaId(id)
+    setActiveId(id)
   }
 
   return (
     <section
       role="dialog"
       aria-label="Nota flotante"
-      style={{ left: pos.x, top: pos.y, width: ANCHO, height: ALTO }}
+      style={{ left: pos.x, top: pos.y, width: WIDTH, height: HEIGHT }}
       className={`${card} fixed z-30 flex flex-col overflow-hidden shadow-2xl`}
     >
       <header
         onPointerDown={(e) => {
-          arrastre.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y }
+          drag.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y }
         }}
         className={`flex shrink-0 cursor-grab flex-col gap-2 border-b px-3 py-2 active:cursor-grabbing ${line}`}
       >
         <div className="flex items-center gap-2">
           <Icon name="drag" className="h-4 w-4 shrink-0 text-neutral-300 dark:text-neutral-600" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium" title={activa?.title}>
-            {activa?.title ?? 'Sin blocs todavía'}
+          <span className="min-w-0 flex-1 truncate text-sm font-medium" title={active?.title}>
+            {active?.title ?? 'Sin blocs todavía'}
           </span>
           <button
             type="button"
-            onClick={crear}
+            onClick={create}
             onPointerDown={(e) => e.stopPropagation()}
             aria-label="Nuevo bloc"
             className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
@@ -76,7 +76,7 @@ export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
           </button>
           <button
             type="button"
-            onClick={onCerrar}
+            onClick={onClose}
             onPointerDown={(e) => e.stopPropagation()}
             aria-label="Cerrar nota flotante"
             className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
@@ -87,8 +87,8 @@ export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
 
         {notepads.length > 1 && (
           <select
-            value={activa?.id}
-            onChange={(e) => setActivaId(e.target.value)}
+            value={active?.id}
+            onChange={(e) => setActiveId(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             aria-label="Bloc de notas"
             className={`${select} h-8 w-full px-2 py-0 text-xs`}
@@ -102,21 +102,21 @@ export function FloatingNote({ notepads, setNotepads, onCerrar }: Props) {
         )}
       </header>
 
-      {activa ? (
+      {active ? (
         <Editor
-          key={activa.id}
-          notepad={activa}
+          key={active.id}
+          notepad={active}
           compacto
-          onPaginas={(pages: NotepadPage[]) =>
+          onPages={(pages: NotepadPage[]) =>
             setNotepads((prev) =>
-              prev.map((n) => (n.id === activa.id ? { ...n, pages, html: undefined } : n)),
+              prev.map((n) => (n.id === active.id ? { ...n, pages, html: undefined } : n)),
             )
           }
         />
       ) : (
         <button
           type="button"
-          onClick={crear}
+          onClick={create}
           className="flex flex-1 items-center justify-center gap-2 text-sm text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
         >
           <Icon name="plus" className="h-4 w-4" />
