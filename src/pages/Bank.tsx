@@ -25,6 +25,7 @@ import {
   line,
   select,
 } from '../components/ui'
+import { t } from '../lib/i18n'
 
 export type BankTab = 'dinero' | 'ingresos' | 'gastos' | 'objetivos'
 
@@ -60,10 +61,10 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           }}
           className={`${card} animate-[fade-in_0.4s_ease-out] flex flex-col gap-3 p-6`}
         >
-          <Label>Primera vez</Label>
-          <h2 className="text-xl font-semibold">¿Cuánto dinero tienes ahora?</h2>
+          <Label>{t('Primera vez')}</Label>
+          <h2 className="text-xl font-semibold">{t('¿Cuánto dinero tienes ahora?')}</h2>
           <p className="text-sm text-neutral-400 dark:text-neutral-500">
-            Sólo se pregunta una vez. Queda en tu navegador.
+            {t('Sólo se pregunta una vez. Queda en tu navegador.')}
           </p>
           <input
             name="start"
@@ -72,11 +73,11 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
             required
             autoFocus
             placeholder="0,00"
-            aria-label="Dinero actual"
+            aria-label={t('Dinero actual')}
             className={`${input} font-mono`}
           />
           <button type="submit" className={button}>
-            Guardar
+            {t('Guardar')}
           </button>
         </form>
       </div>
@@ -148,7 +149,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           <section className={`${card} animate-[fade-in_0.35s_ease-out] overflow-hidden`}>
             <div className="flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6">
               <div>
-                <Label>Dinero actual</Label>
+                <Label>{t('Dinero actual')}</Label>
                 <p
                   className={`font-mono text-4xl font-medium tracking-tight tabular-nums sm:text-5xl ${
                     balance < 0 ? 'text-red-500' : ''
@@ -191,11 +192,11 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
 
           <div className="grid gap-4 lg:grid-cols-2">
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.1s_both] p-5 sm:p-6`}>
-              <Label>Dónde gastas</Label>
+              <Label>{t('Dónde gastas')}</Label>
               <CatChart data={byCategory(expense, [...EXPENSE_CATS, SUBSCRIPTION_CAT])} tone="bg-red-500" />
             </section>
             <section className={`${card} animate-[fade-in_0.35s_ease-out_0.15s_both] p-5 sm:p-6`}>
-              <Label>De dónde viene</Label>
+              <Label>{t('De dónde viene')}</Label>
               <CatChart data={byCategory(income, INCOME_CATS)} tone="bg-green-500" />
             </section>
           </div>
@@ -273,7 +274,7 @@ function MovementPanel({
         }}
         className={`${card} flex flex-col gap-2 p-4 sm:p-5`}
       >
-        <Label>{positive ? 'Nuevo ingreso' : 'Nuevo gasto'}</Label>
+        <Label>{t(positive ? 'Nuevo ingreso' : 'Nuevo gasto')}</Label>
         <input
           name="amount"
           type="number"
@@ -281,18 +282,18 @@ function MovementPanel({
           min="0.01"
           required
           placeholder="0,00"
-          aria-label="Importe"
+          aria-label={t('Importe')}
           className={`${input} font-mono text-lg`}
         />
         <input
           name="note"
           maxLength={60}
           placeholder={positive ? '¿De qué? (opcional)' : '¿En qué? (opcional)'}
-          aria-label="Concepto"
+          aria-label={t('Concepto')}
           className={input}
         />
         <div className="flex gap-2">
-          <select name="category" defaultValue={cats[0]} aria-label="Categoría" className={select}>
+          <select name="category" defaultValue={cats[0]} aria-label={t('Categoría')} className={select}>
             {cats.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -303,7 +304,7 @@ function MovementPanel({
             name="date"
             type="date"
             defaultValue={dateKey(new Date())}
-            aria-label="Fecha"
+            aria-label={t('Fecha')}
             className={input}
           />
         </div>
@@ -314,10 +315,10 @@ function MovementPanel({
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
         <Label>
-          {positive ? 'Ingresos' : 'Gastos'} · {eur(total)}
+          {t(positive ? 'Ingresos' : 'Gastos')} · {eur(total)}
         </Label>
         {movements.length === 0 ? (
-          <Empty>Sin movimientos.</Empty>
+          <Empty>{t('Sin movimientos.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {movements.map((m) => (
@@ -335,7 +336,7 @@ function MovementPanel({
                   type="button"
                   onClick={() => setEditingItem(m)}
                   className="min-w-0 flex-1 text-left"
-                  title="Editar"
+                  title={t('Editar')}
                 >
                   <span className="block truncate">{m.note || m.category}</span>
                   {m.note && (
@@ -350,7 +351,7 @@ function MovementPanel({
                 <button
                   type="button"
                   onClick={() => onRemove(m.id)}
-                  aria-label="Eliminar movimiento"
+                  aria-label={t('Eliminar movimiento')}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >
                   <Icon name="trash" className="h-4 w-4" />
@@ -384,8 +385,8 @@ function MovementPanel({
               name="note"
               defaultValue={editingItem.note}
               maxLength={60}
-              placeholder="Concepto"
-              aria-label="Concepto"
+              placeholder={t('Concepto')}
+              aria-label={t('Concepto')}
               className={input}
             />
             <input
@@ -395,14 +396,14 @@ function MovementPanel({
               min="0.01"
               defaultValue={editingItem.amount}
               required
-              aria-label="Importe"
+              aria-label={t('Importe')}
               className={`${input} font-mono`}
             />
             <div className="flex gap-2">
               <select
                 name="category"
                 defaultValue={editingItem.category}
-                aria-label="Categoría"
+                aria-label={t('Categoría')}
                 className={select}
               >
                 {[...new Set([...cats, editingItem.category])].map((c) => (
@@ -415,12 +416,12 @@ function MovementPanel({
                 name="date"
                 type="date"
                 defaultValue={editingItem.date}
-                aria-label="Fecha"
+                aria-label={t('Fecha')}
                 className={input}
               />
             </div>
             <button type="submit" className={`${button} mt-2`}>
-              Guardar
+              {t('Guardar')}
             </button>
           </form>
         </Modal>

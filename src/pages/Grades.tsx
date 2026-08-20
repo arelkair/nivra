@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { dateKey, shortDate, type Grade, type Subject, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   grades: Grade[]
@@ -62,7 +63,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
         }}
         className={`${card} flex flex-col gap-2 p-4 sm:p-5`}
       >
-        <Label>Nueva nota</Label>
+        <Label>{t('Nueva nota')}</Label>
         <div className="flex gap-2">
           <input
             name="value"
@@ -71,29 +72,29 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
             min="1"
             max="10"
             required
-            placeholder="Del 1 al 10"
-            aria-label="Nota"
+            placeholder={t('Del 1 al 10')}
+            aria-label={t('Nota')}
             className={`${input} font-mono`}
           />
-          <select name="kind" defaultValue="examen" aria-label="Tipo" className={select}>
+          <select name="kind" defaultValue="examen" aria-label={t('Tipo')} className={select}>
             {KINDS.map((k) => (
               <option key={k.id} value={k.id}>
-                {k.label}
+                {t(k.label)}
               </option>
             ))}
           </select>
-          <select name="term" defaultValue="1" aria-label="Trimestre" className={select}>
-            <option value="1">1º Trimestre</option>
-            <option value="2">2º Trimestre</option>
-            <option value="3">3º Trimestre</option>
+          <select name="term" defaultValue="1" aria-label={t('Trimestre')} className={select}>
+            <option value="1">{t('1º Trimestre')}</option>
+            <option value="2">{t('2º Trimestre')}</option>
+            <option value="3">{t('3º Trimestre')}</option>
           </select>
         </div>
         {subjects.length === 0 ? (
           <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-            Crea asignaturas en Ajustes para poder elegir de qué es la nota.
+            {t('Crea asignaturas en Ajustes para poder elegir de qué es la nota.')}
           </p>
         ) : (
-          <select name="subject" defaultValue={subjects[0].id} aria-label="Asignatura" className={select}>
+          <select name="subject" defaultValue={subjects[0].id} aria-label={t('Asignatura')} className={select}>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -102,7 +103,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
           </select>
         )}
         {works.length > 0 && (
-          <select name="work" defaultValue="" aria-label="Examen o proyecto" className={select}>
+          <select name="work" defaultValue="" aria-label={t('Examen o proyecto')} className={select}>
             <option value="">Sin examen ni proyecto</option>
             {works.map((w) => (
               <option key={w.id} value={w.id}>
@@ -112,7 +113,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
           </select>
         )}
         <button type="submit" className={button}>
-          Añadir
+          {t('Añadir')}
         </button>
       </form>
 
@@ -132,7 +133,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
       {average !== null && (
         <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
           <Label>
-            Media · {visible.length} {visible.length === 1 ? 'nota' : 'notas'}
+            {t('Media')} · {visible.length} {t(visible.length === 1 ? 'nota' : 'notas')}
           </Label>
           <p className={`font-mono text-4xl font-medium tabular-nums ${tone(average)}`}>
             {average.toFixed(2)}
@@ -142,15 +143,15 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
 
       {visible.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <Top title="Mejores" items={best} />
-          {worst.length > 0 && <Top title="Peores" items={worst} />}
+          <Top title={t('Mejores')} items={best} />
+          {worst.length > 0 && <Top title={t('Peores')} items={worst} />}
         </div>
       )}
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out_0.05s_both] p-5 sm:p-6`}>
-        <Label>Todas</Label>
+        <Label>{t('Todas')}</Label>
         {visible.length === 0 ? (
-          <Empty>Sin notas.</Empty>
+          <Empty>{t('Sin notas.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {visible.map((g) => (
@@ -163,7 +164,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
                 </span>
                 <span className="min-w-0 flex-1 truncate">{g.desc || KINDS.find((k) => k.id === g.kind)?.label}</span>
                 <span className="shrink-0 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-                  {KINDS.find((k) => k.id === g.kind)?.label}
+                  {t(KINDS.find((k) => k.id === g.kind)?.label ?? '')}
                   {g.term ? ` · ${g.term}º Trim.` : ''} · {shortDate(g.date)}
                 </span>
                 <button

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { UNITS, countdown, progress, type Countdown, type Unit } from '../lib/store'
 import { Empty, Icon, Label, Modal, Switch, button, card, input, line } from './ui'
+import { locale, t } from '../lib/i18n'
 
 type Props = {
   countdowns: Countdown[]
@@ -20,7 +21,7 @@ const timeOf = (iso?: string) => {
 }
 
 const shortDateTime = (iso: string) =>
-  `${new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ${timeOf(iso)}`
+  `${new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })} ${timeOf(iso)}`
 
 const DEFAULT_UNITS: Record<Unit, boolean> = {
   years: false,
@@ -45,11 +46,11 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
   return (
     <section className={`${card} p-5 sm:p-6`}>
       <div className="flex items-center justify-between gap-2">
-        <Label>Cuenta atrás</Label>
+        <Label>{t('Cuenta atrás')}</Label>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          aria-label="Nueva cuenta atrás"
+          aria-label={t('Nueva cuenta atrás')}
           className={`-mt-3 grid h-7 w-7 place-items-center rounded-lg border text-neutral-400 transition-colors hover:text-neutral-900 ${line} dark:hover:text-white`}
         >
           <Icon name="plus" className="h-3.5 w-3.5" />
@@ -57,7 +58,7 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
       </div>
 
       {countdowns.length === 0 ? (
-        <Empty>Sin cuenta atrás.</Empty>
+        <Empty>{t('Sin cuenta atrás.')}</Empty>
       ) : (
         <div className="flex flex-col gap-2">
           <Card item={countdowns[0]} now={now} big onEdit={() => setEditingId(countdowns[0].id)} />
@@ -135,7 +136,7 @@ function Card({
       </div>
 
       {finished ? (
-        <p className={`mt-1 font-mono font-medium ${big ? 'text-2xl' : 'text-lg'}`}>Se acabó</p>
+        <p className={`mt-1 font-mono font-medium ${big ? 'text-2xl' : 'text-lg'}`}>{t('Se acabó')}</p>
       ) : (
         <div className={`mt-1.5 flex flex-wrap gap-y-1 ${big ? 'gap-x-5' : 'gap-x-3'}`}>
           {parts.map((p) => (
@@ -145,7 +146,7 @@ function Card({
               >
                 {p.value}
               </span>
-              <span className="text-[0.6rem] text-neutral-400 dark:text-neutral-500">{p.label}</span>
+              <span className="text-[0.6rem] text-neutral-400 dark:text-neutral-500">{t(p.label)}</span>
             </div>
           ))}
         </div>
@@ -207,60 +208,60 @@ function CountdownDialog({
           defaultValue={item?.title}
           maxLength={40}
           required
-          placeholder="Título"
+          placeholder={t('Título')}
           className={input}
         />
         <input
           name="subtitle"
           defaultValue={item?.subtitle}
           maxLength={60}
-          placeholder="Subtítulo"
+          placeholder={t('Subtítulo')}
           className={input}
         />
         <div className="mt-2">
-          <Label>Empieza</Label>
+          <Label>{t('Empieza')}</Label>
           <div className="flex gap-2">
             <input
               name="startDate"
               type="date"
               defaultValue={dateOf(item?.created)}
               required
-              aria-label="Día de inicio"
+              aria-label={t('Día de inicio')}
               className={input}
             />
             <input
               name="startTime"
               type="time"
               defaultValue={timeOf(item?.created)}
-              aria-label="Hora de inicio"
+              aria-label={t('Hora de inicio')}
               className={input}
             />
           </div>
         </div>
 
         <div className="mt-2">
-          <Label>Acaba</Label>
+          <Label>{t('Acaba')}</Label>
           <div className="flex gap-2">
             <input
               name="date"
               type="date"
               defaultValue={dateOf(item?.target)}
               required
-              aria-label="Día del final"
+              aria-label={t('Día del final')}
               className={input}
             />
             <input
               name="time"
               type="time"
               defaultValue={timeOf(item?.target)}
-              aria-label="Hora del final"
+              aria-label={t('Hora del final')}
               className={input}
             />
           </div>
         </div>
 
         <div className="mt-2">
-          <Label>Unidades</Label>
+          <Label>{t('Unidades')}</Label>
           {UNITS.map((u) => (
             <Switch
               key={u.id}
@@ -278,11 +279,11 @@ function CountdownDialog({
               onClick={onDelete}
               className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"
             >
-              Eliminar
+              {t('Eliminar')}
             </button>
           )}
           <button type="submit" className={`${button} ml-auto`}>
-            Guardar
+            {t('Guardar')}
           </button>
         </div>
       </form>

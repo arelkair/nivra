@@ -7,6 +7,7 @@ import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '..
 import type { SyncState } from '../lib/sync'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
+import { LANGS, getLang, setLang, t } from '../lib/i18n'
 
 type Props = {
   cfg: Settings
@@ -41,47 +42,67 @@ export function Settings({
   const alterna = (id: string) => setOpenSection((prev) => (prev === id ? null : id))
 
   return (
-    <Modal title="Ajustes" onClose={onClose}>
+    <Modal title={t('Ajustes')} onClose={onClose}>
       <div className="flex flex-col gap-2">
-        <Collapsible title="General" open={openSection === 'general'} animar={cfg.animations} onToggle={() => alterna('general')}>
+        <Collapsible title={t('General')} open={openSection === 'general'} animar={cfg.animations} onToggle={() => alterna('general')}>
           <div className="flex flex-col gap-1">
+            <div className="mb-2 flex items-center justify-between gap-4 py-1">
+              <span className="block text-sm font-medium">{t('Idioma')}</span>
+              <div className="flex shrink-0 gap-1.5">
+                {LANGS.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => l.id !== getLang() && setLang(l.id)}
+                    aria-pressed={l.id === getLang()}
+                    className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+                      l.id === getLang()
+                        ? 'border-neutral-900 font-medium dark:border-white'
+                        : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.04]`
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Switch
               checked={cfg.intro}
               onChange={cfg.setIntro}
-              label="Animación de inicio"
-              hint="La presentación de Nivra al abrir o recargar la web."
+              label={t('Animación de inicio')}
+              hint={t('La presentación de Nivra al abrir o recargar la web.')}
             />
             <Switch
               checked={cfg.animations}
               onChange={cfg.setAnimations}
-              label="Animaciones al cambiar de apartado"
+              label={t('Animaciones al cambiar de apartado')}
             />
             <Switch
               checked={cfg.autoTheme}
               onChange={cfg.setAutoTheme}
-              label="Tema según la hora"
-              hint="Claro de 7:00 a 20:00 y oscuro el resto. Si lo cambias a mano, aguanta hasta el siguiente tramo."
+              label={t('Tema según la hora')}
+              hint={t('Claro de 7:00 a 20:00 y oscuro el resto. Si lo cambias a mano, aguanta hasta el siguiente tramo.')}
             />
-            <Switch checked={cfg.clockOn} onChange={cfg.setClockOn} label="Reloj" />
+            <Switch checked={cfg.clockOn} onChange={cfg.setClockOn} label={t('Reloj')} />
             {cfg.clockOn && (
-              <Switch checked={cfg.hour12} onChange={cfg.setHour12} label="Formato de 12 horas" />
+              <Switch checked={cfg.hour12} onChange={cfg.setHour12} label={t('Formato de 12 horas')} />
             )}
             <Switch
               checked={cfg.searchOn}
               onChange={cfg.setSearchOn}
-              label="Buscador"
-              hint="Aparece en la cabecera y busca en todos los apartados."
+              label={t('Buscador')}
+              hint={t('Aparece en la cabecera y busca en todos los apartados.')}
             />
             <Switch
               checked={cfg.navButtons}
               onChange={cfg.setNavButtons}
-              label="Botones de atrás y adelante"
+              label={t('Botones de atrás y adelante')}
             />
           </div>
         </Collapsible>
 
         <Collapsible
-          title="Aplicación"
+          title={t('Aplicación')}
           open={openSection === 'app'}
           animar={cfg.animations}
           onToggle={() => alterna('app')}
@@ -89,15 +110,15 @@ export function Settings({
           <InstallPanel installPrompt={installPrompt} onInstalled={onInstalled} onNotify={onNotify} />
         </Collapsible>
 
-        <Collapsible title="Color" open={openSection === 'color'} animar={cfg.animations} onToggle={() => alterna('color')}>
+        <Collapsible title={t('Color')} open={openSection === 'color'} animar={cfg.animations} onToggle={() => alterna('color')}>
           <div className="grid grid-cols-5 gap-2">
             {ACCENTS.map((a) => (
               <button
                 key={a.id}
                 type="button"
                 onClick={() => cfg.setAccent(a.id)}
-                title={a.label}
-                aria-label={a.label}
+                title={t(a.label)}
+                aria-label={t(a.label)}
                 aria-pressed={cfg.accent === a.id}
                 className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 transition-colors ${
                   cfg.accent === a.id
@@ -107,7 +128,7 @@ export function Settings({
               >
                 <span className="h-5 w-5 rounded-full" style={{ background: a.swatch }} aria-hidden />
                 <span className="w-full truncate text-center text-[0.55rem] text-neutral-500 dark:text-neutral-400">
-                  {a.label}
+                  {t(a.label)}
                 </span>
               </button>
             ))}
@@ -115,7 +136,7 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
-          title="Asignaturas"
+          title={t('Asignaturas')}
           open={openSection === 'asignaturas'}
           animar={cfg.animations} onToggle={() => alterna('asignaturas')}
         >
@@ -137,14 +158,14 @@ export function Settings({
             }}
             className="mb-3 flex gap-2"
           >
-            <input name="name" maxLength={40} required placeholder="Nueva asignatura" className={input} />
-            <button type="submit" aria-label="Añadir asignatura" className={`${button} shrink-0 px-4`}>
+            <input name="name" maxLength={40} required placeholder={t('Nueva asignatura')} className={input} />
+            <button type="submit" aria-label={t('Añadir asignatura')} className={`${button} shrink-0 px-4`}>
               <Icon name="plus" className="h-4 w-4" />
             </button>
           </form>
 
           {cfg.subjects.length === 0 ? (
-            <p className="text-sm text-neutral-400 dark:text-neutral-500">Sin asignaturas.</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500">{t('Sin asignaturas.')}</p>
           ) : (
             <ul className="flex flex-col">
               {cfg.subjects.map((s, i) => (
@@ -184,7 +205,7 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
-          title="Notificaciones"
+          title={t('Notificaciones')}
           open={openSection === 'notificaciones'}
           animar={cfg.animations} onToggle={() => alterna('notificaciones')}
         >
@@ -192,21 +213,21 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
-          title="Atajos de teclado"
+          title={t('Atajos de teclado')}
           open={openSection === 'atajos'}
           animar={cfg.animations} onToggle={() => alterna('atajos')}
         >
           <Switch
             checked={cfg.shortcutsOn}
             onChange={cfg.setShortcutsOn}
-            label="Atajos activados"
-            hint="No se disparan mientras escribes en un campo."
+            label={t('Atajos activados')}
+            hint={t('No se disparan mientras escribes en un campo.')}
           />
           <ShortcutKeys cfg={cfg} onNotify={onNotify} />
         </Collapsible>
 
         <Collapsible
-          title="Sincronización"
+          title={t('Sincronización')}
           open={openSection === 'sync'}
           animar={cfg.animations} onToggle={() => alterna('sync')}
         >
@@ -214,7 +235,7 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
-          title="Exportar o importar datos"
+          title={t('Exportar o importar datos')}
           open={openSection === 'copia'}
           animar={cfg.animations} onToggle={() => alterna('copia')}
         >
@@ -222,7 +243,7 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
-          title="Cumpleaños"
+          title={t('Cumpleaños')}
           open={openSection === 'cumple'}
           animar={cfg.animations} onToggle={() => alterna('cumple')}
         >
@@ -231,7 +252,7 @@ export function Settings({
               type="date"
               value={cfg.birthday}
               onChange={(e) => cfg.setBirthday(e.target.value)}
-              aria-label="Fecha de cumpleaños"
+              aria-label={t('Fecha de cumpleaños')}
               className={input}
             />
             {cfg.birthday && (
@@ -240,12 +261,12 @@ export function Settings({
                 onClick={() => cfg.setBirthday('')}
                 className="shrink-0 text-xs text-neutral-400 transition-colors hover:text-red-500"
               >
-                Quitar
+                {t('Quitar')}
               </button>
             )}
           </div>
           <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-            Ese día, all los años, cae confeti.
+            {t('Ese día, todos los años, cae confeti.')}
           </p>
         </Collapsible>
       </div>
@@ -259,7 +280,7 @@ function NotificationsPanel({ cfg, onNotify }: { cfg: Settings; onNotify: (t: st
   if (!notificationsSupported()) {
     return (
       <p className="text-sm text-neutral-400 dark:text-neutral-500">
-        Este navegador no admite notificaciones.
+        {t('Este navegador no admite notificaciones.')}
       </p>
     )
   }
@@ -269,16 +290,16 @@ function NotificationsPanel({ cfg, onNotify }: { cfg: Settings; onNotify: (t: st
       <Switch
         checked={cfg.toasts}
         onChange={cfg.setToasts}
-        label="Avisos dentro de la web"
-        hint="Aparecen abajo a la derecha."
+        label={t('Avisos dentro de la web')}
+        hint={t('Aparecen abajo a la derecha.')}
       />
 
       {status === 'granted' ? (
         <Switch
           checked={cfg.notifs}
           onChange={cfg.setNotifs}
-          label="Notificaciones del sistema"
-          hint="Cuentas atrás que acaban, aniversarios, actividades de hoy y exámenes de mañana."
+          label={t('Notificaciones del sistema')}
+          hint={t('Cuentas atrás que acaban, aniversarios, actividades de hoy y exámenes de mañana.')}
         />
       ) : (
         <div>
@@ -326,7 +347,7 @@ function BackupPanel({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[0.7rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
-        Copia de seguridad
+        {t('Copia de seguridad')}
       </p>
       <div className="flex gap-2">
         <button type="button" onClick={exportJson} className={`${ghost} flex-1`}>
@@ -346,7 +367,7 @@ function BackupPanel({
       <button type="button" onClick={() => fileInput.current?.click()} className={button}>
         <span className="flex items-center justify-center gap-2">
           <Icon name="upload" className="h-4 w-4" />
-          Importar copia
+          {t('Importar copia')}
         </span>
       </button>
       <input
@@ -368,12 +389,11 @@ function BackupPanel({
         }}
       />
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-        El CSV es para abrirlo outside; para volver a entrar usa element JSON. Importar reemplaza lo que
-        haya.
+        {t('El CSV es para abrirlo fuera; para volver a entrar usa el JSON. Importar reemplaza lo que haya.')}
       </p>
 
       <p className="mt-3 text-[0.7rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
-        Exportar a Google/Apple Calendar
+        {t('Exportar a Google/Apple Calendar')}
       </p>
       <div className="flex gap-2">
         <button
@@ -383,7 +403,7 @@ function BackupPanel({
         >
           <span className="flex items-center justify-center gap-2">
             <Icon name="download" className="h-4 w-4" />
-            Calendario (.ics)
+            {t('Calendario (.ics)')}
           </span>
         </button>
         <button
@@ -393,12 +413,12 @@ function BackupPanel({
         >
           <span className="flex items-center justify-center gap-2">
             <Icon name="download" className="h-4 w-4" />
-            Horario (.ics)
+            {t('Horario (.ics)')}
           </span>
         </button>
       </div>
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-        Ábrelos con «Importar calendario» en Google Calendar o Apple Calendar.
+        {t('Ábrelos con «Importar calendario» en Google Calendar o Apple Calendar.')}
       </p>
     </div>
   )
@@ -419,7 +439,7 @@ function InstallPanel({
   if (alreadyInstalled) {
     return (
       <p className="text-sm text-neutral-500 dark:text-neutral-400">
-        Ya la estás usando instalada.
+        {t('Ya la estás usando instalada.')}
       </p>
     )
   }
@@ -440,7 +460,7 @@ function InstallPanel({
         >
           <span className="flex items-center justify-center gap-2">
             <Icon name="download" className="h-4 w-4" />
-            Instalar Nivra
+            {t('Instalar Nivra')}
           </span>
         </button>
       ) : (
@@ -451,7 +471,7 @@ function InstallPanel({
         </p>
       )}
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-        Instalada se abre a pantalla completa, con su icono, y funciona sin conexión.
+        {t('Instalada se abre a pantalla completa, con su icono, y funciona sin conexión.')}
       </p>
     </div>
   )
@@ -493,13 +513,13 @@ function ShortcutKeys({ cfg, onNotify }: { cfg: Settings; onNotify: (t: string) 
         const changed = key !== a.key
         return (
           <li key={a.id} className={`flex items-center gap-2 border-b py-2 last:border-0 ${line}`}>
-            <span className="min-w-0 flex-1 truncate text-sm">{a.label}</span>
+            <span className="min-w-0 flex-1 truncate text-sm">{t(a.label)}</span>
 
             <button
               type="button"
               disabled={!cfg.shortcutsOn}
               onClick={() => setCapturing(capturing === a.id ? null : a.id)}
-              title="Pulsa para cambiar la tecla"
+              title={t('Pulsa para cambiar la tecla')}
               className={`shrink-0 rounded-md border px-2 py-1 font-mono text-[0.65rem] transition-colors disabled:opacity-40 ${
                 capturing === a.id
                   ? 'border-neutral-900 dark:border-white'

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { dateKey, eur, shortDate, weekIndex, type Goal, type Movement } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, Segmented, button, card, input, line } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   goals: Goal[]
@@ -48,12 +49,12 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
       <button type="button" onClick={() => setCreating(true)} className={`${button} w-fit`}>
         <span className="flex items-center gap-2">
           <Icon name="plus" className="h-4 w-4" />
-          Nuevo objetivo
+          {t('Nuevo objetivo')}
         </span>
       </button>
 
       <section className={`${card} p-5 sm:p-6`}>
-        <Label>Metas de dinero</Label>
+        <Label>{t('Metas de dinero')}</Label>
         {savingGoals.length === 0 ? (
           <Empty>Sin metas.</Empty>
         ) : (
@@ -94,7 +95,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
       </section>
 
       <section className={`${card} p-5 sm:p-6`}>
-        <Label>Límites de gasto</Label>
+        <Label>{t('Límites de gasto')}</Label>
         {limits.length === 0 ? (
           <Empty>Sin límites.</Empty>
         ) : (
@@ -140,7 +141,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
       </section>
 
       <section className={`${card} p-5 sm:p-6`}>
-        <Label>Ideas para conseguir dinero</Label>
+        <Label>{t('Ideas para conseguir dinero')}</Label>
         {ideas.length === 0 ? (
           <Empty>Sin ideas.</Empty>
         ) : (
@@ -173,7 +174,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
       </section>
 
       {creating && (
-        <Modal title="Nuevo objetivo" onClose={() => setCreating(false)}>
+        <Modal title={t('Nuevo objetivo')} onClose={() => setCreating(false)}>
           <div className="mb-4 flex justify-center">
             <Segmented value={goalKind} onChange={setGoalKind} options={GOAL_KINDS} />
           </div>
@@ -217,10 +218,10 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
             }}
             className="flex flex-col gap-2"
           >
-            <input name="title" maxLength={60} required placeholder="Nombre" className={input} />
+            <input name="title" maxLength={60} required placeholder={t('Nombre')} className={input} />
 
             {goalKind === 'idea' && (
-              <textarea name="desc" maxLength={200} rows={3} placeholder="Detalles" className={input} />
+              <textarea name="desc" maxLength={200} rows={3} placeholder={t('Detalles')} className={input} />
             )}
 
             {goalKind !== 'idea' && (
@@ -231,24 +232,24 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                 min="0.01"
                 required
                 placeholder={goalKind === 'meta' ? '¿Cuánto quieres tener?' : '¿Cuánto puedes gastar?'}
-                aria-label="Cantidad"
+                aria-label={t('Cantidad')}
                 className={`${input} font-mono`}
               />
             )}
 
             {goalKind === 'meta' && (
-              <input name="date" type="date" required aria-label="Para cuándo" className={input} />
+              <input name="date" type="date" required aria-label={t('Para cuándo')} className={input} />
             )}
 
             {goalKind === 'limite' && (
-              <select name="period" defaultValue="semana" aria-label="Periodo" className={input}>
+              <select name="period" defaultValue="semana" aria-label={t('Periodo')} className={input}>
                 <option value="semana">Por semana</option>
                 <option value="mes">Por mes</option>
               </select>
             )}
 
             <button type="submit" className={`${button} mt-2`}>
-              Guardar
+              {t('Guardar')}
             </button>
           </form>
         </Modal>

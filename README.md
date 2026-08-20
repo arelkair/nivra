@@ -23,9 +23,22 @@ you explicitly turn on the optional end-to-end encrypted sync.
 | **Countdowns** | Multiple countdowns with configurable units. |
 | **Reminders** | Date, time and optional link to an exam or project. |
 
-Also included: global search, configurable keyboard shortcuts, undo for
-deletions, light and dark themes with ten accent colours, an optional
-time-of-day theme, browser notifications, JSON/CSV backups and `.ics` export.
+Also included: Spanish and English interfaces, global search, configurable
+keyboard shortcuts, undo for deletions, light and dark themes with ten accent
+colours, an optional time-of-day theme, browser notifications, JSON/CSV backups
+and `.ics` export.
+
+## Language
+
+The interface ships in Spanish and English. The language is chosen on the setup
+screen the first time the app runs, defaults to the browser locale, and can be
+changed later under Settings, General. It is stored under `nivra-lang`.
+
+Translations live in `src/lib/i18n.ts`, keyed by the Spanish source string, so
+`t()` is the identity function in Spanish and any missing translation falls back
+to it rather than showing a key. Stored values, category names and localStorage
+keys are deliberately left untranslated, since changing them would orphan data
+already saved on the device.
 
 ## Getting started
 

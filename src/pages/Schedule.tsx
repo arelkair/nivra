@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DAYS, DEFAULT_PROFILE, blockProfile, weekIndex, type Block, type Profile } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   blocks: Block[]
@@ -54,7 +55,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
         <button
           type="button"
           onClick={() => setCreatingProfile(true)}
-          aria-label="Nuevo horario"
+          aria-label={t('Nuevo horario')}
           className={`grid h-10 w-10 place-items-center rounded-xl border border-dashed text-neutral-400 transition-colors hover:text-neutral-900 ${line} dark:hover:text-white`}
         >
           <Icon name="plus" className="h-4 w-4" />
@@ -62,7 +63,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
       </div>
 
       <p className="mb-3 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-        Arrastra un bloque a otro día para moverlo, o púlsalo para editarlo.
+        {t('Arrastra un bloque a otro día para moverlo, o púlsalo para editarlo.')}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
@@ -94,7 +95,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                 </h3>
                 {i === todayIndex && (
                   <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[0.6rem] font-medium text-neutral-50 dark:bg-white dark:text-neutral-900">
-                    hoy
+                    {t('hoy')}
                   </span>
                 )}
               </div>
@@ -147,7 +148,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                         type="button"
                         onClick={() => setEditingItem(b)}
                         className="mt-0.5 w-full truncate text-left text-sm"
-                        title="Editar"
+                        title={t('Editar')}
                       >
                         {b.title}
                       </button>
@@ -170,7 +171,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
       </div>
 
       {adding !== null && (
-        <Modal title={DAYS[adding]} onClose={() => setAdding(null)}>
+        <Modal title={t(DAYS[adding])} onClose={() => setAdding(null)}>
           <form
             onSubmit={(ev) => {
               ev.preventDefault()
@@ -188,20 +189,20 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             }}
             className="flex flex-col gap-2"
           >
-            <input name="title" maxLength={60} required placeholder="Asignatura o bloque" className={input} />
+            <input name="title" maxLength={60} required placeholder={t('Asignatura o bloque')} className={input} />
             <div className="flex gap-2">
-              <input name="start" type="time" required aria-label="Inicio" className={input} />
-              <input name="end" type="time" required aria-label="Fin" className={input} />
+              <input name="start" type="time" required aria-label={t('Inicio')} className={input} />
+              <input name="end" type="time" required aria-label={t('Fin')} className={input} />
             </div>
             <button type="submit" className={`${button} mt-2`}>
-              Añadir
+              {t('Añadir')}
             </button>
           </form>
         </Modal>
       )}
 
       {editingItem && (
-        <Modal title="Bloque" onClose={() => setEditingItem(null)}>
+        <Modal title={t('Bloque')} onClose={() => setEditingItem(null)}>
           <form
             onSubmit={(ev) => {
               ev.preventDefault()
@@ -232,7 +233,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                 type="time"
                 defaultValue={editingItem.start}
                 required
-                aria-label="Inicio"
+                aria-label={t('Inicio')}
                 className={input}
               />
               <input
@@ -240,11 +241,11 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                 type="time"
                 defaultValue={editingItem.end}
                 required
-                aria-label="Fin"
+                aria-label={t('Fin')}
                 className={input}
               />
             </div>
-            <select name="day" defaultValue={editingItem.day} aria-label="Día" className={input}>
+            <select name="day" defaultValue={editingItem.day} aria-label={t('Día')} className={input}>
               {DAYS.map((d, i) => (
                 <option key={d} value={i}>
                   {d}
@@ -252,7 +253,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               ))}
             </select>
             <button type="submit" className={`${button} mt-2`}>
-              Guardar
+              {t('Guardar')}
             </button>
           </form>
         </Modal>
@@ -291,7 +292,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               maxLength={30}
               required
               autoFocus
-              placeholder="Nombre del horario"
+              placeholder={t('Nombre del horario')}
               className={input}
             />
             <div className="mt-2 flex gap-2">
@@ -307,16 +308,16 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                   }}
                   className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"
                 >
-                  Eliminar
+                  {t('Eliminar')}
                 </button>
               )}
               <button type="submit" className={`${button} ml-auto`}>
-                Guardar
+                {t('Guardar')}
               </button>
             </div>
             {editingProfile && profiles.length > 1 && (
               <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-                Al eliminarlo se borran también sus bloques.
+                {t('Al eliminarlo se borran también sus bloques.')}
               </p>
             )}
           </form>

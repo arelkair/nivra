@@ -1,5 +1,4 @@
 import {
-  MONTHS,
   TYPES,
   blockProfile,
   dateKey,
@@ -20,6 +19,7 @@ import {
 import { Countdowns } from '../components/Countdowns'
 import { Flame } from '../components/Flame'
 import { Empty, Icon, Label, card, line } from '../components/ui'
+import { locale, t } from '../lib/i18n'
 
 type Props = {
   items: CalItem[]
@@ -97,10 +97,10 @@ export function Dashboard({
 
       <header className="animate-[fade-in_0.4s_ease-out] shrink-0">
         <p className="text-sm text-neutral-400 first-letter:uppercase dark:text-neutral-500">
-          {today.toLocaleDateString('es-ES', { weekday: 'long' })}
+          {today.toLocaleDateString(locale(), { weekday: 'long' })}
         </p>
         <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-          {today.getDate()} de {MONTHS[today.getMonth()]}
+          {today.toLocaleDateString(locale(), { day: 'numeric', month: 'long' })}
         </h2>
       </header>
 
@@ -116,7 +116,7 @@ export function Dashboard({
               {s.value}
             </p>
             <p className="mt-1 text-[0.7rem] text-neutral-400 sm:text-xs dark:text-neutral-500">
-              {s.label}
+              {t(s.label)}
             </p>
           </button>
         ))}
@@ -127,25 +127,25 @@ export function Dashboard({
       </div>
 
       <div className="grid gap-4 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-3 xl:grid-cols-3 xl:grid-rows-2">
-        <Panel title="Hoy" delay={0.1}>
+        <Panel title={t('Hoy')} delay={0.1}>
           {todayItems.length === 0 ? (
-            <Empty>Sin actividades.</Empty>
+            <Empty>{t('Sin actividades.')}</Empty>
           ) : (
             <ul className="flex flex-col">
               {todayItems.map((e) => (
                 <Row key={e.id}>
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
                   <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                  <span className="shrink-0 text-[0.7rem] text-neutral-400">{TYPES[e.type].label}</span>
+                  <span className="shrink-0 text-[0.7rem] text-neutral-400">{t(TYPES[e.type].label)}</span>
                 </Row>
               ))}
             </ul>
           )}
         </Panel>
 
-        <Panel title="Horario" delay={0.15}>
+        <Panel title={t('Horario')} delay={0.15}>
           {todayBlocks.length === 0 ? (
-            <Empty>Sin bloques.</Empty>
+            <Empty>{t('Sin bloques.')}</Empty>
           ) : (
             <ul className="flex flex-col">
               {todayBlocks.map((b) => (
@@ -160,9 +160,9 @@ export function Dashboard({
           )}
         </Panel>
 
-        <Panel title="Exámenes y proyectos" delay={0.2}>
+        <Panel title={t('Exámenes y proyectos')} delay={0.2}>
           {nextWorks.length === 0 ? (
-            <Empty>Nada por venir.</Empty>
+            <Empty>{t('Nada por venir.')}</Empty>
           ) : (
             <ul className="flex flex-col">
               {nextWorks.map((w) => (
@@ -178,9 +178,9 @@ export function Dashboard({
           )}
         </Panel>
 
-        <Panel title="Próximo" delay={0.25}>
+        <Panel title={t('Próximo')} delay={0.25}>
           {upcoming.length === 0 ? (
-            <Empty>Sin actividades.</Empty>
+            <Empty>{t('Sin actividades.')}</Empty>
           ) : (
             <ul className="flex flex-col">
               {upcoming.map(({ date, item }) => (
@@ -196,9 +196,9 @@ export function Dashboard({
           )}
         </Panel>
 
-        <Panel title="Pendiente" delay={0.3}>
+        <Panel title={t('Pendiente')} delay={0.3}>
           {pending.length === 0 ? (
-            <Empty>Sin tareas.</Empty>
+            <Empty>{t('Sin tareas.')}</Empty>
           ) : (
             <ul className="flex flex-col">
               {pending.slice(0, 5).map((t) => (

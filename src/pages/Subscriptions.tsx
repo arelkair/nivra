@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { eur, type Subscription } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, line } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   subs: Subscription[]
@@ -19,17 +20,17 @@ export function Subscriptions({ subs, setSubs }: Props) {
       <button type="button" onClick={() => setCreating(true)} className={`${button} w-fit`}>
         <span className="flex items-center gap-2">
           <Icon name="plus" className="h-4 w-4" />
-          Nueva suscripción
+          {t('Nueva suscripción')}
         </span>
       </button>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
         <Label>
-          Suscripciones · {subs.length}
-          {total > 0 && ` · ${eur(total)} al mes`}
+          {t('Suscripciones')} · {subs.length}
+          {total > 0 && ` · ${eur(total)} ${t('al mes')}`}
         </Label>
         {subs.length === 0 ? (
-          <Empty>Sin suscripciones.</Empty>
+          <Empty>{t('Sin suscripciones.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {subs.map((s) => (
@@ -38,7 +39,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
                   type="button"
                   onClick={() => setEditingId(s.id)}
                   className="min-w-0 flex-1 text-left"
-                  title="Editar"
+                  title={t('Editar')}
                 >
                   <span className="block truncate text-sm">{s.title}</span>
                   <span className="block text-[0.7rem] text-neutral-400 dark:text-neutral-500">
@@ -77,7 +78,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
           </ul>
         )}
         <p className="mt-4 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          El día de renovación se resta solo del dinero, como gasto de categoría «Suscripción».
+          {t('El día de renovación se resta solo del dinero, como gasto de categoría «Suscripción».')}
         </p>
       </section>
 
@@ -136,7 +137,7 @@ function SubDialog({
           defaultValue={sub?.title}
           maxLength={60}
           required
-          placeholder="Nombre"
+          placeholder={t('Nombre')}
           className={input}
         />
         <input
@@ -144,7 +145,7 @@ function SubDialog({
           type="url"
           defaultValue={sub?.url}
           placeholder="https://…"
-          aria-label="Enlace"
+          aria-label={t('Enlace')}
           className={input}
         />
         <div className="flex gap-2">
@@ -155,8 +156,8 @@ function SubDialog({
             min="0.01"
             defaultValue={sub?.price}
             required
-            placeholder="Precio"
-            aria-label="Precio al mes"
+            placeholder={t('Precio')}
+            aria-label={t('Precio al mes')}
             className={`${input} font-mono`}
           />
           <input
@@ -166,15 +167,15 @@ function SubDialog({
             max="31"
             defaultValue={sub?.day ?? new Date().getDate()}
             required
-            aria-label="Día de renovación"
+            aria-label={t('Día de renovación')}
             className={`${input} font-mono`}
           />
         </div>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          Precio al mes y día del mes en que se renueva.
+          {t('Precio al mes y día del mes en que se renueva.')}
         </p>
         <button type="submit" className={`${button} mt-2`}>
-          Guardar
+          {t('Guardar')}
         </button>
       </form>
     </Modal>

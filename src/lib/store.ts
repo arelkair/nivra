@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { onSyncApplied, markChanged } from './sync'
+import { locale } from './i18n'
 
 export type PageId =
   | 'dashboard'
@@ -461,7 +462,7 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
 }
 
 export const eur = (n: number) =>
-  new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
+  new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' }).format(n)
 
 export function useStored<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(() => {

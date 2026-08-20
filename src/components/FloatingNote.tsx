@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Editor } from '../pages/Notepads'
 import type { Notepad, NotepadPage } from '../lib/store'
 import { Icon, card, line, select } from './ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   notepads: Notepad[]
@@ -50,7 +51,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
   return (
     <section
       role="dialog"
-      aria-label="Nota flotante"
+      aria-label={t('Nota flotante')}
       style={{ left: pos.x, top: pos.y, width: WIDTH, height: HEIGHT }}
       className={`${card} fixed z-30 flex flex-col overflow-hidden shadow-2xl`}
     >
@@ -69,7 +70,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
             type="button"
             onClick={create}
             onPointerDown={(e) => e.stopPropagation()}
-            aria-label="Nuevo bloc"
+            aria-label={t('Nuevo bloc')}
             className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
           >
             <Icon name="plus" className="h-4 w-4" />
@@ -78,7 +79,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
             type="button"
             onClick={onClose}
             onPointerDown={(e) => e.stopPropagation()}
-            aria-label="Cerrar nota flotante"
+            aria-label={t('Cerrar nota flotante')}
             className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
           >
             <Icon name="close" className="h-4 w-4" />
@@ -90,7 +91,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
             value={active?.id}
             onChange={(e) => setActiveId(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
-            aria-label="Bloc de notas"
+            aria-label={t('Bloc de notas')}
             className={`${select} h-8 w-full px-2 py-0 text-xs`}
           >
             {notepads.map((n) => (
@@ -120,7 +121,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
           className="flex flex-1 items-center justify-center gap-2 text-sm text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
         >
           <Icon name="plus" className="h-4 w-4" />
-          Crear un bloc para escribir
+          {t('Crear un bloc para escribir')}
         </button>
       )}
     </section>

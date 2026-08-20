@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { locale, t } from '../lib/i18n'
 
 export const line = 'border-black/[0.07] dark:border-white/[0.08]'
 
@@ -48,7 +49,7 @@ export function Segmented<T extends string>({
               : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
           }`}
         >
-          {o.label}
+          {t(o.label)}
         </button>
       ))}
     </div>
@@ -172,7 +173,7 @@ export function Switch({
 
 export function CatChart({ data, tone }: { data: { label: string; value: number }[]; tone: string }) {
   const max = Math.max(1, ...data.map((d) => d.value))
-  if (data.length === 0) return <Empty>Sin datos.</Empty>
+  if (data.length === 0) return <Empty>{t('Sin datos.')}</Empty>
   return (
     <ul className="flex flex-col gap-3">
       {data.map((d) => (
@@ -204,7 +205,7 @@ export function Clock({ hour12 }: { hour12: boolean }) {
     <span
       className={`flex h-10 shrink-0 items-center rounded-xl border px-2.5 font-mono text-xs tabular-nums text-neutral-500 sm:px-3 sm:text-sm ${line} dark:text-neutral-400`}
     >
-      {now.toLocaleTimeString('es-ES', {
+      {now.toLocaleTimeString(locale(), {
         hour: '2-digit',
         minute: '2-digit',
         hour12,
@@ -305,13 +306,13 @@ export function Toasts({ toasts, onClose }: { toasts: Toast[]; onClose: (id: str
               }}
               className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium underline underline-offset-2 transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.08]"
             >
-              Deshacer
+              {t('Deshacer')}
             </button>
           )}
           <button
             type="button"
             onClick={() => onClose(a.id)}
-            aria-label="Cerrar aviso"
+            aria-label={t('Cerrar aviso')}
             className="shrink-0 rounded-lg p-1 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
           >
             <Icon name="close" className="h-3.5 w-3.5" />
@@ -351,7 +352,7 @@ export function Modal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar"
+          aria-label={t('Cerrar')}
           className="-mt-1 -mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-neutral-400 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           <Icon name="close" />

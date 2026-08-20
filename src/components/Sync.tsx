@@ -10,6 +10,7 @@ import {
   type SyncState,
 } from '../lib/sync'
 import { Icon, Label, button, input, line } from './ui'
+import { locale, t } from '../lib/i18n'
 
 export function SyncPanel({
   status,
@@ -57,7 +58,7 @@ export function SyncPanel({
 
   return (
     <div>
-      <Label>Sincronización</Label>
+      <Label>{t('Sincronización')}</Label>
 
       {status ? (
         <div className="flex flex-col gap-2">
@@ -78,7 +79,7 @@ export function SyncPanel({
                 navigator.clipboard.writeText(withDashes(status.code))
                 setToast('Código copiado.')
               }}
-              aria-label="Copiar código"
+              aria-label={t('Copiar código')}
               className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
             >
               <Icon name="link" className="h-4 w-4" />
@@ -89,7 +90,7 @@ export function SyncPanel({
             {status.error
               ? `Último intento fallido: ${status.error}`
               : status.lastSeen
-                ? `Al día · ${new Date(status.lastSeen).toLocaleTimeString('es-ES')} · se comprueba cada 4 s`
+                ? `Al día · ${new Date(status.lastSeen).toLocaleTimeString(locale())} · se comprueba cada 4 s`
                 : 'Sin sincronizar todavía.'}
           </p>
 
@@ -102,7 +103,7 @@ export function SyncPanel({
             }}
             className="w-fit text-xs text-neutral-400 transition-colors hover:text-red-500"
           >
-            Desconectar este dispositivo
+            {t('Desconectar este dispositivo')}
           </button>
         </div>
       ) : (
@@ -127,20 +128,19 @@ export function SyncPanel({
       >
         <input
           name="codigo"
-          placeholder="Código de otro dispositivo"
-          aria-label="Código de otro dispositivo"
+          placeholder={t('Código de otro dispositivo')}
+          aria-label={t('Código de otro dispositivo')}
           className={`${input} font-mono tracking-wider`}
         />
         <button type="submit" disabled={working} className={`${button} shrink-0`}>
-          Unir
+          {t('Unir')}
         </button>
       </form>
 
       {toast && <p className="mt-2 text-[0.7rem] text-neutral-500 dark:text-neutral-400">{toast}</p>}
 
       <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-        Los datos se cifran en tu navegador con el código antes de salir. El servidor guarda algo que
-        no puede leer, y sin element código no hay forma de recuperarlo.
+        {t('Los datos se cifran en tu navegador con el código antes de salir. El servidor guarda algo que no puede leer, y sin el código no hay forma de recuperarlo.')}
       </p>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PageId } from '../lib/store'
 import { Icon, card, input, line } from './ui'
+import { t } from '../lib/i18n'
 
 export type Destination = PageId | 'ajustes'
 
@@ -39,7 +40,7 @@ export function Search({
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          aria-label="Buscar"
+          aria-label={t('Buscar')}
           className={`grid h-10 w-10 place-items-center rounded-xl border text-neutral-500 transition-colors hover:text-neutral-900 sm:hidden ${line} dark:text-neutral-400 dark:hover:text-white`}
         >
           <Icon name="search" className="h-[18px] w-[18px]" />
@@ -66,8 +67,8 @@ export function Search({
               }
               if (e.key === 'Enter' && results[0]) choose(results[0])
             }}
-            placeholder="Buscar…"
-            aria-label="Buscar"
+            placeholder={t('Buscar…')}
+            aria-label={t('Buscar')}
             className={`${input} h-10 w-44 py-0 !pl-9 lg:w-60`}
           />
         </div>
@@ -82,13 +83,13 @@ export function Search({
               value={text}
               onChange={(e) => setText(e.target.value)}
               autoFocus
-              placeholder="Buscar…"
-              aria-label="Buscar"
+              placeholder={t('Buscar…')}
+              aria-label={t('Buscar')}
               className={`${input} mb-2 sm:hidden`}
             />
             {text.trim() === '' ? (
               <p className="px-2 py-3 text-sm text-neutral-400 dark:text-neutral-500">
-                Escribe para buscar en todos los apartados.
+                {t('Escribe para buscar en todos los apartados.')}
               </p>
             ) : results.length === 0 ? (
               <p className="px-2 py-3 text-sm text-neutral-400 dark:text-neutral-500">

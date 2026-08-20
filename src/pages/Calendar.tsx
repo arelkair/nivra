@@ -4,7 +4,6 @@ import {
   MONTHS,
   REPEATS,
   TYPES,
-  WEEKDAYS,
   dateKey,
   itemsOfDay,
   isFreeDay,
@@ -21,6 +20,7 @@ import {
 } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, input, select } from '../components/ui'
+import { locale, t, weekdayLetters } from '../lib/i18n'
 
 type Props = {
   items: CalItem[]
@@ -81,14 +81,14 @@ export function Calendar({
         <h2 className="text-2xl font-semibold tracking-tight first-letter:uppercase sm:text-3xl">
           {view === 'mes' ? (
             <>
-              {MONTHS[cursor.m]}{' '}
+              {t(MONTHS[cursor.m])}{' '}
               <span className="text-neutral-300 dark:text-neutral-600">{cursor.y}</span>
             </>
           ) : (
             <>
-              {weekDays[0].getDate()} {MONTHS[weekDays[0].getMonth()].slice(0, 3)}
+              {weekDays[0].getDate()} {t(MONTHS[weekDays[0].getMonth()]).slice(0, 3)}
               <span className="text-neutral-300 dark:text-neutral-600"> — </span>
-              {weekDays[6].getDate()} {MONTHS[weekDays[6].getMonth()].slice(0, 3)}
+              {weekDays[6].getDate()} {t(MONTHS[weekDays[6].getMonth()]).slice(0, 3)}
             </>
           )}
         </h2>
@@ -111,7 +111,7 @@ export function Calendar({
             }}
             className="rounded-xl border border-black/[0.07] px-4 py-2 text-sm text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-neutral-100"
           >
-            Hoy
+            {t('Hoy')}
           </button>
           <button
             type="button"
@@ -152,7 +152,7 @@ export function Calendar({
               >
                 <span className="flex items-baseline justify-between gap-2">
                   <span className="text-[0.65rem] tracking-wider text-neutral-400 uppercase">
-                    {DAYS[weekIndex(d)].slice(0, 3)}
+                    {t(DAYS[weekIndex(d)]).slice(0, 3)}
                   </span>
                   <span
                     className={`font-mono text-2xl tabular-nums ${
@@ -179,7 +179,7 @@ export function Calendar({
                     <span
                       className={`truncate rounded-md ${GRADIENT} px-1.5 py-0.5 text-[0.65rem] text-white`}
                     >
-                      Día especial
+                      {t('Día especial')}
                     </span>
                   )}
                   {own.length === 0 && !isAnniversary && !isSpecial ? (
@@ -207,7 +207,7 @@ export function Calendar({
       <>
 
       <div className="mb-2 grid grid-cols-7 text-center text-[0.7rem] font-semibold tracking-wider text-neutral-300 dark:text-neutral-600">
-        {WEEKDAYS.map((d, i) => (
+        {weekdayLetters().map((d, i) => (
           <span key={i} className={i >= 5 ? 'text-red-300 dark:text-red-500/60' : ''}>
             {d}
           </span>
@@ -254,7 +254,7 @@ export function Calendar({
             >
               {hasSubscription && (
                 <span
-                  title="Ese día se renueva una suscripción"
+                  title={t('Ese día se renueva una suscripción')}
                   className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-neutral-400 ring-2 ring-[var(--paper)] dark:bg-neutral-500"
                 />
               )}
@@ -389,7 +389,7 @@ function DayDialog({
   onDelete,
 }: DialogProps) {
   const [y, m, d] = date.split('-').map(Number)
-  const label = new Date(y, m - 1, d).toLocaleDateString('es-ES', {
+  const label = new Date(y, m - 1, d).toLocaleDateString(locale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -409,7 +409,7 @@ function DayDialog({
             disabled={locked}
             aria-pressed={free}
             title={locked ? 'Festivo oficial o fin de semana' : 'Marcar como día sin trabajo'}
-            aria-label="Día sin trabajo"
+            aria-label={t('Día sin trabajo')}
             className={`${square} ${
               free
                 ? 'border-red-500 bg-red-500 text-white'
@@ -422,8 +422,8 @@ function DayDialog({
             type="button"
             onClick={onToggleSpecial}
             aria-pressed={special}
-            title="Marcar como día especial"
-            aria-label="Día especial"
+            title={t('Marcar como día especial')}
+            aria-label={t('Día especial')}
             className={`${square} ${
               special
                 ? 'border-transparent bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)] text-white'
@@ -436,8 +436,8 @@ function DayDialog({
             type="button"
             onClick={onToggleAnniversary}
             aria-pressed={!!anniversary}
-            title="Marcar como aniversario (cada año)"
-            aria-label="Aniversario"
+            title={t('Marcar como aniversario (cada año)')}
+            aria-label={t('Aniversario')}
             className={`${square} ${
               anniversary
                 ? 'border-yellow-500 bg-yellow-500 text-white'
@@ -454,14 +454,14 @@ function DayDialog({
           defaultValue={anniversary.name}
           onChange={(e) => onRenameAnniversary(e.target.value)}
           maxLength={40}
-          placeholder="¿De qué o de quién es el aniversario?"
+          placeholder={t('¿De qué o de quién es el aniversario?')}
           className={`${input} mb-4 border-yellow-300 bg-yellow-50 dark:border-yellow-500/40 dark:bg-yellow-500/10`}
         />
       )}
 
       {items.length === 0 ? (
         <div className="mb-5">
-          <Empty>Sin actividades.</Empty>
+          <Empty>{t('Sin actividades.')}</Empty>
         </div>
       ) : (
         <ul className="mb-5 flex flex-col gap-2">
@@ -477,8 +477,8 @@ function DayDialog({
                   <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{e.desc}</p>
                 )}
                 <p className="mt-1 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
-                  {TYPES[e.type].label}
-                  {e.repeat && ` · ${REPEATS.find((r) => r.id === e.repeat)?.label.toLowerCase()}`}
+                  {t(TYPES[e.type].label)}
+                  {e.repeat && ` · ${t(REPEATS.find((r) => r.id === e.repeat)?.label ?? '').toLowerCase()}`}
                   {e.origin !== 'evento' && ' · desde su apartado'}
                 </p>
               </div>
@@ -514,26 +514,26 @@ function DayDialog({
         }}
         className="flex flex-col gap-2"
       >
-        <input name="title" maxLength={60} required placeholder="Nueva actividad" className={input} />
-        <textarea name="desc" maxLength={200} rows={2} placeholder="Descripción" className={input} />
+        <input name="title" maxLength={60} required placeholder={t('Nueva actividad')} className={input} />
+        <textarea name="desc" maxLength={200} rows={2} placeholder={t('Descripción')} className={input} />
         <div className="flex gap-2">
-          <select name="type" defaultValue="festividad" className={select} aria-label="Tipo">
-            {Object.entries(TYPES).map(([value, t]) => (
+          <select name="type" defaultValue="festividad" className={select} aria-label={t('Tipo')}>
+            {Object.entries(TYPES).map(([value, info]) => (
               <option key={value} value={value}>
-                {t.label}
+                {t(info.label)}
               </option>
             ))}
           </select>
-          <select name="repeat" defaultValue="" className={select} aria-label="Repetición">
-            <option value="">No se repite</option>
+          <select name="repeat" defaultValue="" className={select} aria-label={t('Repetición')}>
+            <option value="">{t('No se repite')}</option>
             {REPEATS.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.label}
+                {t(r.label)}
               </option>
             ))}
           </select>
           <button type="submit" className={`${button} shrink-0`}>
-            Añadir
+            {t('Añadir')}
           </button>
         </div>
       </form>

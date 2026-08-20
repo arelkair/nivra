@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { dateKey, shortDate, type Reminder, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   reminders: Reminder[]
@@ -23,14 +24,16 @@ export function Reminders({ reminders, setReminders, works }: Props) {
       <button type="button" onClick={() => setCreating(true)} className={`${button} w-fit`}>
         <span className="flex items-center gap-2">
           <Icon name="plus" className="h-4 w-4" />
-          Nuevo recordatorio
+          {t('Nuevo recordatorio')}
         </span>
       </button>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
-        <Label>Recordatorios · {reminders.length}</Label>
+        <Label>
+          {t('Recordatorios')} · {reminders.length}
+        </Label>
         {sorted.length === 0 ? (
-          <Empty>Sin recordatorios.</Empty>
+          <Empty>{t('Sin recordatorios.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {sorted.map((r) => {
@@ -49,7 +52,7 @@ export function Reminders({ reminders, setReminders, works }: Props) {
                     type="button"
                     onClick={() => setEditingId(r.id)}
                     className="min-w-0 flex-1 text-left"
-                    title="Editar"
+                    title={t('Editar')}
                   >
                     <span className="block truncate text-sm">{r.title}</span>
                     {(r.subtitle || work) && (
@@ -137,14 +140,14 @@ function ReminderDialog({
           maxLength={60}
           required
           autoFocus
-          placeholder="¿Qué hay que recordar?"
+          placeholder={t('¿Qué hay que recordar?')}
           className={input}
         />
         <input
           name="subtitle"
           defaultValue={reminder?.subtitle}
           maxLength={80}
-          placeholder="Subtítulo (opcional)"
+          placeholder={t('Subtítulo (opcional)')}
           className={input}
         />
         <div className="flex gap-2">
@@ -153,20 +156,20 @@ function ReminderDialog({
             type="date"
             defaultValue={reminder?.date ?? dateKey(new Date())}
             required
-            aria-label="Fecha"
+            aria-label={t('Fecha')}
             className={input}
           />
           <input
             name="time"
             type="time"
             defaultValue={reminder?.time}
-            aria-label="Hora"
+            aria-label={t('Hora')}
             className={input}
           />
         </div>
         {works.length > 0 && (
-          <select name="work" defaultValue={reminder?.work ?? ''} aria-label="Vincular a" className={select}>
-            <option value="">Sin vincular</option>
+          <select name="work" defaultValue={reminder?.work ?? ''} aria-label={t('Vincular a')} className={select}>
+            <option value="">{t('Sin vincular')}</option>
             {works.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.kind === 'examen' ? 'Examen' : 'Proyecto'} · {w.title}
@@ -175,7 +178,7 @@ function ReminderDialog({
           </select>
         )}
         <button type="submit" className={`${button} mt-2`}>
-          Guardar
+          {t('Guardar')}
         </button>
       </form>
     </Modal>

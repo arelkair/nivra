@@ -48,6 +48,7 @@ import {
   type Wish,
   type Work,
 } from './lib/store'
+import { t } from './lib/i18n'
 
 const SETUP_KEY = 'nivra-setup-done'
 
@@ -469,7 +470,7 @@ function App() {
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
-                aria-label="Menú"
+                aria-label={t('Menú')}
                 className={`${headerButton} md:hidden`}
               >
                 <Icon name="menu" className="h-[18px] w-[18px]" />
@@ -480,7 +481,7 @@ function App() {
                     type="button"
                     onClick={back}
                     disabled={index === 0}
-                    aria-label="Atrás"
+                    aria-label={t('Atrás')}
                     className={headerButton}
                   >
                     <Icon name="back" className="h-[18px] w-[18px]" />
@@ -489,7 +490,7 @@ function App() {
                     type="button"
                     onClick={forward}
                     disabled={index >= pageHistory.length - 1}
-                    aria-label="Adelante"
+                    aria-label={t('Adelante')}
                     className={headerButton}
                   >
                     <Icon name="forward" className="h-[18px] w-[18px]" />
@@ -500,9 +501,9 @@ function App() {
                 Nivra
               </span>
               <p className="hidden min-w-0 items-center gap-2 text-sm md:flex">
-                <span className="text-neutral-400 dark:text-neutral-500">{currentGroup?.title}</span>
+                <span className="text-neutral-400 dark:text-neutral-500">{currentGroup && t(currentGroup.title)}</span>
                 <Icon name="right" className="h-3 w-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
-                <span className="truncate font-medium">{currentPage?.label}</span>
+                <span className="truncate font-medium">{currentPage && t(currentPage.label)}</span>
               </p>
             </div>
 
@@ -527,7 +528,7 @@ function App() {
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
-                aria-label="Ajustes"
+                aria-label={t('Ajustes')}
                 className={headerButton}
               >
                 <Icon name="settings" className="h-[18px] w-[18px]" />
@@ -633,7 +634,7 @@ function App() {
           <div className="fixed inset-0 z-30 md:hidden">
             <button
               type="button"
-              aria-label="Cerrar menú"
+              aria-label={t('Cerrar menú')}
               onClick={() => setMenuOpen(false)}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
@@ -645,7 +646,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen(false)}
-                  aria-label="Cerrar"
+                  aria-label={t('Cerrar')}
                   className="text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
                 >
                   <Icon name="close" className="h-5 w-5" />
@@ -722,30 +723,30 @@ function Navigation({
             {GROUPS.map((g) => (
               <div key={g.title}>
                 <p className="mb-2 px-3 text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
-                  {g.title}
+                  {t(g.title)}
                 </p>
                 <div className="flex flex-col gap-0.5">
                   {g.pages.map((p) => (
                     <div key={p.id}>
                       <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
                         <Icon name={p.icon} className="h-[17px] w-[17px] shrink-0" />
-                        <span className="min-w-0 truncate">{p.label}</span>
+                        <span className="min-w-0 truncate">{t(p.label)}</span>
                       </button>
 
                       {p.id === 'banco' && page === 'banco' && bankInitial !== null && (
                         <div className={`mt-1 ml-6 flex flex-col gap-0.5 border-l pl-3 ${line}`}>
-                          {BANK_TABS.map((t) => (
+                          {BANK_TABS.map((tab) => (
                             <button
-                              key={t.id}
+                              key={tab.id}
                               type="button"
-                              onClick={() => setBankTab(t.id)}
+                              onClick={() => setBankTab(tab.id)}
                               className={`rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
-                                bankTab === t.id
+                                bankTab === tab.id
                                   ? 'font-medium text-neutral-900 dark:text-white'
                                   : 'text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white'
                               }`}
                             >
-                              {t.label}
+                              {t(tab.label)}
                             </button>
                           ))}
                         </div>

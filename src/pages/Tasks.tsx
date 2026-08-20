@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { reorder, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   tasks: Task[]
@@ -42,16 +43,18 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
         }}
         className="flex gap-2"
       >
-        <input name="title" maxLength={80} required placeholder="Nueva tarea" className={input} />
-        <button type="submit" aria-label="Añadir tarea" className={`${button} shrink-0 px-4`}>
+        <input name="title" maxLength={80} required placeholder={t('Nueva tarea')} className={input} />
+        <button type="submit" aria-label={t('Añadir tarea')} className={`${button} shrink-0 px-4`}>
           <Icon name="plus" className="h-5 w-5" />
         </button>
       </form>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
-        <Label>Pendiente · {pending.length}</Label>
+        <Label>
+          {t('Pendiente')} · {pending.length}
+        </Label>
         {pending.length === 0 ? (
-          <Empty>Sin tareas.</Empty>
+          <Empty>{t('Sin tareas.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {pending.map((t) => (
@@ -73,7 +76,9 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
 
       {done.length > 0 && (
         <section className={`${card} animate-[fade-in_0.35s_ease-out_0.05s_both] p-5 sm:p-6`}>
-          <Label>Hecho · {done.length}</Label>
+          <Label>
+            {t('Hecho')} · {done.length}
+          </Label>
           <ul className="flex flex-col">
             {done.map((t) => (
               <Row
@@ -98,7 +103,7 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
             }}
             className="mt-4 text-xs text-neutral-400 transition-colors hover:text-red-500"
           >
-            Vaciar
+            {t('Vaciar')}
           </button>
         </section>
       )}
@@ -154,7 +159,7 @@ function Row({
         type="button"
         onClick={() => onOpen(task.id)}
         className="min-w-0 flex-1 text-left"
-        title="Editar"
+        title={t('Editar')}
       >
         <span
           className={`block truncate text-sm ${
@@ -239,13 +244,13 @@ function TaskDialog({
   }
 
   return (
-    <Modal title="Tarea" onClose={onClose}>
+    <Modal title={t('Tarea')} onClose={onClose}>
       <div className="flex flex-col gap-2">
         <input
           value={task.title}
           onChange={(e) => onPatch({ title: e.target.value })}
           maxLength={80}
-          aria-label="Título"
+          aria-label={t('Título')}
           className={input}
         />
         <textarea
@@ -253,8 +258,8 @@ function TaskDialog({
           onChange={(e) => onPatch({ desc: e.target.value })}
           maxLength={300}
           rows={3}
-          placeholder="Descripción"
-          aria-label="Descripción"
+          placeholder={t('Descripción')}
+          aria-label={t('Descripción')}
           className={input}
         />
         <div className="flex items-center gap-2">
@@ -262,7 +267,7 @@ function TaskDialog({
             type="date"
             value={task.date ?? ''}
             onChange={(e) => onPatch({ date: e.target.value || undefined })}
-            aria-label="Fecha"
+            aria-label={t('Fecha')}
             className={input}
           />
           {task.date && (
@@ -271,21 +276,21 @@ function TaskDialog({
               onClick={() => onPatch({ date: undefined })}
               className="shrink-0 text-xs text-neutral-400 transition-colors hover:text-red-500"
             >
-              Quitar
+              {t('Quitar')}
             </button>
           )}
         </div>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          Con date aparece en element calendario como Tarea, en azul.
+          {t('Con fecha aparece en el calendario como Tarea, en azul.')}
         </p>
 
         <select
           value={task.subject ?? ''}
           onChange={(e) => onPatch({ subject: e.target.value || undefined })}
-          aria-label="Asignatura"
+          aria-label={t('Asignatura')}
           className={select}
         >
-          <option value="">Sin asignatura</option>
+          <option value="">{t('Sin asignatura')}</option>
           {subjects.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -297,7 +302,7 @@ function TaskDialog({
           <select
             value={task.notepad ?? ''}
             onChange={(e) => onPatch({ notepad: e.target.value || undefined })}
-            aria-label="Bloc de notas"
+            aria-label={t('Bloc de notas')}
             className={select}
           >
             <option value="">Sin bloc de notas</option>
@@ -314,7 +319,7 @@ function TaskDialog({
       </div>
 
       <div className="mt-6">
-        <Label>Subtareas</Label>
+        <Label>{t('Subtareas')}</Label>
         {task.subtasks.length > 0 && (
           <ul className="mb-3 flex flex-col">
             {task.subtasks.map((s) => (
@@ -387,8 +392,8 @@ function TaskDialog({
           }}
           className="flex gap-2"
         >
-          <input name="sub" maxLength={80} required placeholder="Nueva subtarea" className={input} />
-          <button type="submit" aria-label="Añadir subtarea" className={`${button} shrink-0 px-4`}>
+          <input name="sub" maxLength={80} required placeholder={t('Nueva subtarea')} className={input} />
+          <button type="submit" aria-label={t('Añadir subtarea')} className={`${button} shrink-0 px-4`}>
             <Icon name="plus" className="h-4 w-4" />
           </button>
         </form>

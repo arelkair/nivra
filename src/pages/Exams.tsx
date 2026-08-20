@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { TYPES, reorder, shortDate, type Grade, type Notepad, type Subject, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   works: Work[]
@@ -69,7 +70,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
                   : 'border border-black/[0.07] text-neutral-500 hover:bg-black/[0.04] dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.06]'
               }`}
             >
-              {TYPES[k].label}
+              {t(TYPES[k].label)}
             </button>
           ))}
         </div>
@@ -81,8 +82,8 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           className={input}
         />
         {subjects.length > 0 && (
-          <select name="subject" defaultValue="" aria-label="Asignatura" className={select}>
-            <option value="">Sin asignatura</option>
+          <select name="subject" defaultValue="" aria-label={t('Asignatura')} className={select}>
+            <option value="">{t('Sin asignatura')}</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -99,16 +100,18 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
             className={input}
           />
           <button type="submit" className={`${button} shrink-0`}>
-            Añadir
+            {t('Añadir')}
           </button>
         </div>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          {kind === 'examen' ? 'Fecha obligatoria. Sale en rojo.' : 'Fecha opcional. Sale en verde.'}
+          {t(kind === 'examen' ? 'Fecha obligatoria. Sale en rojo.' : 'Fecha opcional. Sale en verde.')}
         </p>
       </form>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
-        <Label>Exámenes · {exams.length}</Label>
+        <Label>
+          {t('Exámenes')} · {exams.length}
+        </Label>
         {exams.length === 0 ? (
           <Empty>Sin exámenes.</Empty>
         ) : (
@@ -129,7 +132,9 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
       </section>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out_0.05s_both] p-5 sm:p-6`}>
-        <Label>Proyectos · {projects.length}</Label>
+        <Label>
+          {t('Proyectos')} · {projects.length}
+        </Label>
         {projects.length === 0 ? (
           <Empty>Sin proyectos.</Empty>
         ) : (
@@ -182,13 +187,13 @@ function Row({
   return (
     <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
       <span className={`h-2 w-2 shrink-0 rounded-full ${TYPES[work.kind].dot}`} />
-      <button type="button" onClick={() => onOpen(work.id)} className="min-w-0 flex-1 text-left" title="Editar">
+      <button type="button" onClick={() => onOpen(work.id)} className="min-w-0 flex-1 text-left" title={t('Editar')}>
         <span className="block truncate text-sm">{work.title}</span>
         <span className="mt-0.5 flex gap-2 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
           {work.date ? (
             <span className={`rounded px-1.5 ${TYPES[work.kind].chip}`}>{shortDate(work.date)}</span>
           ) : (
-            <span>Sin fecha</span>
+            <span>{t('Sin fecha')}</span>
           )}
           {subject && (
             <span className="rounded px-1.5 text-white" style={{ background: subject.color }}>
@@ -202,7 +207,7 @@ function Row({
       </button>
       {grade !== undefined && (
         <span
-          title="Nota obtenida"
+          title={t('Nota obtenida')}
           className={`shrink-0 rounded-md px-2 py-0.5 font-mono text-sm font-medium tabular-nums ${
             grade >= 5
               ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200'
@@ -266,13 +271,13 @@ function WorkDialog({
   }
 
   return (
-    <Modal title={TYPES[work.kind].label} onClose={onClose}>
+    <Modal title={t(TYPES[work.kind].label)} onClose={onClose}>
       <div className="flex flex-col gap-2">
         <input
           value={work.title}
           onChange={(e) => onPatch({ title: e.target.value })}
           maxLength={80}
-          aria-label="Título"
+          aria-label={t('Título')}
           className={input}
         />
         <textarea
@@ -280,8 +285,8 @@ function WorkDialog({
           onChange={(e) => onPatch({ desc: e.target.value })}
           maxLength={300}
           rows={3}
-          placeholder="Descripción"
-          aria-label="Descripción"
+          placeholder={t('Descripción')}
+          aria-label={t('Descripción')}
           className={input}
         />
         <input
@@ -291,17 +296,17 @@ function WorkDialog({
             onPatch({ date: e.target.value || (work.kind === 'examen' ? work.date : undefined) })
           }
           required={work.kind === 'examen'}
-          aria-label="Fecha"
+          aria-label={t('Fecha')}
           className={input}
         />
 
         <select
           value={work.subject ?? ''}
           onChange={(e) => onPatch({ subject: e.target.value || undefined })}
-          aria-label="Asignatura"
+          aria-label={t('Asignatura')}
           className={select}
         >
-          <option value="">Sin asignatura</option>
+          <option value="">{t('Sin asignatura')}</option>
           {subjects.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -313,7 +318,7 @@ function WorkDialog({
           <select
             value={work.notepad ?? ''}
             onChange={(e) => onPatch({ notepad: e.target.value || undefined })}
-            aria-label="Bloc de notas"
+            aria-label={t('Bloc de notas')}
             className={select}
           >
             <option value="">Sin bloc de notas</option>
@@ -333,14 +338,14 @@ function WorkDialog({
             <select
               value={work.category ?? 'colegio'}
               onChange={(e) => onPatch({ category: e.target.value as 'colegio' | 'casa' })}
-              aria-label="Categoría"
+              aria-label={t('Categoría')}
               className={select}
             >
               <option value="colegio">Colegio</option>
               <option value="casa">Casa</option>
             </select>
             <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-              La categoría no sale en el calendario.
+              {t('La categoría no sale en el calendario.')}
             </p>
           </>
         )}

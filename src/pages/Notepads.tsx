@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { pagesOf, sanitize, type Notepad, type NotepadPage } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   notepads: Notepad[]
@@ -44,7 +45,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          aria-label="Nuevo bloc"
+          aria-label={t('Nuevo bloc')}
           className={`grid h-10 w-10 place-items-center rounded-xl border border-dashed text-neutral-400 transition-colors hover:text-neutral-900 ${line} dark:hover:text-white`}
         >
           <Icon name="plus" className="h-4 w-4" />
@@ -62,7 +63,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
         />
       ) : (
         <section className={`${card} p-6`}>
-          <Empty>Sin blocs. Crea el primero con el botón +.</Empty>
+          <Empty>{t('Sin blocs. Crea el primero con el botón +.')}</Empty>
         </section>
       )}
 
@@ -97,7 +98,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
               maxLength={30}
               required
               autoFocus
-              placeholder="Nombre del bloc"
+              placeholder={t('Nombre del bloc')}
               className={input}
             />
             <div className="mt-2 flex gap-2">
@@ -113,11 +114,11 @@ export function Notepads({ notepads, setNotepads }: Props) {
                   }}
                   className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"
                 >
-                  Eliminar
+                  {t('Eliminar')}
                 </button>
               )}
               <button type="submit" className={`${button} ml-auto`}>
-                Guardar
+                {t('Guardar')}
               </button>
             </div>
           </form>
@@ -205,7 +206,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => apply('bold')}
-          aria-label="Negrita"
+          aria-label={t('Negrita')}
           className={`${btnClass} ${line} font-bold`}
         >
           B
@@ -253,7 +254,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => apply('insertUnorderedList')}
-          aria-label="Lista"
+          aria-label={t('Lista')}
           className={`${btnClass} ${line}`}
         >
           <Icon name="tasks" className="h-4 w-4" />
@@ -261,7 +262,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => apply('removeFormat')}
-          aria-label="Quitar formato"
+          aria-label={t('Quitar formato')}
           className={`${btnClass} ${line} text-neutral-400`}
         >
           <Icon name="close" className="h-4 w-4" />
@@ -270,7 +271,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => setSearching((v) => !v)}
-          aria-label="Buscar en el bloc"
+          aria-label={t('Buscar en el bloc')}
           aria-pressed={searching}
           className={`${btnClass} ${line} ml-auto ${searching ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
         >
@@ -288,14 +289,14 @@ export function Editor({
               if (e.key === 'Escape') setSearching(false)
             }}
             autoFocus
-            placeholder="Buscar en esta página…"
-            aria-label="Buscar en el bloc"
+            placeholder={t('Buscar en esta página…')}
+            aria-label={t('Buscar en el bloc')}
             className={`${input} h-8 flex-1 py-0 text-sm`}
           />
           <button
             type="button"
             onClick={() => findNext(true)}
-            aria-label="Coincidencia anterior"
+            aria-label={t('Coincidencia anterior')}
             className={`${btnClass} ${line} h-8 w-8`}
           >
             <Icon name="up" className="h-3.5 w-3.5" />
@@ -303,7 +304,7 @@ export function Editor({
           <button
             type="button"
             onClick={() => findNext(false)}
-            aria-label="Siguiente coincidencia"
+            aria-label={t('Siguiente coincidencia')}
             className={`${btnClass} ${line} h-8 w-8`}
           >
             <Icon name="down" className="h-3.5 w-3.5" />
@@ -333,7 +334,7 @@ export function Editor({
           type="button"
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
           disabled={index === 0}
-          aria-label="Página anterior"
+          aria-label={t('Página anterior')}
           className={btnClass + ' ' + line + ' disabled:opacity-30'}
         >
           <Icon name="left" className="h-4 w-4" />
@@ -364,7 +365,7 @@ export function Editor({
               onPages([...pageList, newPage])
               setIndex(pageList.length)
             }}
-            aria-label="Nueva página"
+            aria-label={t('Nueva página')}
             className={btnClass + ' ' + line + ' ml-1'}
           >
             <Icon name="plus" className="h-3.5 w-3.5" />
@@ -376,7 +377,7 @@ export function Editor({
                 onPages(pageList.filter((p) => p.id !== currentPage.id))
                 setIndex((i) => Math.max(0, i - 1))
               }}
-              aria-label="Eliminar esta página"
+              aria-label={t('Eliminar esta página')}
               className={btnClass + ' ' + line + ' text-neutral-400 hover:text-red-500'}
             >
               <Icon name="trash" className="h-3.5 w-3.5" />
@@ -388,7 +389,7 @@ export function Editor({
           type="button"
           onClick={() => setIndex((i) => Math.min(pageList.length - 1, i + 1))}
           disabled={index >= pageList.length - 1}
-          aria-label="Página siguiente"
+          aria-label={t('Página siguiente')}
           className={btnClass + ' ' + line + ' disabled:opacity-30'}
         >
           <Icon name="right" className="h-4 w-4" />

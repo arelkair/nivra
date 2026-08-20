@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { eur, reorder, type Wish } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
+import { t } from '../lib/i18n'
 
 type Props = {
   wishes: Wish[]
@@ -19,17 +20,17 @@ export function Wishlist({ wishes, setWishes }: Props) {
       <button type="button" onClick={() => setCreating(true)} className={`${button} w-fit`}>
         <span className="flex items-center gap-2">
           <Icon name="plus" className="h-4 w-4" />
-          Nuevo deseo
+          {t('Nuevo deseo')}
         </span>
       </button>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
         <Label>
-          Deseos · {wishes.length}
+          {t('Deseos')} · {wishes.length}
           {total > 0 && ` · ${eur(total)}`}
         </Label>
         {wishes.length === 0 ? (
-          <Empty>Sin deseos.</Empty>
+          <Empty>{t('Sin deseos.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {wishes.map((w, i) => (
@@ -41,7 +42,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                   type="button"
                   onClick={() => setEditingId(w.id)}
                   className="min-w-0 flex-1 text-left"
-                  title="Editar"
+                  title={t('Editar')}
                 >
                   <span className="block truncate text-sm">{w.title}</span>
                   {w.desc && (
@@ -152,7 +153,7 @@ function WishDialog({
           defaultValue={wish?.title}
           maxLength={60}
           required
-          placeholder="¿Qué quieres?"
+          placeholder={t('¿Qué quieres?')}
           className={input}
         />
         <textarea
@@ -160,7 +161,7 @@ function WishDialog({
           defaultValue={wish?.desc}
           maxLength={200}
           rows={2}
-          placeholder="Descripción"
+          placeholder={t('Descripción')}
           className={input}
         />
         <input
@@ -169,8 +170,8 @@ function WishDialog({
           step="0.01"
           min="0"
           defaultValue={wish?.price}
-          placeholder="Precio"
-          aria-label="Precio"
+          placeholder={t('Precio')}
+          aria-label={t('Precio')}
           className={`${input} font-mono`}
         />
         <input
@@ -178,14 +179,14 @@ function WishDialog({
           type="url"
           defaultValue={wish?.url}
           placeholder="https://donde-comprarlo.com"
-          aria-label="Enlace"
+          aria-label={t('Enlace')}
           className={input}
         />
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          El enlace debe empezar por http:// o https://.
+          {t('El enlace debe empezar por http:// o https://.')}
         </p>
         <button type="submit" className={`${button} mt-2`}>
-          Guardar
+          {t('Guardar')}
         </button>
       </form>
     </Modal>
