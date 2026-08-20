@@ -169,7 +169,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
                     {periodNet >= 0 ? '+' : ''}
                     {eur(periodNet)}
                   </span>
-                  <span>{period === 'semana' ? 'esta semana' : 'este mes'}</span>
+                  <span>{period === 'semana' ? t('esta semana') : t('este mes')}</span>
                 </p>
               </div>
               <Segmented
@@ -225,7 +225,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           onRemove={(id) => {
             const before = movements
             setMovements((prev) => prev.filter((m) => m.id !== id))
-            notifyWithUndo('Movimiento eliminado', () => setMovements(() => before))
+            notifyWithUndo(t('Movimiento eliminado'), () => setMovements(() => before))
           }}
         />
       )}
@@ -274,7 +274,7 @@ function MovementPanel({
         }}
         className={`${card} flex flex-col gap-2 p-4 sm:p-5`}
       >
-        <Label>{t(positive ? 'Nuevo ingreso' : 'Nuevo gasto')}</Label>
+        <Label>{t(positive ? t('Nuevo ingreso') : t('Nuevo gasto'))}</Label>
         <input
           name="amount"
           type="number"
@@ -288,7 +288,7 @@ function MovementPanel({
         <input
           name="note"
           maxLength={60}
-          placeholder={positive ? '¿De qué? (opcional)' : '¿En qué? (opcional)'}
+          placeholder={positive ? t('¿De qué? (opcional)') : t('¿En qué? (opcional)')}
           aria-label={t('Concepto')}
           className={input}
         />
@@ -309,13 +309,13 @@ function MovementPanel({
           />
         </div>
         <button type="submit" className={button}>
-          {positive ? 'Sumar' : 'Restar'}
+          {positive ? t('Sumar') : t('Restar')}
         </button>
       </form>
 
       <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
         <Label>
-          {t(positive ? 'Ingresos' : 'Gastos')} · {eur(total)}
+          {t(positive ? t('Ingresos') : t('Gastos'))} · {eur(total)}
         </Label>
         {movements.length === 0 ? (
           <Empty>{t('Sin movimientos.')}</Empty>
@@ -363,7 +363,7 @@ function MovementPanel({
       </section>
 
       {editingItem && (
-        <Modal title={positive ? 'Ingreso' : 'Gasto'} onClose={() => setEditingItem(null)}>
+        <Modal title={positive ? t('Ingreso') : t('Gasto')} onClose={() => setEditingItem(null)}>
           <form
             onSubmit={(ev) => {
               ev.preventDefault()

@@ -48,7 +48,7 @@ import {
   type Wish,
   type Work,
 } from './lib/store'
-import { t } from './lib/i18n'
+import { t, tp } from './lib/i18n'
 
 const SETUP_KEY = 'nivra-setup-done'
 
@@ -290,7 +290,7 @@ function App() {
         return { ...s, lastCharged: own.map((p) => p.date).sort().pop() }
       }),
     )
-    notify(`Se han cobrado ${dueCharges.length} suscripción/es.`)
+    notify(tp('Se han cobrado {0} suscripción/es.', dueCharges.length))
   }, [subs, setMovements, setSubs, notify])
 
   const alreadyNotified = useRef(false)
@@ -333,49 +333,50 @@ function App() {
       const add = (id: string, title: string, kind: string, page: Destination) =>
         out.push({ id, title, kind, page })
 
-      for (const t of tasks) if (matches(t.title)) add(t.id, t.title, 'Tarea', 'tareas')
+      for (const task of tasks)
+        if (matches(task.title)) add(task.id, task.title, t('Tarea'), 'tareas')
       for (const w of works)
         if (matches(w.title))
-          add(w.id, w.title, w.kind === 'examen' ? 'Examen' : 'Proyecto', 'examenes')
+          add(w.id, w.title, w.kind === 'examen' ? t('Examen') : t('Proyecto'), 'examenes')
       for (const e of events)
-        if (matches(e.title)) add(e.id, e.title, 'Actividad del calendario', 'calendario')
+        if (matches(e.title)) add(e.id, e.title, t('Actividad del calendario'), 'calendario')
       for (const a of anniversaries)
-        if (matches(a.name)) add(a.id, a.name, 'Aniversario', 'calendario')
-      for (const w of wishes) if (matches(w.title)) add(w.id, w.title, 'Deseo', 'deseos')
-      for (const x of subs) if (matches(x.title)) add(x.id, x.title, 'Suscripción', 'suscripciones')
-      for (const n of notepads) if (matches(n.title)) add(n.id, n.title, 'Bloc de notas', 'bloc')
-      for (const g of grades) if (matches(g.desc)) add(g.id, g.desc ?? '', 'Nota', 'notas')
-      for (const b of blocks) if (matches(b.title)) add(b.id, b.title, 'Bloque del horario', 'horario')
+        if (matches(a.name)) add(a.id, a.name, t('Aniversario'), 'calendario')
+      for (const w of wishes) if (matches(w.title)) add(w.id, w.title, t('Deseo'), 'deseos')
+      for (const x of subs) if (matches(x.title)) add(x.id, x.title, t('Suscripción'), 'suscripciones')
+      for (const n of notepads) if (matches(n.title)) add(n.id, n.title, t('Bloc de notas'), 'bloc')
+      for (const g of grades) if (matches(g.desc)) add(g.id, g.desc ?? '', t('Nota'), 'notas')
+      for (const b of blocks) if (matches(b.title)) add(b.id, b.title, t('Bloque del horario'), 'horario')
       for (const c of countdowns)
-        if (matches(c.title)) add(c.id, c.title, 'Cuenta atrás', 'cuentas')
+        if (matches(c.title)) add(c.id, c.title, t('Cuenta atrás'), 'cuentas')
       for (const r of reminders)
-        if (matches(r.title)) add(r.id, r.title, 'Recordatorio', 'recordatorios')
+        if (matches(r.title)) add(r.id, r.title, t('Recordatorio'), 'recordatorios')
       for (const g of goals)
         if (matches(g.title))
           add(
             g.id,
             g.title,
-            g.kind === 'meta' ? 'Meta de ahorro' : g.kind === 'limite' ? 'Límite de gasto' : 'Idea',
+            g.kind === 'meta' ? t('Meta de ahorro') : g.kind === 'limite' ? t('Límite de gasto') : t('Idea'),
             'banco',
           )
-      for (const p of profiles) if (matches(p.name)) add(p.id, p.name, 'Perfil de horario', 'horario')
-      for (const a of cfg.subjects) if (matches(a.name)) add(a.id, a.name, 'Asignatura', 'ajustes')
+      for (const p of profiles) if (matches(p.name)) add(p.id, p.name, t('Perfil de horario'), 'horario')
+      for (const a of cfg.subjects) if (matches(a.name)) add(a.id, a.name, t('Asignatura'), 'ajustes')
 
       for (const c of [...new Set([...EXPENSE_CATS, SUBSCRIPTION_CAT])])
-        if (matches(c)) add(`gasto-${c}`, c, 'Categoría de gasto', 'banco')
+        if (matches(c)) add(`gasto-${c}`, t(c), t('Categoría de gasto'), 'banco')
       for (const c of INCOME_CATS)
-        if (matches(c)) add(`ingreso-${c}`, c, 'Categoría de ingreso', 'banco')
+        if (matches(c)) add(`ingreso-${c}`, t(c), t('Categoría de ingreso'), 'banco')
 
       const seen = new Set<string>()
       for (const m of movements) {
-        const label = `${m.category} · ${m.amount.toFixed(2)} €`
+        const label = `${t(m.category)} · ${m.amount.toFixed(2)} €`
         if (matches(m.category) && !seen.has(m.id)) {
           seen.add(m.id)
-          add(m.id, label, m.kind === 'gasto' ? 'Gasto' : 'Ingreso', 'banco')
+          add(m.id, label, m.kind === 'gasto' ? t('Gasto') : t('Ingreso'), 'banco')
         }
       }
 
-      for (const o of SETTING_LABELS) if (matches(o)) add(`op-${o}`, o, 'Ajustes', 'ajustes')
+      for (const o of SETTING_LABELS) if (matches(o)) add(`op-${o}`, t(o), t('Ajustes'), 'ajustes')
 
       return out.slice(0, 12)
     },
@@ -520,7 +521,7 @@ function App() {
               <button
                 type="button"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                aria-label={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+                aria-label={theme === 'dark' ? t('Tema claro') : t('Tema oscuro')}
                 className={headerButton}
               >
                 <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="h-[18px] w-[18px]" />

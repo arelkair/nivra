@@ -182,7 +182,7 @@ function CountdownDialog({
   const [units, setUnits] = useState<Record<Unit, boolean>>(item?.units ?? DEFAULT_UNITS)
 
   return (
-    <Modal title={item ? 'Cuenta atrás' : 'Nueva cuenta atrás'} onClose={onClose}>
+    <Modal title={item ? t('Cuenta atrás') : t('Nueva cuenta atrás')} onClose={onClose}>
       <form
         onSubmit={(ev) => {
           ev.preventDefault()
@@ -267,7 +267,7 @@ function CountdownDialog({
               key={u.id}
               checked={units[u.id]}
               onChange={(v) => setUnits((prev) => ({ ...prev, [u.id]: v }))}
-              label={u.many[0].toUpperCase() + u.many.slice(1)}
+              label={t(u.many)[0].toUpperCase() + t(u.many).slice(1)}
             />
           ))}
         </div>

@@ -1,5 +1,6 @@
 import { dateKey, type Streak } from '../lib/store'
 import { Icon, card } from './ui'
+import { t, tp } from '../lib/i18n'
 
 const DAYS_TO_RED = 120
 
@@ -27,11 +28,11 @@ export function Flame({
         onClick={() =>
           setStreak((prev) => ({ count: prev.last === yesterday ? prev.count + 1 : 1, last: today }))
         }
-        aria-label={doneToday ? 'Racha ya marcada hoy' : 'Marcar día'}
+        aria-label={doneToday ? t('Racha ya marcada hoy') : t('Marcar día')}
         title={
           doneToday
-            ? `${streak.count} ${streak.count === 1 ? 'día seguido' : 'días seguidos'}. Ya has marcado hoy.`
-            : 'Marca tu día'
+            ? tp('{0}. Ya has marcado hoy.', `${streak.count} ${t(streak.count === 1 ? 'día seguido' : 'días seguidos')}`)
+            : t('Marca tu día')
         }
         className={`flex items-center gap-2 transition-transform ${
           doneToday ? 'cursor-default' : 'hover:scale-105 active:scale-95'
@@ -42,7 +43,7 @@ export function Flame({
         <span className="font-mono text-xl font-medium tabular-nums">{streak.count}</span>
       </button>
       <p className="truncate text-[0.55rem] tracking-wider text-neutral-400 uppercase dark:text-neutral-500">
-        {streak.count === 1 ? 'día seguido' : 'días seguidos'}
+        {t(streak.count === 1 ? 'día seguido' : 'días seguidos')}
       </p>
     </section>
   )

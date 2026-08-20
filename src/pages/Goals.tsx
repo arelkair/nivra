@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { dateKey, eur, shortDate, weekIndex, type Goal, type Movement } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, Segmented, button, card, input, line } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   goals: Goal[]
@@ -41,7 +41,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
     const before = goals
     const title = goals.find((g) => g.id === id)?.title ?? ''
     setGoals((prev) => prev.filter((g) => g.id !== id))
-    notifyWithUndo(`«${title}» eliminado`, () => setGoals(() => before))
+    notifyWithUndo(tp('«{0}» eliminado', title), () => setGoals(() => before))
   }
 
   return (
@@ -231,7 +231,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                 step="0.01"
                 min="0.01"
                 required
-                placeholder={goalKind === 'meta' ? '¿Cuánto quieres tener?' : '¿Cuánto puedes gastar?'}
+                placeholder={goalKind === 'meta' ? t('¿Cuánto quieres tener?') : t('¿Cuánto puedes gastar?')}
                 aria-label={t('Cantidad')}
                 className={`${input} font-mono`}
               />

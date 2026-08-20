@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { eur, type Subscription } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, line } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   subs: Subscription[]
@@ -43,8 +43,8 @@ export function Subscriptions({ subs, setSubs }: Props) {
                 >
                   <span className="block truncate text-sm">{s.title}</span>
                   <span className="block text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-                    Se renueva el día {s.day} de cada mes
-                    {s.lastCharged && ` · último cobro ${s.lastCharged}`}
+                    {tp('Se renueva el día {0} de cada mes', s.day)}
+                    {s.lastCharged && tp(' · último cobro {0}', s.lastCharged)}
                   </span>
                 </button>
                 <span className="shrink-0 font-mono text-sm tabular-nums text-red-500">
@@ -66,7 +66,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
                   onClick={() => {
                     const before = subs
                     setSubs((prev) => prev.filter((x) => x.id !== s.id))
-                    notifyWithUndo(`«${s.title}» eliminada`, () => setSubs(() => before))
+                    notifyWithUndo(tp('«{0}» eliminada', s.title), () => setSubs(() => before))
                   }}
                   aria-label={`Eliminar ${s.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -110,7 +110,7 @@ function SubDialog({
   onSave: (s: Subscription) => void
 }) {
   return (
-    <Modal title={sub ? 'Suscripción' : 'Nueva suscripción'} onClose={onClose}>
+    <Modal title={sub ? t('Suscripción') : t('Nueva suscripción')} onClose={onClose}>
       <form
         onSubmit={(ev) => {
           ev.preventDefault()

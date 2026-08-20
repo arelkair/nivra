@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { dateKey, shortDate, type Reminder, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   reminders: Reminder[]
@@ -70,7 +70,7 @@ export function Reminders({ reminders, setReminders, works }: Props) {
                     onClick={() => {
                       const before = reminders
                       setReminders((prev) => prev.filter((x) => x.id !== r.id))
-                      notifyWithUndo(`«${r.title}» eliminado`, () => setReminders(() => before))
+                      notifyWithUndo(tp('«{0}» eliminado', r.title), () => setReminders(() => before))
                     }}
                     aria-label={`Eliminar ${r.title}`}
                     className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -115,7 +115,7 @@ function ReminderDialog({
   onSave: (r: Reminder) => void
 }) {
   return (
-    <Modal title={reminder ? 'Recordatorio' : 'Nuevo recordatorio'} onClose={onClose}>
+    <Modal title={reminder ? t('Recordatorio') : t('Nuevo recordatorio')} onClose={onClose}>
       <form
         onSubmit={(ev) => {
           ev.preventDefault()
@@ -172,7 +172,7 @@ function ReminderDialog({
             <option value="">{t('Sin vincular')}</option>
             {works.map((w) => (
               <option key={w.id} value={w.id}>
-                {w.kind === 'examen' ? 'Examen' : 'Proyecto'} · {w.title}
+                {w.kind === 'examen' ? t('Examen') : t('Proyecto')} · {w.title}
               </option>
             ))}
           </select>

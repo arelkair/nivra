@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { reorder, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   tasks: Task[]
@@ -24,7 +24,7 @@ export function Tasks({ tasks, setTasks, subjects, notepads, setNotepads }: Prop
     const before = tasks
     const title = tasks.find((t) => t.id === id)?.title ?? ''
     setTasks((prev) => prev.filter((t) => t.id !== id))
-    notifyWithUndo(`«${title}» eliminada`, () => setTasks(() => before))
+    notifyWithUndo(tp('«{0}» eliminada', title), () => setTasks(() => before))
   }
 
   return (
@@ -313,7 +313,7 @@ function TaskDialog({
             ))}
           </select>
           <button type="button" onClick={createNotepad} className={button + ' shrink-0'}>
-            Nuevo
+            {t('Nuevo')}
           </button>
         </div>
       </div>

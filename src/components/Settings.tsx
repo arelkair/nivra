@@ -7,7 +7,7 @@ import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '..
 import type { SyncState } from '../lib/sync'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
-import { LANGS, getLang, setLang, t } from '../lib/i18n'
+import { LANGS, getLang, setLang, t, tp } from '../lib/i18n'
 
 type Props = {
   cfg: Settings
@@ -318,12 +318,12 @@ function NotificationsPanel({ cfg, onNotify }: { cfg: Settings; onNotify: (t: st
             }}
             className={`${button} w-full`}
           >
-            {status === 'denied' ? 'Bloqueadas por el navegador' : 'Permitir notificaciones'}
+            {status === 'denied' ? t('Bloqueadas por el navegador') : t('Permitir notificaciones')}
           </button>
           <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
             {status === 'denied'
-              ? 'Tendrás que volver a permitirlas desde los ajustes del navegador.'
-              : 'El navegador te preguntará si quieres permitirlas.'}
+              ? t('Tendrás que volver a permitirlas desde los ajustes del navegador.')
+              : t('El navegador te preguntará si quieres permitirlas.')}
           </p>
         </div>
       )}
@@ -454,7 +454,7 @@ function InstallPanel({
             await evento.prompt()
             const { outcome } = await evento.userChoice
             onInstalled()
-            onNotify(outcome === 'accepted' ? 'Nivra se está instalando.' : 'Instalación cancelada.')
+            onNotify(outcome === 'accepted' ? t('Nivra se está instalando.') : t('Instalación cancelada.'))
           }}
           className={button}
         >
@@ -466,8 +466,8 @@ function InstallPanel({
       ) : (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {isApple
-            ? 'En iPhone o iPad: pulsa Compartir y luego «Añadir a pantalla de inicio».'
-            : 'Tu navegador aún no ofrece instalarla. Suele aparecer tras usar la web un rato, o desde su menú, en «Instalar aplicación».'}
+            ? t('En iPhone o iPad: pulsa Compartir y luego «Añadir a pantalla de inicio».')
+            : t('Tu navegador aún no ofrece instalarla. Suele aparecer tras usar la web un rato, o desde su menú, en «Instalar aplicación».')}
         </p>
       )}
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
@@ -495,7 +495,7 @@ function ShortcutKeys({ cfg, onNotify }: { cfg: Settings; onNotify: (t: string) 
         (a) => a.id !== capturing && (cfg.customKeys[a.id] ?? a.key) === key,
       )
       if (taken) {
-        onNotify(`Esa tecla ya la usa «${taken.label}».`)
+        onNotify(tp('Esa tecla ya la usa «{0}».', t(taken.label)))
         setCapturing(null)
         return
       }

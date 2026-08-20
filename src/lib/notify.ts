@@ -10,6 +10,7 @@ import {
   type Task,
   type Work,
 } from './store'
+import { t, tp } from './i18n'
 
 const SENT_KEY = 'nivra-notified'
 
@@ -53,37 +54,41 @@ export function pendingNotices(
 
   for (const r of datos.reminders) {
     if (r.date !== key) continue
-    const time = r.time ? ` a las ${r.time}` : ''
-    añadir(`record:${r.id}:${key}`, `Hoy${time}: ${r.title}`, true)
+    const time = r.time ? tp(' a las {0}', r.time) : ''
+    añadir(`record:${r.id}:${key}`, tp('Hoy{0}: {1}', time, r.title), true)
   }
 
   for (const w of datos.works) {
     if (w.date !== mañana) continue
-    añadir(`manana:${w.id}:${mañana}`, `Mañana tienes ${TYPES[w.kind].label.toLowerCase()} de ${w.title}`, true)
+    añadir(
+      `manana:${w.id}:${mañana}`,
+      tp('Mañana tienes {0} de {1}', t(TYPES[w.kind].label).toLowerCase(), w.title),
+      true,
+    )
   }
 
   for (const c of datos.countdowns) {
     if (new Date(c.target).getTime() <= today.getTime()) {
-      añadir(`fin:${c.id}`, `Se ha acabado la cuenta atrás de ${c.title}`, true)
+      añadir(`fin:${c.id}`, tp('Se ha acabado la cuenta atrás de {0}', c.title), true)
     }
   }
 
   for (const a of datos.anniversaries) {
     if (a.md === monthDay(key)) {
-      añadir(`aniv:${a.id}:${key}`, `Hoy es el aniversario de ${a.name || 'algo tuyo'}`, true)
+      añadir(`aniv:${a.id}:${key}`, tp('Hoy es el aniversario de {0}', a.name || t('algo tuyo')), true)
     }
   }
 
   // itemsDeDia rather than i.date === clave so recurring entries are counted.
   for (const i of itemsOfDay(datos.items, key)) {
-    añadir(`hoy:${i.id}:${key}`, `${TYPES[i.type].label} de hoy: ${i.title}`, false)
+    añadir(`hoy:${i.id}:${key}`, tp('{0} de hoy: {1}', t(TYPES[i.type].label), i.title), false)
   }
 
   const overdue = datos.tasks.filter((t) => !t.done && t.date && t.date < key)
   if (overdue.length === 1) {
-    añadir(`tarde:${key}`, `Tarea atrasada: ${overdue[0].title}`, false)
+    añadir(`tarde:${key}`, tp('Tarea atrasada: {0}', overdue[0].title), false)
   } else if (overdue.length > 1) {
-    añadir(`tarde:${key}`, `Tienes ${overdue.length} tareas atrasadas`, false)
+    añadir(`tarde:${key}`, tp('Tienes {0} tareas atrasadas', overdue.length), false)
   }
 
   return out

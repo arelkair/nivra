@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { TYPES, reorder, shortDate, type Grade, type Notepad, type Subject, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   works: Work[]
@@ -24,7 +24,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
     const before = works
     const title = works.find((w) => w.id === id)?.title ?? ''
     setWorks((prev) => prev.filter((w) => w.id !== id))
-    notifyWithUndo(`«${title}» eliminado`, () => setWorks(() => before))
+    notifyWithUndo(tp('«{0}» eliminado', title), () => setWorks(() => before))
   }
 
   const exams = works.filter((w) => w.kind === 'examen')
@@ -78,7 +78,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           name="title"
           maxLength={80}
           required
-          placeholder={kind === 'examen' ? 'Nuevo examen' : 'Nuevo proyecto'}
+          placeholder={kind === 'examen' ? t('Nuevo examen') : t('Nuevo proyecto')}
           className={input}
         />
         {subjects.length > 0 && (
@@ -96,7 +96,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
             name="date"
             type="date"
             required={kind === 'examen'}
-            aria-label={kind === 'examen' ? 'Fecha (obligatoria)' : 'Fecha (opcional)'}
+            aria-label={kind === 'examen' ? t('Fecha (obligatoria)') : t('Fecha (opcional)')}
             className={input}
           />
           <button type="submit" className={`${button} shrink-0`}>
@@ -104,7 +104,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           </button>
         </div>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
-          {t(kind === 'examen' ? 'Fecha obligatoria. Sale en rojo.' : 'Fecha opcional. Sale en verde.')}
+          {t(kind === 'examen' ? t('Fecha obligatoria. Sale en rojo.') : t('Fecha opcional. Sale en verde.'))}
         </p>
       </form>
 
@@ -113,7 +113,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           {t('Exámenes')} · {exams.length}
         </Label>
         {exams.length === 0 ? (
-          <Empty>Sin exámenes.</Empty>
+          <Empty>{t('Sin exámenes.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {exams.map((w) => (
@@ -136,7 +136,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           {t('Proyectos')} · {projects.length}
         </Label>
         {projects.length === 0 ? (
-          <Empty>Sin proyectos.</Empty>
+          <Empty>{t('Sin proyectos.')}</Empty>
         ) : (
           <ul className="flex flex-col">
             {projects.map((w) => (
@@ -329,7 +329,7 @@ function WorkDialog({
             ))}
           </select>
           <button type="button" onClick={createNotepad} className={button + ' shrink-0'}>
-            Nuevo
+            {t('Nuevo')}
           </button>
         </div>
 

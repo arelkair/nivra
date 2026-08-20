@@ -20,7 +20,7 @@ import {
 } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, input, select } from '../components/ui'
-import { locale, t, weekdayLetters } from '../lib/i18n'
+import { locale, t, tp, weekdayLetters } from '../lib/i18n'
 
 type Props = {
   items: CalItem[]
@@ -116,7 +116,7 @@ export function Calendar({
           <button
             type="button"
             onClick={() => (view === 'mes' ? move(-1) : moveWeek(-1))}
-            aria-label={view === 'mes' ? 'Mes anterior' : 'Semana anterior'}
+            aria-label={view === 'mes' ? t('Mes anterior') : t('Semana anterior')}
             className={navButton}
           >
             <Icon name="left" className="h-4 w-4" />
@@ -124,7 +124,7 @@ export function Calendar({
           <button
             type="button"
             onClick={() => (view === 'mes' ? move(1) : moveWeek(1))}
-            aria-label={view === 'mes' ? 'Mes siguiente' : 'Semana siguiente'}
+            aria-label={view === 'mes' ? t('Mes siguiente') : t('Semana siguiente')}
             className={navButton}
           >
             <Icon name="right" className="h-4 w-4" />
@@ -184,7 +184,7 @@ export function Calendar({
                   )}
                   {own.length === 0 && !isAnniversary && !isSpecial ? (
                     <span className="text-[0.7rem] text-neutral-300 dark:text-neutral-600">
-                      Nada
+                      {t('Nada')}
                     </span>
                   ) : (
                     own.map((e) => (
@@ -347,7 +347,7 @@ export function Calendar({
           onDelete={(id, title) => {
             setEvents((prev) => {
               const before = prev
-              notifyWithUndo(`«${title}» eliminada`, () => setEvents(() => before))
+              notifyWithUndo(tp('«{0}» eliminada', title), () => setEvents(() => before))
               return prev.filter((e) => e.id !== id)
             })
           }}
@@ -408,7 +408,7 @@ function DayDialog({
             onClick={onToggleFree}
             disabled={locked}
             aria-pressed={free}
-            title={locked ? 'Festivo oficial o fin de semana' : 'Marcar como día sin trabajo'}
+            title={locked ? t('Festivo oficial o fin de semana') : t('Marcar como día sin trabajo')}
             aria-label={t('Día sin trabajo')}
             className={`${square} ${
               free
@@ -479,7 +479,7 @@ function DayDialog({
                 <p className="mt-1 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
                   {t(TYPES[e.type].label)}
                   {e.repeat && ` · ${t(REPEATS.find((r) => r.id === e.repeat)?.label ?? '').toLowerCase()}`}
-                  {e.origin !== 'evento' && ' · desde su apartado'}
+                  {e.origin !== 'evento' && t(' · desde su apartado')}
                 </p>
               </div>
               {e.origin === 'evento' && (

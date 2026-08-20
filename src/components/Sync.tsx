@@ -10,7 +10,7 @@ import {
   type SyncState,
 } from '../lib/sync'
 import { Icon, Label, button, input, line } from './ui'
-import { locale, t } from '../lib/i18n'
+import { locale, t, tp } from '../lib/i18n'
 
 export function SyncPanel({
   status,
@@ -71,7 +71,7 @@ export function SyncPanel({
               onClick={() => setVisible(!visible)}
               className="shrink-0 text-xs text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
             >
-              {visible ? 'Ocultar' : 'Ver'}
+              {visible ? t('Ocultar') : t('Ver')}
             </button>
             <button
               type="button"
@@ -88,7 +88,7 @@ export function SyncPanel({
 
           <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
             {status.error
-              ? `Último intento fallido: ${status.error}`
+              ? tp('Último intento fallido: {0}', status.error)
               : status.lastSeen
                 ? `Al día · ${new Date(status.lastSeen).toLocaleTimeString(locale())} · se comprueba cada 4 s`
                 : 'Sin sincronizar todavía.'}
@@ -108,7 +108,7 @@ export function SyncPanel({
         </div>
       ) : (
         <button type="button" onClick={create} disabled={working} className={`${button} w-full`}>
-          {working ? 'Activando…' : 'Crear mi código'}
+          {working ? t('Activando…') : t('Crear mi código')}
         </button>
       )}
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { pagesOf, sanitize, type Notepad, type NotepadPage } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   notepads: Notepad[]
@@ -32,7 +32,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
             key={n.id}
             type="button"
             onClick={() => (n.id === active?.id ? setRenaming(n) : setActiveId(n.id))}
-            title={n.id === active?.id ? 'Renombrar o eliminar' : 'Abrir'}
+            title={n.id === active?.id ? t('Renombrar o eliminar') : t('Abrir')}
             className={`rounded-xl border px-4 py-2 text-sm transition-colors ${
               n.id === active?.id
                 ? 'border-neutral-900 font-medium dark:border-white'
@@ -69,7 +69,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
 
       {(creating || renaming) && (
         <Modal
-          title={renaming ? 'Bloc' : 'Nuevo bloc'}
+          title={renaming ? t('Bloc') : t('Nuevo bloc')}
           onClose={() => {
             setCreating(false)
             setRenaming(null)
@@ -110,7 +110,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
                     setNotepads((prev) => prev.filter((n) => n.id !== renaming.id))
                     setActiveId(null)
                     setRenaming(null)
-                    notifyWithUndo(`«${renaming.title}» eliminado`, () => setNotepads(() => before))
+                    notifyWithUndo(tp('«{0}» eliminado', renaming.title), () => setNotepads(() => before))
                   }}
                   className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-red-500"
                 >
@@ -325,8 +325,8 @@ export function Editor({
       />
 
       <p className={`border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
-        {palabrasPagina} palabra{palabrasPagina === 1 ? '' : 's'} en esta página
-        {pageList.length > 1 && ` · ${palabrasTotal} en el bloc`}
+        {palabrasPagina} {t(palabrasPagina === 1 ? 'palabra' : 'palabras')} {t('en esta página')}
+        {pageList.length > 1 && tp(' · {0} en el bloc', palabrasTotal)}
       </p>
 
       <div className={`flex items-center justify-between gap-2 border-t p-2 ${line}`}>
@@ -346,7 +346,7 @@ export function Editor({
               key={p.id}
               type="button"
               onClick={() => setIndex(i)}
-              aria-label={'Página ' + (i + 1)}
+              aria-label={t('Página ') + (i + 1)}
               aria-current={i === index}
               className={
                 'h-7 min-w-7 rounded-lg px-2 font-mono text-xs transition-colors ' +

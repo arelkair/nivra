@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { eur, reorder, type Wish } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   wishes: Wish[]
@@ -88,7 +88,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                   onClick={() => {
                     const before = wishes
                     setWishes((prev) => prev.filter((x) => x.id !== w.id))
-                    notifyWithUndo(`«${w.title}» eliminado`, () => setWishes(() => before))
+                    notifyWithUndo(tp('«{0}» eliminado', w.title), () => setWishes(() => before))
                   }}
                   aria-label={`Eliminar ${w.title}`}
                   className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -129,7 +129,7 @@ function WishDialog({
   onSave: (w: Wish) => void
 }) {
   return (
-    <Modal title={wish ? 'Deseo' : 'Nuevo deseo'} onClose={onClose}>
+    <Modal title={wish ? t('Deseo') : t('Nuevo deseo')} onClose={onClose}>
       <form
         onSubmit={(ev) => {
           ev.preventDefault()

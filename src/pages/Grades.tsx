@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { dateKey, shortDate, type Grade, type Subject, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   grades: Grade[]
@@ -107,7 +107,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
             <option value="">Sin examen ni proyecto</option>
             {works.map((w) => (
               <option key={w.id} value={w.id}>
-                {w.kind === 'examen' ? 'Examen' : 'Proyecto'} · {w.title}
+                {w.kind === 'examen' ? t('Examen') : t('Proyecto')} · {w.title}
               </option>
             ))}
           </select>
@@ -133,7 +133,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
       {average !== null && (
         <section className={`${card} animate-[fade-in_0.35s_ease-out] p-5 sm:p-6`}>
           <Label>
-            {t('Media')} · {visible.length} {t(visible.length === 1 ? 'nota' : 'notas')}
+            {t('Media')} · {visible.length} {t(visible.length === 1 ? t('nota') : t('notas'))}
           </Label>
           <p className={`font-mono text-4xl font-medium tabular-nums ${tone(average)}`}>
             {average.toFixed(2)}
@@ -165,7 +165,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
                 <span className="min-w-0 flex-1 truncate">{g.desc || KINDS.find((k) => k.id === g.kind)?.label}</span>
                 <span className="shrink-0 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
                   {t(KINDS.find((k) => k.id === g.kind)?.label ?? '')}
-                  {g.term ? ` · ${g.term}º Trim.` : ''} · {shortDate(g.date)}
+                  {g.term ? tp(' · {0}º Trim.', g.term) : ''} · {shortDate(g.date)}
                 </span>
                 <button
                   type="button"

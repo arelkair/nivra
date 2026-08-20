@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DAYS, DEFAULT_PROFILE, blockProfile, weekIndex, type Block, type Profile } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
-import { t } from '../lib/i18n'
+import { t, tp } from '../lib/i18n'
 
 type Props = {
   blocks: Block[]
@@ -42,7 +42,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             key={p.id}
             type="button"
             onClick={() => (p.id === active ? setEditingProfile(p) : setActive(p.id))}
-            title={p.id === active ? 'Renombrar o eliminar' : 'Cambiar a este horario'}
+            title={p.id === active ? t('Renombrar o eliminar') : t('Cambiar a este horario')}
             className={`rounded-xl border px-4 py-2 text-sm transition-colors ${
               p.id === active
                 ? 'border-neutral-900 font-medium dark:border-white'
@@ -91,7 +91,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                     i === todayIndex ? '' : 'text-neutral-400 dark:text-neutral-500'
                   }`}
                 >
-                  {day}
+                  {t(day)}
                 </h3>
                 {i === todayIndex && (
                   <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[0.6rem] font-medium text-neutral-50 dark:bg-white dark:text-neutral-900">
@@ -102,7 +102,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
 
               <ul className="flex flex-1 flex-col gap-2">
                 {dayBlocks.length === 0 ? (
-                  <Empty>Vacío.</Empty>
+                  <Empty>{t('Vacío.')}</Empty>
                 ) : (
                   dayBlocks.map((b) => (
                     <li
@@ -135,7 +135,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                             onClick={() => {
                               const before = blocks
                               setBlocks((prev) => prev.filter((x) => x.id !== b.id))
-                              notifyWithUndo(`«${b.title}» eliminado`, () => setBlocks(() => before))
+                              notifyWithUndo(tp('«{0}» eliminado', b.title), () => setBlocks(() => before))
                             }}
                             aria-label={`Eliminar ${b.title}`}
                             className="text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
@@ -160,7 +160,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               <button
                 type="button"
                 onClick={() => setAdding(i)}
-                aria-label={`Añadir bloque el ${day}`}
+                aria-label={tp('Añadir bloque el {0}', t(day))}
                 className={`mt-3 flex items-center justify-center gap-1 rounded-xl border border-dashed py-2 text-xs text-neutral-400 transition-colors hover:border-neutral-400 hover:text-neutral-900 ${line} dark:hover:text-white`}
               >
                 <Icon name="plus" className="h-3.5 w-3.5" />
@@ -248,7 +248,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <select name="day" defaultValue={editingItem.day} aria-label={t('Día')} className={input}>
               {DAYS.map((d, i) => (
                 <option key={d} value={i}>
-                  {d}
+                  {t(d)}
                 </option>
               ))}
             </select>
@@ -261,7 +261,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
 
       {(creatingProfile || editingProfile) && (
         <Modal
-          title={editingProfile ? 'Horario' : 'Nuevo horario'}
+          title={editingProfile ? t('Horario') : t('Nuevo horario')}
           onClose={() => {
             setCreatingProfile(false)
             setEditingProfile(null)

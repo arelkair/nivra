@@ -410,6 +410,37 @@ const EN: Record<string, string> = {
   Juegos: 'Games',
   Aparatos: 'Devices',
   'Suscripción': 'Subscription',
+  'Vacío.': 'Empty.',
+  'Sin exámenes.': 'No exams.',
+  'Sin proyectos.': 'No projects.',
+  '«{0}» eliminado': '“{0}” deleted',
+  '«{0}» eliminada': '“{0}” deleted',
+  'Se han cobrado {0} suscripción/es.': '{0} subscription(s) charged.',
+  'Esa tecla ya la usa «{0}».': 'That key is already used by “{0}”.',
+  'Último intento fallido: {0}': 'Last attempt failed: {0}',
+  'Al día · {0} · se comprueba sola': 'Up to date · {0} · checks itself',
+  '{0}. Ya has marcado hoy.': '{0}. Already marked today.',
+  ' · desde su apartado': ' · from its own section',
+  Nada: 'Nothing',
+  Nuevo: 'New',
+  'Página ': 'Page ',
+  palabra: 'word',
+  palabras: 'words',
+  'en esta página': 'on this page',
+  ' · {0} en el bloc': ' · {0} in the notepad',
+  ' · último cobro {0}': ' · last charged {0}',
+  'Se renueva el día {0} de cada mes': 'Renews on day {0} of every month',
+  'Añadir bloque el {0}': 'Add a block on {0}',
+  ' · {0}º Trim.': ' · Term {0}',
+  'Hoy{0}: {1}': 'Today{0}: {1}',
+  ' a las {0}': ' at {0}',
+  'Mañana tienes {0} de {1}': 'Tomorrow you have {0} for {1}',
+  'Se ha acabado la cuenta atrás de {0}': 'The countdown for {0} has finished',
+  'Hoy es el aniversario de {0}': 'Today is the anniversary of {0}',
+  'algo tuyo': 'something of yours',
+  '{0} de hoy: {1}': '{0} today: {1}',
+  'Tarea atrasada: {0}': 'Overdue task: {0}',
+  'Tienes {0} tareas atrasadas': 'You have {0} overdue tasks',
   'Metas de dinero': 'Money targets',
   'Límites de gasto': 'Spending limits',
   'Ideas para conseguir dinero': 'Ideas to make money',
@@ -442,6 +473,10 @@ const EN: Record<string, string> = {
     'With a date it appears on the calendar as a Task, in blue.',
   'El enlace debe empezar por http:// o https://.': 'The link must start with http:// or https://.',
 }
+
+/** Como t(), pero sustituyendo {0}, {1}... por los valores dados. */
+export const tp = (s: string, ...args: (string | number)[]) =>
+  args.reduce<string>((acc, v, i) => acc.split('{' + i + '}').join(String(v)), t(s))
 
 /** Iniciales de los dias: no valen para el diccionario porque se repiten. */
 export const weekdayLetters = () =>

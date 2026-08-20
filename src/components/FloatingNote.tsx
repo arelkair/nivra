@@ -44,7 +44,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
 
   const create = () => {
     const id = crypto.randomUUID()
-    setNotepads((prev) => [...prev, { id, title: 'Nota rápida', pages: [{ id: id + '-1', html: '' }] }])
+    setNotepads((prev) => [...prev, { id, title: t('Nota rápida'), pages: [{ id: id + '-1', html: '' }] }])
     setActiveId(id)
   }
 
@@ -64,7 +64,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
         <div className="flex items-center gap-2">
           <Icon name="drag" className="h-4 w-4 shrink-0 text-neutral-300 dark:text-neutral-600" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium" title={active?.title}>
-            {active?.title ?? 'Sin blocs todavía'}
+            {active?.title ?? t('Sin blocs todavía')}
           </span>
           <button
             type="button"
