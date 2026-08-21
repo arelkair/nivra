@@ -229,12 +229,12 @@ export function Calendar({
           const isToday = key === todayKey
 
           const numberClass = isToday
-            ? `font-semibold text-white ${
+            ? `font-semibold ${
                 free
-                  ? 'bg-red-500'
+                  ? 'bg-red-500 text-white'
                   : anniversary
-                    ? 'bg-yellow-500'
-                    : 'bg-neutral-900 dark:bg-neutral-100 dark:text-neutral-900'
+                    ? 'bg-yellow-500 text-neutral-900'
+                    : 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
               }`
             : free
               ? 'text-red-500'
@@ -440,7 +440,7 @@ function DayDialog({
             aria-label={t('Aniversario')}
             className={`${square} ${
               anniversary
-                ? 'border-yellow-500 bg-yellow-500 text-white'
+                ? 'border-yellow-500 bg-yellow-500 text-neutral-900'
                 : 'border-black/[0.07] text-neutral-300 hover:border-yellow-400 dark:border-neutral-700 dark:text-neutral-600'
             }`}
           >
