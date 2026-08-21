@@ -40,6 +40,33 @@ export type Profile = { id: string; name: string }
 
 export type Subject = { id: string; name: string; color: string }
 
+export const INK = '#111111'
+export const PAPER = '#ffffff'
+
+const luminancia = (hex: string) => {
+  const canal = (i: number) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * canal(0) + 0.7152 * canal(2) + 0.0722 * canal(4)
+}
+
+const contraste = (a: number, b: number) =>
+  (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+
+/** Texto legible sobre un fondo elegido por el usuario. Compara el contraste de
+ *  ambas tintas en vez de usar un umbral fijo, asi que acierta tambien con los
+ *  colores que el usuario elija a mano. */
+export function textOn(background: string): string {
+  const hex = background.trim().replace('#', '')
+  const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex
+  if (!/^[0-9a-f]{6}$/i.test(full)) return PAPER
+  const fondo = luminancia(full)
+  return contraste(fondo, luminancia('111111')) >= contraste(fondo, luminancia('ffffff'))
+    ? INK
+    : PAPER
+}
+
 export type Subscription = {
   id: string
   title: string
@@ -498,6 +525,11 @@ export function useStored<T>(key: string, initial: T) {
 }
 
 if (import.meta.env.DEV) {
+  console.assert(textOn('#eab308') === INK, 'el amarillo pide tinta oscura')
+  console.assert(textOn('#1e40af') === PAPER, 'el azul marino pide tinta clara')
+  console.assert(textOn('#ffffff') === INK && textOn('#000000') === PAPER, 'blanco y negro')
+  console.assert(textOn('#fff') === INK, 'admite hex de tres cifras')
+  console.assert(textOn('rojo') === PAPER, 'un color ilegible cae en tinta clara')
   console.assert(dateKey(new Date(2026, 7, 5)) === '2026-08-05', 'dateKey debe rellenar con ceros')
   console.assert(monthGrid(2026, 7).length === 5 + 31, 'agosto 2026 empieza en sábado')
   console.assert(monthGrid(2026, 7)[5] === 1, 'el día 1 va tras 5 huecos')

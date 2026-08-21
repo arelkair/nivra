@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TYPES, reorder, shortDate, type Grade, type Notepad, type Subject, type Work } from '../lib/store'
+import { TYPES, reorder, shortDate, type Grade, type Notepad, textOn, type Subject, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
@@ -196,7 +196,10 @@ function Row({
             <span>{t('Sin fecha')}</span>
           )}
           {subject && (
-            <span className="rounded px-1.5 text-white" style={{ background: subject.color }}>
+            <span
+              className="rounded px-1.5"
+              style={{ background: subject.color, color: textOn(subject.color) }}
+            >
               {subject.name}
             </span>
           )}

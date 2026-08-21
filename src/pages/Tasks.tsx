@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { reorder, shortDate, type Notepad, type SubTask, type Subject, type Task } from '../lib/store'
+import { reorder, shortDate, type Notepad, type SubTask, textOn, type Subject, type Task } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
@@ -170,7 +170,10 @@ function Row({
         </span>
         <span className="mt-0.5 flex gap-2 text-[0.65rem] text-neutral-400 dark:text-neutral-500">
           {subject && (
-            <span className="rounded px-1.5 text-white" style={{ background: subject.color }}>
+            <span
+              className="rounded px-1.5"
+              style={{ background: subject.color, color: textOn(subject.color) }}
+            >
               {subject.name}
             </span>
           )}
