@@ -541,7 +541,9 @@ function App() {
             key={cfg.animations ? page : 'fijo'}
             className={`nivra-scroll flex-1 overflow-y-auto overscroll-contain px-5 pt-7 pb-10 sm:px-8 sm:pt-8 md:pb-12 ${
               cfg.animations ? 'animate-[fade-in_0.35s_ease-out]' : ''
-            } ${page === 'dashboard' ? 'lg:overflow-hidden' : ''}`}
+            } ${page === 'dashboard' ? 'lg:overflow-hidden' : ''} ${
+              page === 'bloc' ? 'overflow-hidden' : ''
+            }`}
           >
             {page === 'dashboard' && (
               <Dashboard

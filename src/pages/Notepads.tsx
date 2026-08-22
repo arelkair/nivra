@@ -25,7 +25,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         {notepads.map((n) => (
           <button
@@ -201,7 +201,7 @@ export function Editor({
     'grid h-9 w-9 place-items-center rounded-lg border text-sm transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
 
   return (
-    <section className={`${card} flex flex-col overflow-hidden`}>
+    <section className={`${card} flex flex-col overflow-hidden ${compacto ? '' : 'min-h-0 flex-1'}`}>
       <div className={`flex flex-wrap items-center gap-1.5 border-b p-2 ${line}`}>
         <button
           type="button"
@@ -321,15 +321,15 @@ export function Editor({
         aria-multiline="true"
         aria-label={`Contenido de ${notepad.title}`}
         onInput={(e) => onChange(sanitize(e.currentTarget.innerHTML))}
-        className={`${compacto ? 'min-h-40 flex-1 overflow-y-auto p-4' : 'min-h-[24rem] p-5'} nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5`}
+        className={`${compacto ? 'p-4' : 'p-5'} min-h-0 flex-1 overflow-y-auto nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5`}
       />
 
-      <p className={`border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
+      <p className={`shrink-0 border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
         {palabrasPagina} {t(palabrasPagina === 1 ? 'palabra' : 'palabras')} {t('en esta página')}
         {pageList.length > 1 && tp(' · {0} en el bloc', palabrasTotal)}
       </p>
 
-      <div className={`flex items-center justify-between gap-2 border-t p-2 ${line}`}>
+      <div className={`flex shrink-0 items-center justify-between gap-2 border-t p-2 ${line}`}>
         <button
           type="button"
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
