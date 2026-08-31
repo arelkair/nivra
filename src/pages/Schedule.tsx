@@ -70,7 +70,11 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
         {DAYS.map((day, i) => {
           const dayBlocks = visible
             .filter((b) => b.day === i)
-            .sort((a, b) => a.start.localeCompare(b.start))
+            .sort((a, b) => {
+              const la = a.lateNight ? 1 : 0
+              const lb = b.lateNight ? 1 : 0
+              return la !== lb ? la - lb : a.start.localeCompare(b.start)
+            })
           return (
             <section
               key={day}
@@ -181,9 +185,10 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const b = String(data.get('end') ?? '')
               if (!title || !a || !b) return
               const [start, end] = a <= b ? [a, b] : [b, a]
+              const lateNight = data.get('lateNight') === 'on'
               setBlocks((prev) => [
                 ...prev,
-                { id: crypto.randomUUID(), day: adding, start, end, title, profile: active },
+                { id: crypto.randomUUID(), day: adding, start, end, title, profile: active, lateNight },
               ])
               setAdding(null)
             }}
@@ -194,6 +199,13 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               <input name="start" type="time" required aria-label={t('Inicio')} className={input} />
               <input name="end" type="time" required aria-label={t('Fin')} className={input} />
             </div>
+            <label className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+              <input name="lateNight" type="checkbox" className="h-4 w-4 rounded" />
+              {t('Colocar al final del día')}
+            </label>
+            <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+              {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
+            </p>
             <button type="submit" className={`${button} mt-2`}>
               {t('Añadir')}
             </button>
@@ -213,8 +225,11 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               if (!title || !a || !b) return
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
+              const lateNight = data.get('lateNight') === 'on'
               setBlocks((prev) =>
-                prev.map((x) => (x.id === editingItem.id ? { ...x, title, start, end, day: dayIndex } : x)),
+                prev.map((x) =>
+                  x.id === editingItem.id ? { ...x, title, start, end, day: dayIndex, lateNight } : x,
+                ),
               )
               setEditingItem(null)
             }}
@@ -252,6 +267,18 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                 </option>
               ))}
             </select>
+            <label className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+              <input
+                name="lateNight"
+                type="checkbox"
+                defaultChecked={editingItem.lateNight}
+                className="h-4 w-4 rounded"
+              />
+              {t('Colocar al final del día')}
+            </label>
+            <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+              {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
+            </p>
             <button type="submit" className={`${button} mt-2`}>
               {t('Guardar')}
             </button>

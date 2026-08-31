@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { UNITS, countdown, progress, type Countdown, type Unit } from '../lib/store'
+import { useEffect, useState, type DragEvent } from 'react'
+import { UNITS, countdown, moveById, progress, type Countdown, type Unit } from '../lib/store'
 import { Empty, Icon, Label, Modal, Switch, button, card, input, line } from './ui'
 import { locale, t } from '../lib/i18n'
 
@@ -36,7 +36,29 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
   const [now, setNow] = useState(() => new Date())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
   const editing = countdowns.find((c) => c.id === editingId)
+
+  const dragProps = (id: string) => ({
+    draggable: true,
+    onDragStart: () => setDraggingId(id),
+    onDragEnd: () => {
+      setDraggingId(null)
+      setOverId(null)
+    },
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault()
+      setOverId(id)
+    },
+    onDrop: () => {
+      if (draggingId) setCountdowns((prev) => moveById(prev, draggingId, id))
+      setDraggingId(null)
+      setOverId(null)
+    },
+    dragging: draggingId === id,
+    over: overId === id && !!draggingId && draggingId !== id,
+  })
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -61,13 +83,30 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
         <Empty>{t('Sin cuenta atrás.')}</Empty>
       ) : (
         <div className="flex flex-col gap-2">
-          <Card item={countdowns[0]} now={now} big onEdit={() => setEditingId(countdowns[0].id)} />
+          <Card
+            item={countdowns[0]}
+            now={now}
+            big
+            onEdit={() => setEditingId(countdowns[0].id)}
+            {...dragProps(countdowns[0].id)}
+          />
           {countdowns.length > 1 && (
             <div className="grid gap-2 sm:grid-cols-2">
               {countdowns.slice(1).map((c) => (
-                <Card key={c.id} item={c} now={now} onEdit={() => setEditingId(c.id)} />
+                <Card
+                  key={c.id}
+                  item={c}
+                  now={now}
+                  onEdit={() => setEditingId(c.id)}
+                  {...dragProps(c.id)}
+                />
               ))}
             </div>
+          )}
+          {countdowns.length > 1 && (
+            <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+              {t('Arrastra una cuenta atrás para reordenarla.')}
+            </p>
           )}
         </div>
       )}
@@ -103,11 +142,25 @@ function Card({
   now,
   big,
   onEdit,
+  draggable,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  dragging,
+  over,
 }: {
   item: Countdown
   now: Date
   big?: boolean
   onEdit: () => void
+  draggable?: boolean
+  onDragStart?: () => void
+  onDragEnd?: () => void
+  onDragOver?: (e: DragEvent) => void
+  onDrop?: () => void
+  dragging?: boolean
+  over?: boolean
 }) {
   const target = new Date(item.target)
   const parts = countdown(now, target, item.units)
@@ -115,7 +168,18 @@ function Card({
   const finished = target.getTime() <= now.getTime()
 
   return (
-    <div className={`shrink-0 rounded-xl border ${big ? 'p-4' : 'p-3'} ${line}`}>
+    <div
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`shrink-0 cursor-grab rounded-xl border transition-colors active:cursor-grabbing ${
+        big ? 'p-4' : 'p-3'
+      } ${line} ${dragging ? 'opacity-40' : ''} ${
+        over ? 'border-neutral-400 dark:border-neutral-500' : ''
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className={`truncate font-medium ${big ? 'text-base' : 'text-sm'}`}>{item.title}</p>

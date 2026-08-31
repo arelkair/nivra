@@ -472,6 +472,31 @@ const EN: Record<string, string> = {
   'Con fecha aparece en el calendario como Tarea, en azul.':
     'With a date it appears on the calendar as a Task, in blue.',
   'El enlace debe empezar por http:// o https://.': 'The link must start with http:// or https://.',
+
+  // marcadores, tablas, gráficas y texto desplegable
+  'Marcar página': 'Bookmark page',
+  'Quitar marcador': 'Remove bookmark',
+  'Insertar tabla': 'Insert table',
+  'Insertar gráfica': 'Insert chart',
+  'Insertar texto desplegable': 'Insert collapsible text',
+  Filas: 'Rows',
+  Columnas: 'Columns',
+  Insertar: 'Insert',
+  'Gráfica de barras': 'Bar chart',
+  Etiqueta: 'Label',
+  Valor: 'Value',
+  'Añadir fila': 'Add row',
+  'Toca para expandir': 'Tap to expand',
+  'Escribe aquí…': 'Write here…',
+
+  // horario
+  'Colocar al final del día': 'Place at the end of the day',
+  'Útil si tienes una actividad que empieza pasada la medianoche.':
+    'Useful if you have an activity that starts after midnight.',
+
+  // arrastrar
+  'Arrastra un bloc para reordenarlo.': 'Drag a notepad to reorder it.',
+  'Arrastra una cuenta atrás para reordenarla.': 'Drag a countdown to reorder it.',
 }
 
 /** Como t(), pero sustituyendo {0}, {1}... por los valores dados. */

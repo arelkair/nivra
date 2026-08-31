@@ -487,6 +487,19 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M12 9v4l2.5 2M9 2h6" />
     </>
   ),
+  table: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18M3 16h18M9 4v16M15 4v16" />
+    </>
+  ),
+  chart: <path d="M4 20V10M10 20V4M16 20v-7M4 20h16" />,
+  collapse: (
+    <>
+      <rect x="3" y="4" width="18" height="6" rx="1.5" />
+      <path d="M8 15l4 4 4-4" />
+    </>
+  ),
 }
 
 export function Icon({ name, className = 'h-[1.15em] w-[1.15em]' }: { name: string; className?: string }) {

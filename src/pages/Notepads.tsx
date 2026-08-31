@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { pagesOf, sanitize, type Notepad, type NotepadPage } from '../lib/store'
+import { moveById, pagesOf, sanitize, type Notepad, type NotepadPage } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
@@ -15,6 +15,8 @@ export function Notepads({ notepads, setNotepads }: Props) {
   const [activeId, setActiveId] = useState<string | null>(notepads[0]?.id ?? null)
   const [renaming, setRenaming] = useState<Notepad | null>(null)
   const [creating, setCreating] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
   const active = notepads.find((n) => n.id === activeId) ?? notepads[0]
 
   const create = (title: string) => {
@@ -31,9 +33,30 @@ export function Notepads({ notepads, setNotepads }: Props) {
           <button
             key={n.id}
             type="button"
+            draggable
+            onDragStart={() => setDraggingId(n.id)}
+            onDragEnd={() => {
+              setDraggingId(null)
+              setOverId(null)
+            }}
+            onDragOver={(e) => {
+              e.preventDefault()
+              setOverId(n.id)
+            }}
+            onDrop={() => {
+              if (draggingId) setNotepads((prev) => moveById(prev, draggingId, n.id))
+              setDraggingId(null)
+              setOverId(null)
+            }}
             onClick={() => (n.id === active?.id ? setRenaming(n) : setActiveId(n.id))}
             title={n.id === active?.id ? t('Renombrar o eliminar') : t('Abrir')}
-            className={`rounded-xl border px-4 py-2 text-sm transition-colors ${
+            className={`cursor-grab rounded-xl border px-4 py-2 text-sm transition-colors active:cursor-grabbing ${
+              draggingId === n.id ? 'opacity-40' : ''
+            } ${
+              overId === n.id && draggingId && draggingId !== n.id && n.id !== active?.id
+                ? 'border-neutral-400 dark:border-neutral-500'
+                : ''
+            } ${
               n.id === active?.id
                 ? 'border-neutral-900 font-medium dark:border-white'
                 : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.04]`
@@ -51,6 +74,12 @@ export function Notepads({ notepads, setNotepads }: Props) {
           <Icon name="plus" className="h-4 w-4" />
         </button>
       </div>
+
+      {notepads.length > 1 && (
+        <p className="-mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          {t('Arrastra un bloc para reordenarlo.')}
+        </p>
+      )}
 
       {active ? (
         <Editor
@@ -139,6 +168,30 @@ const countWords = (html: string) => {
   return m ? m.length : 0
 }
 
+const TABLE_CELL = (r: number, c: number) =>
+  Array.from({ length: r }, (_, ri) =>
+    `<tr>${Array.from({ length: c }, () => (ri === 0 ? '<th> </th>' : '<td> </td>')).join('')}</tr>`,
+  ).join('')
+
+function barChartHtml(title: string, rows: { label: string; value: number }[]) {
+  const max = Math.max(...rows.map((r) => r.value), 1)
+  const rowH = 26
+  const height = rows.length * rowH + (title ? 28 : 8)
+  const width = 360
+  const barMaxW = 220
+  const bars = rows
+    .map((r, i) => {
+      const y = (title ? 28 : 8) + i * rowH
+      const w = Math.max(2, (r.value / max) * barMaxW)
+      return `<text x="0" y="${y + 14}" font-size="11" fill="currentColor">${r.label}</text>
+        <rect x="110" y="${y + 3}" width="${w}" height="14" rx="3" fill="currentColor" opacity="0.75" />
+        <text x="${116 + w}" y="${y + 14}" font-size="11" fill="currentColor">${r.value}</text>`
+    })
+    .join('')
+  const heading = title ? `<text x="0" y="16" font-size="12" font-weight="600" fill="currentColor">${title}</text>` : ''
+  return `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%">${heading}${bars}</svg>`
+}
+
 export function Editor({
   notepad,
   onPages,
@@ -154,6 +207,8 @@ export function Editor({
   const ref = useRef<HTMLDivElement>(null)
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
+  const [tableDialog, setTableDialog] = useState(false)
+  const [chartDialog, setChartDialog] = useState(false)
 
   const last = useRef<string | null>(null)
 
@@ -181,6 +236,26 @@ export function Editor({
     if (ref.current) onChange(sanitize(ref.current.innerHTML))
   }
 
+  const appendHtml = (html: string) => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    range.collapse(false)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    document.execCommand('insertHTML', false, html)
+    onChange(sanitize(el.innerHTML))
+  }
+
+  const toggleBookmark = () => {
+    onPages(
+      pageList.map((p) => (p.id === currentPage.id ? { ...p, bookmarked: !p.bookmarked } : p)),
+    )
+  }
+
   const findNext = (back: boolean) => {
     if (!query) return
     ref.current?.focus()
@@ -201,6 +276,7 @@ export function Editor({
     'grid h-9 w-9 place-items-center rounded-lg border text-sm transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
 
   return (
+    <>
     <section className={`${card} flex flex-col overflow-hidden ${compacto ? '' : 'min-h-0 flex-1'}`}>
       <div className={`flex flex-wrap items-center gap-1.5 border-b p-2 ${line}`}>
         <button
@@ -214,7 +290,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => apply('italic')}
-          aria-label="Cursiva"
+          aria-label={t('Cursiva')}
           className={`${btnClass} ${line} font-serif italic`}
         >
           I
@@ -222,7 +298,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => apply('underline')}
-          aria-label="Subrayado"
+          aria-label={t('Subrayado')}
           className={`${btnClass} ${line} underline`}
         >
           U
@@ -230,7 +306,7 @@ export function Editor({
         <button
           type="button"
           onClick={() => apply('strikeThrough')}
-          aria-label="Tachado"
+          aria-label={t('Tachado')}
           className={`${btnClass} ${line} line-through`}
         >
           S
@@ -266,6 +342,49 @@ export function Editor({
           className={`${btnClass} ${line} text-neutral-400`}
         >
           <Icon name="close" className="h-4 w-4" />
+        </button>
+
+        <span className={`mx-1 h-6 w-px ${'bg-black/10 dark:bg-white/15'}`} />
+
+        <button
+          type="button"
+          onClick={() => setTableDialog(true)}
+          aria-label={t('Insertar tabla')}
+          className={`${btnClass} ${line}`}
+        >
+          <Icon name="table" className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setChartDialog(true)}
+          aria-label={t('Insertar gráfica')}
+          className={`${btnClass} ${line}`}
+        >
+          <Icon name="chart" className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            appendHtml(
+              `<details><summary>${t('Toca para expandir')}</summary><div>${t('Escribe aquí…')}</div></details><br>`,
+            )
+          }
+          aria-label={t('Insertar texto desplegable')}
+          className={`${btnClass} ${line}`}
+        >
+          <Icon name="collapse" className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleBookmark}
+          aria-label={currentPage.bookmarked ? t('Quitar marcador') : t('Marcar página')}
+          aria-pressed={!!currentPage.bookmarked}
+          className={`${btnClass} ${line} ${
+            currentPage.bookmarked ? 'text-yellow-500' : 'text-neutral-400'
+          }`}
+        >
+          <Icon name="star" className="h-4 w-4" />
         </button>
 
         <button
@@ -321,7 +440,7 @@ export function Editor({
         aria-multiline="true"
         aria-label={`Contenido de ${notepad.title}`}
         onInput={(e) => onChange(sanitize(e.currentTarget.innerHTML))}
-        className={`${compacto ? 'p-4' : 'p-5'} min-h-0 flex-1 overflow-y-auto nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5`}
+        className={`${compacto ? 'p-4' : 'p-5'} min-h-0 flex-1 overflow-y-auto nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-black/10 [&_td]:p-1.5 [&_th]:border [&_th]:border-black/10 [&_th]:bg-black/[0.04] [&_th]:p-1.5 dark:[&_td]:border-white/15 dark:[&_th]:border-white/15 dark:[&_th]:bg-white/[0.06] [&_details]:my-2 [&_details]:rounded-lg [&_details]:border [&_details]:border-black/10 [&_details]:p-2 dark:[&_details]:border-white/15 [&_summary]:cursor-pointer [&_summary]:font-medium`}
       />
 
       <p className={`shrink-0 border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
@@ -349,13 +468,19 @@ export function Editor({
               aria-label={t('Página ') + (i + 1)}
               aria-current={i === index}
               className={
-                'h-7 min-w-7 rounded-lg px-2 font-mono text-xs transition-colors ' +
+                'relative h-7 min-w-7 rounded-lg px-2 font-mono text-xs transition-colors ' +
                 (i === index
                   ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                   : 'text-neutral-400 hover:text-neutral-900 dark:hover:text-white')
               }
             >
               {i + 1}
+              {p.bookmarked && (
+                <Icon
+                  name="star"
+                  className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-500"
+                />
+              )}
             </button>
           ))}
           <button
@@ -396,5 +521,114 @@ export function Editor({
         </button>
       </div>
     </section>
+
+    {tableDialog && (
+      <Modal title={t('Insertar tabla')} onClose={() => setTableDialog(false)}>
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault()
+            const data = new FormData(ev.currentTarget)
+            const rows = Math.min(20, Math.max(1, Number(data.get('rows')) || 1))
+            const cols = Math.min(10, Math.max(1, Number(data.get('cols')) || 1))
+            setTableDialog(false)
+            requestAnimationFrame(() => appendHtml(`<table>${TABLE_CELL(rows, cols)}</table><br>`))
+          }}
+          className="flex flex-col gap-2"
+        >
+          <div className="flex gap-2">
+            <input
+              name="rows"
+              type="number"
+              min={1}
+              max={20}
+              defaultValue={3}
+              required
+              aria-label={t('Filas')}
+              placeholder={t('Filas')}
+              className={input}
+            />
+            <input
+              name="cols"
+              type="number"
+              min={1}
+              max={10}
+              defaultValue={3}
+              required
+              aria-label={t('Columnas')}
+              placeholder={t('Columnas')}
+              className={input}
+            />
+          </div>
+          <button type="submit" className={`${button} mt-2`}>
+            {t('Insertar')}
+          </button>
+        </form>
+      </Modal>
+    )}
+
+    {chartDialog && <ChartDialog onClose={() => setChartDialog(false)} onInsert={appendHtml} />}
+    </>
+  )
+}
+
+function ChartDialog({
+  onClose,
+  onInsert,
+}: {
+  onClose: () => void
+  onInsert: (html: string) => void
+}) {
+  const [rows, setRows] = useState([0, 1, 2])
+
+  return (
+    <Modal title={t('Gráfica de barras')} onClose={onClose}>
+      <form
+        onSubmit={(ev) => {
+          ev.preventDefault()
+          const data = new FormData(ev.currentTarget)
+          const title = String(data.get('title') ?? '').trim()
+          const values = rows
+            .map((id) => ({
+              label: String(data.get(`label${id}`) ?? '').trim(),
+              value: Number(data.get(`value${id}`)) || 0,
+            }))
+            .filter((r) => r.label)
+          if (!values.length) return
+          onClose()
+          requestAnimationFrame(() => onInsert(barChartHtml(title, values) + '<br>'))
+        }}
+        className="flex flex-col gap-2"
+      >
+        <input name="title" maxLength={40} placeholder={t('Título')} className={input} />
+        {rows.map((id) => (
+          <div key={id} className="flex gap-2">
+            <input
+              name={`label${id}`}
+              maxLength={20}
+              placeholder={t('Etiqueta')}
+              aria-label={t('Etiqueta')}
+              className={`${input} flex-[2]`}
+            />
+            <input
+              name={`value${id}`}
+              type="number"
+              placeholder={t('Valor')}
+              aria-label={t('Valor')}
+              className={`${input} flex-1`}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setRows((prev) => [...prev, (prev.at(-1) ?? 0) + 1])}
+          className="self-start text-xs text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+        >
+          {t('Añadir fila')}
+        </button>
+        <button type="submit" className={`${button} mt-2`}>
+          {t('Insertar')}
+        </button>
+      </form>
+    </Modal>
   )
 }

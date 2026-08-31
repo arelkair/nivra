@@ -135,7 +135,7 @@ export type Grade = {
 
 export type Streak = { count: number; last: string }
 
-export type NotepadPage = { id: string; html: string }
+export type NotepadPage = { id: string; html: string; bookmarked?: boolean }
 
 export type Notepad = { id: string; title: string; html?: string; pages?: NotepadPage[] }
 
@@ -291,6 +291,7 @@ export type Block = {
   end: string
   title: string
   profile?: string
+  lateNight?: boolean
 }
 
 export const blockProfile = (b: Block) => b.profile ?? DEFAULT_PROFILE
@@ -324,6 +325,17 @@ export function reorder<T>(list: T[], index: number, step: number): T[] {
   const copy = [...list]
   const [item] = copy.splice(index, 1)
   copy.splice(destino, 0, item)
+  return copy
+}
+
+export function moveById<T extends { id: string }>(list: T[], fromId: string, toId: string): T[] {
+  if (fromId === toId) return list
+  const fromIndex = list.findIndex((x) => x.id === fromId)
+  const toIndex = list.findIndex((x) => x.id === toId)
+  if (fromIndex === -1 || toIndex === -1) return list
+  const copy = [...list]
+  const [item] = copy.splice(fromIndex, 1)
+  copy.splice(toIndex, 0, item)
   return copy
 }
 
