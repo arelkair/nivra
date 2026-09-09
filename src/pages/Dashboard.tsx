@@ -27,6 +27,7 @@ type Props = {
   blocks: Block[]
   works: Work[]
   balance: number | null
+  bankEnabled: boolean
   countdowns: Countdown[]
   setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
   remindersHoy: Reminder[]
@@ -42,6 +43,7 @@ export function Dashboard({
   blocks,
   works,
   balance,
+  bankEnabled,
   countdowns,
   setCountdowns,
   remindersHoy,
@@ -64,7 +66,9 @@ export function Dashboard({
     .slice(0, 5)
 
   const stats = [
-    { value: balance === null ? '—' : eur(balance), label: 'dinero', page: 'banco' as PageId },
+    ...(bankEnabled
+      ? [{ value: balance === null ? '—' : eur(balance), label: 'dinero', page: 'banco' as PageId }]
+      : []),
     { value: todayItems.length, label: 'hoy', page: 'calendario' as PageId },
     { value: pending.length, label: 'tareas', page: 'tareas' as PageId },
     { value: nextWorks.length, label: 'por venir', page: 'examenes' as PageId },

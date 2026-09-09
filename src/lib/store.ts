@@ -251,6 +251,7 @@ export type Task = {
   subtasks: SubTask[]
   subject?: string
   notepad?: string
+  url?: string
 }
 
 export type Work = {

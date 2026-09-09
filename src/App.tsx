@@ -158,6 +158,7 @@ function App() {
 
   const irA = useCallback(
     (destino: PageId) => {
+      if (destino === 'banco' && !cfg.bankEnabled) return
       setMenuOpen(false)
       if (pageHistory[index] === destino) return
       if (destino === 'banco') setBankTab('dinero')
@@ -166,10 +167,14 @@ function App() {
       setIndex(next)
       history.pushState({ nivra: next }, '')
     },
-    [index, pageHistory],
+    [index, pageHistory, cfg.bankEnabled],
   )
   const back = useCallback(() => history.back(), [])
   const forward = useCallback(() => history.forward(), [])
+
+  useEffect(() => {
+    if (page === 'banco' && !cfg.bankEnabled) irA('dashboard')
+  }, [page, cfg.bankEnabled, irA])
 
   const notify = useCallback(
     (text: string, undo?: () => void) => {
@@ -330,8 +335,10 @@ function App() {
           .replace(/\p{Diacritic}/gu, '')
           .includes(q)
       const out: SearchResult[] = []
-      const add = (id: string, title: string, kind: string, page: Destination) =>
+      const add = (id: string, title: string, kind: string, page: Destination) => {
+        if (page === 'banco' && !cfg.bankEnabled) return
         out.push({ id, title, kind, page })
+      }
 
       for (const task of tasks)
         if (matches(task.title)) add(task.id, task.title, t('Tarea'), 'tareas')
@@ -396,6 +403,7 @@ function App() {
       profiles,
       movements,
       cfg.subjects,
+      cfg.bankEnabled,
     ],
   )
 
@@ -460,6 +468,7 @@ function App() {
             bankTab={bankTab}
             setBankTab={setBankTab}
             bankInitial={bankInitial}
+            bankEnabled={cfg.bankEnabled}
           />
         </aside>
 
@@ -552,6 +561,7 @@ function App() {
                 blocks={blocks}
                 works={works}
                 balance={balance}
+                bankEnabled={cfg.bankEnabled}
                 countdowns={mainCountdown ? [mainCountdown] : []}
                 setCountdowns={setCountdowns}
                 remindersHoy={remindersHoy}
@@ -610,7 +620,7 @@ function App() {
             )}
             {page === 'deseos' && <Wishlist wishes={wishes} setWishes={setWishes} />}
             {page === 'suscripciones' && <Subscriptions subs={subs} setSubs={setSubs} />}
-            {page === 'banco' && (
+            {page === 'banco' && cfg.bankEnabled && (
               <Bank
                 initial={bankInitial}
                 setInitial={setBankInitial}
@@ -664,6 +674,7 @@ function App() {
                   setMenuOpen(false)
                 }}
                 bankInitial={bankInitial}
+                bankEnabled={cfg.bankEnabled}
               />
             </div>
           </div>
@@ -707,12 +718,14 @@ function Navigation({
   bankTab,
   setBankTab,
   bankInitial,
+  bankEnabled,
 }: {
   page: PageId
   irA: (p: PageId) => void
   bankTab: BankTab
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
+  bankEnabled: boolean
 }) {
   const navItem = (activo: boolean) =>
     `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
@@ -729,7 +742,9 @@ function Navigation({
                   {t(g.title)}
                 </p>
                 <div className="flex flex-col gap-0.5">
-                  {g.pages.map((p) => (
+                  {g.pages
+                    .filter((p) => p.id !== 'banco' || bankEnabled)
+                    .map((p) => (
                     <div key={p.id}>
                       <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
                         <Icon name={p.icon} className="h-[17px] w-[17px] shrink-0" />

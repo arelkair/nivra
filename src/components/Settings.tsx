@@ -98,6 +98,12 @@ export function Settings({
               onChange={cfg.setNavButtons}
               label={t('Botones de atrás y adelante')}
             />
+            <Switch
+              checked={cfg.bankEnabled}
+              onChange={cfg.setBankEnabled}
+              label={t('Sección de banco')}
+              hint={t('Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.')}
+            />
           </div>
         </Collapsible>
 
@@ -508,7 +514,7 @@ function ShortcutKeys({ cfg, onNotify }: { cfg: Settings; onNotify: (t: string) 
 
   return (
     <ul className="mt-3 flex flex-col">
-      {SHORTCUTS.map((a) => {
+      {SHORTCUTS.filter((a) => a.id !== 'banco' || cfg.bankEnabled).map((a) => {
         const key = cfg.customKeys[a.id] ?? a.key
         const changed = key !== a.key
         return (

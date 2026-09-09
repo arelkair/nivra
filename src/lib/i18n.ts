@@ -472,6 +472,7 @@ const EN: Record<string, string> = {
   'Con fecha aparece en el calendario como Tarea, en azul.':
     'With a date it appears on the calendar as a Task, in blue.',
   'El enlace debe empezar por http:// o https://.': 'The link must start with http:// or https://.',
+  'Abrir enlace de {0}': 'Open the link for {0}',
 
   // marcadores, tablas, gráficas y texto desplegable
   'Marcar página': 'Bookmark page',
@@ -493,6 +494,11 @@ const EN: Record<string, string> = {
   'Colocar al final del día': 'Place at the end of the day',
   'Útil si tienes una actividad que empieza pasada la medianoche.':
     'Useful if you have an activity that starts after midnight.',
+
+  // ajustes de secciones
+  'Sección de banco': 'Bank section',
+  'Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.':
+    'Hides the bank, its stats and its shortcuts from the rest of the app.',
 
   // arrastrar
   'Arrastra un bloc para reordenarlo.': 'Drag a notepad to reorder it.',

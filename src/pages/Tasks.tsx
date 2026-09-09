@@ -192,6 +192,18 @@ function Row({
         </span>
       </button>
 
+      {task.url && /^https?:\/\//i.test(task.url) && (
+        <a
+          href={task.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={tp('Abrir enlace de {0}', task.title)}
+          className="shrink-0 text-neutral-300 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+        >
+          <Icon name="link" className="h-3.5 w-3.5" />
+        </a>
+      )}
+
       <span className="flex shrink-0 flex-col">
         <button
           type="button"
@@ -285,6 +297,18 @@ function TaskDialog({
         </div>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
           {t('Con fecha aparece en el calendario como Tarea, en azul.')}
+        </p>
+
+        <input
+          type="url"
+          value={task.url ?? ''}
+          onChange={(e) => onPatch({ url: e.target.value })}
+          placeholder="https://…"
+          aria-label={t('Enlace')}
+          className={input}
+        />
+        <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          {t('El enlace debe empezar por http:// o https://.')}
         </p>
 
         <select
