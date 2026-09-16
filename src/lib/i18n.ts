@@ -549,6 +549,15 @@ const EN: Record<string, string> = {
   'Notas de la asignatura': 'Subject grades',
   'Nota {0} eliminada': 'Grade {0} deleted',
 
+  // horario en tabla
+  'Horario libre': 'Free layout',
+  'Horario en tabla': 'Table layout',
+  'Nuevo bloque': 'New block',
+  'Nueva franja horaria': 'New time slot',
+  'Las horas fijas se mantienen siempre en la misma fila. Un día con una hora distinta simplemente añade una franja nueva.':
+    'Fixed hours always stay on the same row. A day with a different time just adds a new slot.',
+  'Añadir bloque el {0} de {1} a {2}': 'Add a block on {0} from {1} to {2}',
+
   // ajustes de secciones
   'Sección de banco': 'Bank section',
   'Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.':

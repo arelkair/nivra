@@ -36,7 +36,7 @@ export type Countdown = {
   units: Record<Unit, boolean>
 }
 
-export type Profile = { id: string; name: string }
+export type Profile = { id: string; name: string; mode?: 'libre' | 'tabla' }
 
 export type Subject = { id: string; name: string; color: string }
 
