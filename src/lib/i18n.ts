@@ -558,6 +558,13 @@ const EN: Record<string, string> = {
     'Fixed hours always stay on the same row. A day with a different time just adds a new slot.',
   'Añadir bloque el {0} de {1} a {2}': 'Add a block on {0} from {1} to {2}',
 
+  // estilo
+  Estilo: 'Style',
+  Clásico: 'Classic',
+  'Carpetas de escritorio': 'Desktop folders',
+  'Cambia el aspecto general de la navegación. No afecta al color ni al modo claro u oscuro.':
+    'Changes the overall look of the navigation. Does not affect the accent colour or light/dark mode.',
+
   // ajustes de secciones
   'Sección de banco': 'Bank section',
   'Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.':

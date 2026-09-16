@@ -537,6 +537,7 @@ function App() {
             setBankTab={setBankTab}
             bankInitial={bankInitial}
             bankEnabled={cfg.bankEnabled}
+            themeStyle={cfg.themeStyle}
           />
         </aside>
 
@@ -744,6 +745,7 @@ function App() {
                 }}
                 bankInitial={bankInitial}
                 bankEnabled={cfg.bankEnabled}
+                themeStyle={cfg.themeStyle}
               />
             </div>
           </div>
@@ -788,6 +790,7 @@ function Navigation({
   setBankTab,
   bankInitial,
   bankEnabled,
+  themeStyle,
 }: {
   page: PageId
   irA: (p: PageId) => void
@@ -795,6 +798,7 @@ function Navigation({
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
   bankEnabled: boolean
+  themeStyle: 'clasico' | 'carpetas'
 }) {
   const navItem = (activo: boolean) =>
     `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
@@ -802,6 +806,74 @@ function Navigation({
         ? 'bg-black/[0.06] font-medium text-neutral-900 dark:bg-white/[0.10] dark:text-white'
         : 'text-neutral-500 hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
     }`
+
+  const bankTabs = page === 'banco' && bankInitial !== null && (
+    <div className={`flex flex-col gap-0.5 border-l pl-3 ${line}`}>
+      {BANK_TABS.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => setBankTab(tab.id)}
+          className={`rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
+            bankTab === tab.id
+              ? 'font-medium text-neutral-900 dark:text-white'
+              : 'text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white'
+          }`}
+        >
+          {t(tab.label)}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (themeStyle === 'carpetas') {
+    return (
+      <nav className="flex flex-col gap-5 pb-4">
+        {GROUPS.map((g) => (
+          <div key={g.title}>
+            <p className="mb-2 px-1 text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+              {t(g.title)}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {g.pages
+                .filter((p) => p.id !== 'banco' || bankEnabled)
+                .map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => irA(p.id)}
+                    className="group flex flex-col items-center gap-1.5"
+                  >
+                    <span className="relative">
+                      <span
+                        className={`absolute -top-1.5 left-2 h-2 w-6 rounded-t-md transition-colors ${
+                          page === p.id ? 'bg-neutral-900 dark:bg-white' : 'bg-black/10 dark:bg-white/15'
+                        }`}
+                      />
+                      <span
+                        className={`flex h-12 w-14 items-center justify-center rounded-lg rounded-tl-none border transition-colors ${
+                          page === p.id
+                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                            : `${line} text-neutral-500 group-hover:bg-black/[0.03] dark:text-neutral-400 dark:group-hover:bg-white/[0.05]`
+                        }`}
+                      >
+                        <Icon name={p.icon} className="h-5 w-5" />
+                      </span>
+                    </span>
+                    <span className="max-w-full truncate text-[0.65rem] text-neutral-600 dark:text-neutral-300">
+                      {t(p.short)}
+                    </span>
+                  </button>
+                ))}
+            </div>
+            {g.pages.some((p) => p.id === 'banco') && bankTabs && (
+              <div className="mt-2 ml-1">{bankTabs}</div>
+            )}
+          </div>
+        ))}
+      </nav>
+    )
+  }
 
   return (
           <nav className="flex flex-col gap-6 pb-4">
@@ -820,23 +892,8 @@ function Navigation({
                         <span className="min-w-0 truncate">{t(p.label)}</span>
                       </button>
 
-                      {p.id === 'banco' && page === 'banco' && bankInitial !== null && (
-                        <div className={`mt-1 ml-6 flex flex-col gap-0.5 border-l pl-3 ${line}`}>
-                          {BANK_TABS.map((tab) => (
-                            <button
-                              key={tab.id}
-                              type="button"
-                              onClick={() => setBankTab(tab.id)}
-                              className={`rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
-                                bankTab === tab.id
-                                  ? 'font-medium text-neutral-900 dark:text-white'
-                                  : 'text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white'
-                              }`}
-                            >
-                              {t(tab.label)}
-                            </button>
-                          ))}
-                        </div>
+                      {p.id === 'banco' && page === 'banco' && bankTabs && (
+                        <div className="mt-1 ml-6">{bankTabs}</div>
                       )}
                     </div>
                   ))}

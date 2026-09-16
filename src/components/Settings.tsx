@@ -168,6 +168,51 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
+          title={t('Estilo')}
+          open={openSection === 'estilo'}
+          animar={cfg.animations}
+          onToggle={() => alterna('estilo')}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            {(
+              [
+                { id: 'clasico', label: t('Clásico') },
+                { id: 'carpetas', label: t('Carpetas de escritorio') },
+              ] as const
+            ).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => cfg.setThemeStyle(s.id)}
+                aria-pressed={cfg.themeStyle === s.id}
+                className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
+                  cfg.themeStyle === s.id
+                    ? 'border-neutral-900 dark:border-white'
+                    : `${line} hover:border-neutral-400`
+                }`}
+              >
+                {s.id === 'clasico' ? (
+                  <div className="flex h-12 w-full gap-1">
+                    <div className="h-full w-3 rounded bg-black/20 dark:bg-white/20" />
+                    <div className="flex-1 rounded bg-black/[0.06] dark:bg-white/[0.08]" />
+                  </div>
+                ) : (
+                  <div className="grid h-12 w-full grid-cols-3 gap-1">
+                    {Array.from({ length: 6 }, (_, i) => (
+                      <div key={i} className="rounded bg-black/20 dark:bg-white/20" />
+                    ))}
+                  </div>
+                )}
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{s.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+            {t('Cambia el aspecto general de la navegación. No afecta al color ni al modo claro u oscuro.')}
+          </p>
+        </Collapsible>
+
+        <Collapsible
           title={t('Fondo')}
           open={openSection === 'fondo'}
           animar={cfg.animations}

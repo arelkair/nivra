@@ -26,6 +26,7 @@ export function useSettings() {
   const [ambientOn, setAmbientOn] = useStored('nivra-ambient', false)
   const [ambientPreset, setAmbientPreset] = useStored<'lluvia' | 'olas'>('nivra-ambient-preset', 'lluvia')
   const [ambientVolume, setAmbientVolume] = useStored('nivra-ambient-volume', 20)
+  const [themeStyle, setThemeStyle] = useStored<'clasico' | 'carpetas'>('nivra-theme-style', 'clasico')
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
   const [customKeys, setCustomKeys] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
@@ -75,6 +76,8 @@ export function useSettings() {
     setAmbientPreset,
     ambientVolume,
     setAmbientVolume,
+    themeStyle,
+    setThemeStyle,
     shortcutsOn,
     setShortcutsOn,
     enabledShortcuts,
