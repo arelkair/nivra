@@ -211,6 +211,7 @@ export function Editor({
   const [chartDialog, setChartDialog] = useState(false)
 
   const last = useRef<string | null>(null)
+  const pendingSelect = useRef<number | null>(null)
 
   useEffect(() => {
     const element = ref.current
@@ -223,6 +224,44 @@ export function Editor({
     }
     element.innerHTML = clean
     last.current = clean
+  })
+
+  const selectOccurrence = (occ: number) => {
+    const el = ref.current
+    if (!el || !query) return
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    const needle = query.toLowerCase()
+    let count = 0
+    let node: Node | null
+    while ((node = walker.nextNode())) {
+      const text = node.textContent ?? ''
+      const lower = text.toLowerCase()
+      let from = 0
+      while (true) {
+        const at = lower.indexOf(needle, from)
+        if (at === -1) break
+        if (count === occ) {
+          const range = document.createRange()
+          range.setStart(node, at)
+          range.setEnd(node, at + needle.length)
+          const sel = window.getSelection()
+          sel?.removeAllRanges()
+          sel?.addRange(range)
+          const container = node.parentElement
+          container?.scrollIntoView({ block: 'center' })
+          return
+        }
+        count++
+        from = at + needle.length
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (pendingSelect.current === null) return
+    const occ = pendingSelect.current
+    pendingSelect.current = null
+    selectOccurrence(occ)
   })
 
   const onChange = (html: string) => {
@@ -250,24 +289,116 @@ export function Editor({
     onChange(sanitize(el.innerHTML))
   }
 
-  const toggleBookmark = () => {
+  const savedRange = useRef<Range | null>(null)
+  const [bookmarkDialog, setBookmarkDialog] = useState(false)
+  const [bookmarksPanel, setBookmarksPanel] = useState(false)
+
+  const openBookmarkDialog = () => {
+    const sel = window.getSelection()
+    savedRange.current =
+      sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode)
+        ? sel.getRangeAt(0).cloneRange()
+        : null
+    setBookmarkDialog(true)
+  }
+
+  const insertBookmark = (title: string, color: string) => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    if (savedRange.current) {
+      sel?.addRange(savedRange.current)
+    } else {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      range.collapse(false)
+      sel?.addRange(range)
+    }
+    const id = crypto.randomUUID()
+    const marker = `<span data-bookmark-id="${id}" contenteditable="false" title="${title.replace(/"/g, '&quot;')}" style="display:inline-block;width:9px;height:9px;border-radius:9999px;vertical-align:middle;margin:0 2px;background:${color};box-shadow:0 0 0 1px rgba(128,128,128,.5)"></span>`
+    document.execCommand('insertHTML', false, marker)
+    const html = sanitize(el.innerHTML)
+    last.current = html
     onPages(
-      pageList.map((p) => (p.id === currentPage.id ? { ...p, bookmarked: !p.bookmarked } : p)),
+      pageList.map((p) =>
+        p.id === currentPage.id
+          ? { ...p, html, bookmarks: [...(p.bookmarks ?? []), { id, title, color }] }
+          : p,
+      ),
     )
   }
 
-  const findNext = (back: boolean) => {
-    if (!query) return
-    ref.current?.focus()
-    // Uses the browser's native window.find, which can move the selection outside
-    // the editor once no further match remains on this page.
-    ;(window as Window & { find?: (s: string, c?: boolean, b?: boolean, w?: boolean) => boolean }).find?.(
-      query,
-      false,
-      back,
-      true,
+  const jumpToBookmark = (id: string) => {
+    const marker = ref.current?.querySelector(`[data-bookmark-id="${CSS.escape(id)}"]`)
+    if (marker) {
+      marker.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      return
+    }
+    onPages(
+      pageList.map((p) =>
+        p.id === currentPage.id
+          ? { ...p, bookmarks: (p.bookmarks ?? []).filter((b) => b.id !== id) }
+          : p,
+      ),
     )
   }
+
+  const deleteBookmark = (id: string) => {
+    const marker = ref.current?.querySelector(`[data-bookmark-id="${CSS.escape(id)}"]`)
+    marker?.remove()
+    const html = ref.current ? sanitize(ref.current.innerHTML) : currentPage.html
+    last.current = html
+    onPages(
+      pageList.map((p) =>
+        p.id === currentPage.id
+          ? { ...p, html, bookmarks: (p.bookmarks ?? []).filter((b) => b.id !== id) }
+          : p,
+      ),
+    )
+  }
+
+  const countMatches = (html: string, q: string) => {
+    const needle = q.toLowerCase()
+    const text = plainText(html).toLowerCase()
+    let count = 0
+    let pos = 0
+    while (true) {
+      const at = text.indexOf(needle, pos)
+      if (at === -1) break
+      count++
+      pos = at + needle.length
+    }
+    return count
+  }
+
+  const matches = query
+    ? pageList.flatMap((p, pageIndex) =>
+        Array.from({ length: countMatches(p.html, query) }, (_, occ) => ({ pageIndex, occ })),
+      )
+    : []
+
+  const [matchPos, setMatchPos] = useState(0)
+
+  const goToMatch = (pos: number) => {
+    if (matches.length === 0) return
+    const wrapped = ((pos % matches.length) + matches.length) % matches.length
+    const m = matches[wrapped]
+    setMatchPos(wrapped)
+    if (index !== m.pageIndex) {
+      pendingSelect.current = m.occ
+      setIndex(m.pageIndex)
+    } else {
+      selectOccurrence(m.occ)
+    }
+  }
+
+  const findNext = (back: boolean) => goToMatch(matchPos + (back ? -1 : 1))
+
+  useEffect(() => {
+    if (query) goToMatch(0)
+  }, [query])
 
   const palabrasPagina = countWords(currentPage.html)
   const palabrasTotal = pageList.reduce((s, p) => s + countWords(p.html), 0)
@@ -279,6 +410,33 @@ export function Editor({
     <>
     <section className={`${card} flex flex-col overflow-hidden ${compacto ? '' : 'min-h-0 flex-1'}`}>
       <div className={`flex flex-wrap items-center gap-1.5 border-b p-2 ${line}`}>
+        <button
+          type="button"
+          onClick={() => apply('formatBlock', 'h2')}
+          aria-label={t('Título')}
+          className={`${btnClass} ${line} font-semibold`}
+        >
+          H1
+        </button>
+        <button
+          type="button"
+          onClick={() => apply('formatBlock', 'h3')}
+          aria-label={t('Subtítulo')}
+          className={`${btnClass} ${line} text-xs font-semibold`}
+        >
+          H2
+        </button>
+        <button
+          type="button"
+          onClick={() => apply('formatBlock', 'p')}
+          aria-label={t('Texto normal')}
+          className={`${btnClass} ${line} text-neutral-400`}
+        >
+          T
+        </button>
+
+        <span className={`mx-1 h-6 w-px ${'bg-black/10 dark:bg-white/15'}`} />
+
         <button
           type="button"
           onClick={() => apply('bold')}
@@ -377,19 +535,34 @@ export function Editor({
 
         <button
           type="button"
-          onClick={toggleBookmark}
-          aria-label={currentPage.bookmarked ? t('Quitar marcador') : t('Marcar página')}
-          aria-pressed={!!currentPage.bookmarked}
-          className={`${btnClass} ${line} ${
-            currentPage.bookmarked ? 'text-yellow-500' : 'text-neutral-400'
-          }`}
+          onClick={openBookmarkDialog}
+          aria-label={t('Añadir marcador aquí')}
+          className={`${btnClass} ${line} text-neutral-400`}
         >
           <Icon name="star" className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setBookmarksPanel(true)}
+          aria-label={t('Ver marcadores de esta página')}
+          className={`${btnClass} ${line} relative text-neutral-400`}
+        >
+          <Icon name="pin" className="h-4 w-4" />
+          {(currentPage.bookmarks?.length ?? 0) > 0 && (
+            <span className="absolute -right-1 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-neutral-900 px-0.5 font-mono text-[0.55rem] text-white dark:bg-white dark:text-neutral-900">
+              {currentPage.bookmarks!.length}
+            </span>
+          )}
         </button>
 
         <button
           type="button"
-          onClick={() => setSearching((v) => !v)}
+          onClick={() =>
+            setSearching((v) => {
+              if (v) setQuery('')
+              return !v
+            })
+          }
           aria-label={t('Buscar en el bloc')}
           aria-pressed={searching}
           className={`${btnClass} ${line} ml-auto ${searching ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
@@ -405,26 +578,36 @@ export function Editor({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') findNext(e.shiftKey)
-              if (e.key === 'Escape') setSearching(false)
+              if (e.key === 'Escape') {
+                setSearching(false)
+                setQuery('')
+              }
             }}
             autoFocus
-            placeholder={t('Buscar en esta página…')}
+            placeholder={t('Buscar en todo el bloc…')}
             aria-label={t('Buscar en el bloc')}
             className={`${input} h-8 flex-1 py-0 text-sm`}
           />
+          {query && (
+            <span className="shrink-0 font-mono text-xs text-neutral-400 dark:text-neutral-500">
+              {matches.length === 0 ? t('Sin resultados') : `${matchPos + 1}/${matches.length}`}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => findNext(true)}
+            disabled={matches.length === 0}
             aria-label={t('Coincidencia anterior')}
-            className={`${btnClass} ${line} h-8 w-8`}
+            className={`${btnClass} ${line} h-8 w-8 disabled:opacity-30`}
           >
             <Icon name="up" className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={() => findNext(false)}
+            disabled={matches.length === 0}
             aria-label={t('Siguiente coincidencia')}
-            className={`${btnClass} ${line} h-8 w-8`}
+            className={`${btnClass} ${line} h-8 w-8 disabled:opacity-30`}
           >
             <Icon name="down" className="h-3.5 w-3.5" />
           </button>
@@ -440,7 +623,7 @@ export function Editor({
         aria-multiline="true"
         aria-label={`Contenido de ${notepad.title}`}
         onInput={(e) => onChange(sanitize(e.currentTarget.innerHTML))}
-        className={`${compacto ? 'p-4' : 'p-5'} min-h-0 flex-1 overflow-y-auto nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-black/10 [&_td]:p-1.5 [&_th]:border [&_th]:border-black/10 [&_th]:bg-black/[0.04] [&_th]:p-1.5 dark:[&_td]:border-white/15 dark:[&_th]:border-white/15 dark:[&_th]:bg-white/[0.06] [&_details]:my-2 [&_details]:rounded-lg [&_details]:border [&_details]:border-black/10 [&_details]:p-2 dark:[&_details]:border-white/15 [&_summary]:cursor-pointer [&_summary]:font-medium`}
+        className={`${compacto ? 'p-4' : 'p-5'} min-h-0 flex-1 overflow-y-auto nivra-scroll text-sm leading-relaxed outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-black/10 [&_td]:p-1.5 [&_th]:border [&_th]:border-black/10 [&_th]:bg-black/[0.04] [&_th]:p-1.5 dark:[&_td]:border-white/15 dark:[&_th]:border-white/15 dark:[&_th]:bg-white/[0.06] [&_details]:my-2 [&_details]:rounded-lg [&_details]:border [&_details]:border-black/10 [&_details]:p-2 dark:[&_details]:border-white/15 [&_summary]:cursor-pointer [&_summary]:font-medium [&_h2]:mt-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mt-1.5 [&_h3]:text-base [&_h3]:font-semibold`}
       />
 
       <p className={`shrink-0 border-t px-3 py-1.5 font-mono text-[0.65rem] text-neutral-400 dark:text-neutral-500 ${line}`}>
@@ -475,11 +658,8 @@ export function Editor({
               }
             >
               {i + 1}
-              {p.bookmarked && (
-                <Icon
-                  name="star"
-                  className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-500"
-                />
+              {(p.bookmarks?.length ?? 0) > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-yellow-500" />
               )}
             </button>
           ))}
@@ -567,7 +747,113 @@ export function Editor({
     )}
 
     {chartDialog && <ChartDialog onClose={() => setChartDialog(false)} onInsert={appendHtml} />}
+
+    {bookmarkDialog && (
+      <Modal title={t('Nuevo marcador')} onClose={() => setBookmarkDialog(false)}>
+        <BookmarkForm
+          onCancel={() => setBookmarkDialog(false)}
+          onSave={(title, color) => {
+            setBookmarkDialog(false)
+            requestAnimationFrame(() => insertBookmark(title, color))
+          }}
+        />
+      </Modal>
+    )}
+
+    {bookmarksPanel && (
+      <Modal title={t('Marcadores')} onClose={() => setBookmarksPanel(false)}>
+        {(currentPage.bookmarks?.length ?? 0) === 0 ? (
+          <Empty>{t('Sin marcadores en esta página.')}</Empty>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {currentPage.bookmarks!.map((b) => (
+              <li key={b.id} className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookmarksPanel(false)
+                    requestAnimationFrame(() => jumpToBookmark(b.id))
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                >
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: b.color }}
+                  />
+                  <span className="truncate">{b.title}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteBookmark(b.id)}
+                  aria-label={tp('Eliminar marcador «{0}»', b.title)}
+                  className="shrink-0 rounded-lg p-2 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                >
+                  <Icon name="trash" className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Modal>
+    )}
     </>
+  )
+}
+
+function BookmarkForm({
+  onCancel,
+  onSave,
+}: {
+  onCancel: () => void
+  onSave: (title: string, color: string) => void
+}) {
+  const [color, setColor] = useState(COLORS[1])
+  return (
+    <form
+      onSubmit={(ev) => {
+        ev.preventDefault()
+        const title = String(new FormData(ev.currentTarget).get('title') ?? '').trim()
+        if (!title) return
+        onSave(title, color)
+      }}
+      className="flex flex-col gap-3"
+    >
+      <input
+        name="title"
+        maxLength={40}
+        required
+        autoFocus
+        placeholder={t('Título del marcador')}
+        className={input}
+      />
+      <div className="flex gap-2">
+        {COLORS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setColor(c)}
+            aria-label={`Color ${c}`}
+            aria-pressed={color === c}
+            className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${
+              color === c ? 'border-neutral-900 dark:border-white' : 'border-transparent'
+            }`}
+            style={{ background: c }}
+          />
+        ))}
+      </div>
+      <div className="mt-1 flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-xl px-4 py-2.5 text-sm text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+        >
+          {t('Cerrar')}
+        </button>
+        <button type="submit" className={`${button} ml-auto`}>
+          {t('Guardar')}
+        </button>
+      </div>
+    </form>
   )
 }
 

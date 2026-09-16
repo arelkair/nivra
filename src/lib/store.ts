@@ -135,7 +135,9 @@ export type Grade = {
 
 export type Streak = { count: number; last: string }
 
-export type NotepadPage = { id: string; html: string; bookmarked?: boolean }
+export type PageBookmark = { id: string; title: string; color: string }
+
+export type NotepadPage = { id: string; html: string; bookmarks?: PageBookmark[] }
 
 export type Notepad = { id: string; title: string; html?: string; pages?: NotepadPage[] }
 
@@ -436,6 +438,7 @@ export type CalItem = {
   type: ItemType
   origin: 'evento' | 'tarea' | 'examen' | 'proyecto'
   repeat?: Repeat
+  subject?: string
 }
 
 const dayOfMonth = (date: string) => Number(date.slice(8))
@@ -497,6 +500,7 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
         desc: w.desc,
         type: w.kind,
         origin: w.kind,
+        subject: w.subject,
       })),
   ]
 }

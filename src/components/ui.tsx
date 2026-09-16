@@ -286,7 +286,7 @@ export function Collapsible({
   )
 }
 
-export type Toast = { id: string; text: string; undo?: () => void }
+export type Toast = { id: string; text: string; undo?: () => void; durationMs: number }
 
 export function Toasts({ toasts, onClose }: { toasts: Toast[]; onClose: (id: string) => void }) {
   return (
@@ -294,7 +294,7 @@ export function Toasts({ toasts, onClose }: { toasts: Toast[]; onClose: (id: str
       {toasts.map((a) => (
         <div
           key={a.id}
-          className={`animate-[fade-in_0.25s_ease-out] pointer-events-auto flex max-w-xs items-center gap-3 rounded-xl border bg-[var(--surface)] py-2 pr-2 pl-4 text-sm shadow-lg ${line}`}
+          className={`animate-[fade-in_0.25s_ease-out] pointer-events-auto relative flex max-w-xs items-center gap-3 overflow-hidden rounded-xl border bg-[var(--surface)] py-2 pr-2 pl-4 text-sm shadow-lg ${line}`}
         >
           <span className="min-w-0 flex-1 py-1">{a.text}</span>
           {a.undo && (
@@ -317,6 +317,10 @@ export function Toasts({ toasts, onClose }: { toasts: Toast[]; onClose: (id: str
           >
             <Icon name="close" className="h-3.5 w-3.5" />
           </button>
+          <span
+            style={{ animationDuration: `${a.durationMs}ms` }}
+            className="absolute inset-x-0 bottom-0 h-0.5 origin-left animate-[shrink-bar_linear_forwards] bg-neutral-300 dark:bg-neutral-600"
+          />
         </div>
       ))}
     </div>

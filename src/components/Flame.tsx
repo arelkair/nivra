@@ -7,9 +7,11 @@ const DAYS_TO_RED = 120
 export function Flame({
   streak,
   setStreak,
+  delay,
 }: {
   streak: Streak
   setStreak: (update: (prev: Streak) => Streak) => void
+  delay?: number
 }) {
   const today = dateKey(new Date())
   const yesterday = dateKey(new Date(Date.now() - 86400000))
@@ -20,7 +22,8 @@ export function Flame({
 
   return (
     <section
-      className={`${card} flex min-h-0 flex-col items-center justify-center gap-1 overflow-hidden p-4`}
+      style={delay !== undefined ? { animationDelay: `${delay}s` } : undefined}
+      className={`${card} ${delay !== undefined ? 'animate-[fade-in_0.4s_ease-out_both]' : ''} flex min-h-0 flex-col items-center justify-center gap-1 overflow-hidden p-4`}
     >
       <button
         type="button"

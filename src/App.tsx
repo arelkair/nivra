@@ -180,8 +180,9 @@ function App() {
     (text: string, undo?: () => void) => {
       if (!cfg.toasts) return
       const id = crypto.randomUUID()
-      setToasts((prev) => [...prev, { id, text, undo }])
-      setTimeout(() => setToasts((prev) => prev.filter((a) => a.id !== id)), undo ? 8000 : 6000)
+      const durationMs = undo ? 8000 : 6000
+      setToasts((prev) => [...prev, { id, text, undo, durationMs }])
+      setTimeout(() => setToasts((prev) => prev.filter((a) => a.id !== id)), durationMs)
     },
     [cfg.toasts],
   )
@@ -574,6 +575,7 @@ function App() {
             {page === 'calendario' && (
               <Calendar
                 items={items}
+                subjects={cfg.subjects}
                 setEvents={setEvents}
                 freeDays={freeDays}
                 setFreeDays={setFreeDays}

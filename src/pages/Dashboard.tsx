@@ -220,7 +220,7 @@ export function Dashboard({
           )}
         </Panel>
 
-        <Flame streak={streak} setStreak={setStreak} />
+        <Flame streak={streak} setStreak={setStreak} delay={0.35} />
       </div>
     </div>
   )

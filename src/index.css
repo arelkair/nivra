@@ -204,6 +204,15 @@ body {
   }
 }
 
+@keyframes shrink-bar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 @keyframes intro-exit {
   to {
     transform: translateY(-100%);

@@ -12,11 +12,13 @@ import {
   monthDay,
   monthGrid,
   weekIndex,
+  textOn,
   type Anniversary,
   type CalItem,
   type ItemType,
   type NivraEvent,
   type Repeat,
+  type Subject,
 } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, input, select } from '../components/ui'
@@ -24,6 +26,7 @@ import { locale, t, tp, weekdayLetters } from '../lib/i18n'
 
 type Props = {
   items: CalItem[]
+  subjects: Subject[]
   specialDays: string[]
   setSpecialDays: (update: (prev: string[]) => string[]) => void
   autoSpecial: string[]
@@ -40,6 +43,7 @@ const GRADIENT =
 
 export function Calendar({
   items,
+  subjects,
   setEvents,
   freeDays,
   setFreeDays,
@@ -304,6 +308,7 @@ export function Calendar({
           key={selected}
           date={selected}
           items={itemsOfDay(items, selected)}
+          subjects={subjects}
           anniversary={anniversaries.find((a) => a.md === monthDay(selected))}
           free={isFreeDay(selected, freeDays)}
           locked={isWeekend(selected) || isOfficialHoliday(selected)}
@@ -360,6 +365,7 @@ export function Calendar({
 type DialogProps = {
   date: string
   items: CalItem[]
+  subjects: Subject[]
   anniversary?: Anniversary
   free: boolean
   locked: boolean
@@ -376,6 +382,7 @@ type DialogProps = {
 function DayDialog({
   date,
   items,
+  subjects,
   anniversary,
   free,
   locked,
@@ -472,7 +479,22 @@ function DayDialog({
             >
               <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm">{e.title}</p>
+                <p className="flex min-w-0 items-center gap-1.5 truncate text-sm">
+                  <span className="truncate">{e.title}</span>
+                  {e.subject &&
+                    subjects.find((s) => s.id === e.subject) &&
+                    (() => {
+                      const subject = subjects.find((s) => s.id === e.subject)!
+                      return (
+                        <span
+                          className="shrink-0 rounded px-1.5 text-[0.65rem]"
+                          style={{ background: subject.color, color: textOn(subject.color) }}
+                        >
+                          {subject.name}
+                        </span>
+                      )
+                    })()}
+                </p>
                 {e.desc && (
                   <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{e.desc}</p>
                 )}
