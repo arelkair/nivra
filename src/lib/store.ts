@@ -131,6 +131,7 @@ export type Grade = {
   kind: 'examen' | 'trabajo' | 'otro'
   date: string
   term?: 1 | 2 | 3
+  weight?: number
 }
 
 export type Streak = { count: number; last: string }

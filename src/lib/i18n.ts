@@ -535,6 +535,20 @@ const EN: Record<string, string> = {
     'A calm, continuous background hum, very quiet.',
   Lluvia: 'Rain',
 
+  // notas por asignatura y %
+  'Todas las asignaturas': 'All subjects',
+  '¿Qué % vale de la nota final? (opcional)': 'What % of the final grade is this worth? (optional)',
+  'Porcentaje de la nota final': 'Percentage of the final grade',
+  'Media simple de todas las notas, sin porcentajes. Solo para ver tu rango académico.':
+    'A plain average of every grade, no percentages. Just to see your overall standing.',
+  'de la nota puesta': 'of the grade set so far',
+  'Ninguna nota de esta asignatura tiene un % puesto todavía.':
+    'No grade for this subject has a % set yet.',
+  'Suma de cada nota por el % que le hayas puesto.':
+    'The sum of each grade times the % you gave it.',
+  'Notas de la asignatura': 'Subject grades',
+  'Nota {0} eliminada': 'Grade {0} deleted',
+
   // ajustes de secciones
   'Sección de banco': 'Bank section',
   'Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.':
