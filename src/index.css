@@ -133,6 +133,84 @@ body,
   height: 100%;
 }
 
+:root[data-theme-pack='naturaleza'] {
+  --paper: #eef4e6;
+  --surface: #f8fbf3;
+  --sunken: #e3edd6;
+}
+
+.dark[data-theme-pack='naturaleza'] {
+  --paper: #0a130c;
+  --surface: #101d13;
+  --sunken: #0c160e;
+}
+
+:root[data-theme-pack='espacio'] {
+  --paper: #0d0d1c;
+  --surface: #14142c;
+  --sunken: #101024;
+}
+
+.dark[data-theme-pack='espacio'] {
+  --paper: #07070f;
+  --surface: #0f0f22;
+  --sunken: #0a0a1a;
+}
+
+@keyframes theme-drift {
+  0% {
+    background-position:
+      10% 20%,
+      80% 70%;
+  }
+  50% {
+    background-position:
+      30% 50%,
+      60% 30%;
+  }
+  100% {
+    background-position:
+      10% 20%,
+      80% 70%;
+  }
+}
+
+@keyframes theme-twinkle {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.nivra-theme-bg-naturaleza {
+  background-image:
+    radial-gradient(45rem 45rem at 10% 20%, rgba(140, 198, 63, 0.35), transparent 60%),
+    radial-gradient(40rem 40rem at 80% 70%, rgba(212, 175, 55, 0.28), transparent 60%);
+  background-repeat: no-repeat;
+  animation: theme-drift 40s ease-in-out infinite;
+}
+
+.nivra-theme-bg-espacio {
+  background-color: #07071a;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 65% 15%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 40% 65%, #fff, transparent),
+    radial-gradient(2px 2px at 85% 55%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 25% 80%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 92% 85%, #fff, transparent),
+    radial-gradient(2px 2px at 55% 40%, #fff, transparent),
+    radial-gradient(45rem 45rem at 10% 20%, rgba(99, 102, 241, 0.35), transparent 60%),
+    radial-gradient(40rem 40rem at 80% 70%, rgba(168, 85, 247, 0.3), transparent 60%);
+  background-repeat: no-repeat;
+  animation:
+    theme-drift 50s ease-in-out infinite,
+    theme-twinkle 4s ease-in-out infinite;
+}
+
 body {
   margin: 0;
   background: var(--paper);

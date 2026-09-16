@@ -2,6 +2,7 @@ import { useEffect, useState, type DragEvent } from 'react'
 import { UNITS, countdown, moveById, progress, type Countdown, type Unit } from '../lib/store'
 import { Empty, Icon, Label, Modal, Switch, button, card, input, line } from './ui'
 import { locale, t } from '../lib/i18n'
+import { playDrop } from '../lib/sound'
 
 type Props = {
   countdowns: Countdown[]
@@ -52,7 +53,10 @@ export function Countdowns({ countdowns, setCountdowns }: Props) {
       setOverId(id)
     },
     onDrop: () => {
-      if (draggingId) setCountdowns((prev) => moveById(prev, draggingId, id))
+      if (draggingId) {
+        playDrop()
+        setCountdowns((prev) => moveById(prev, draggingId, id))
+      }
       setDraggingId(null)
       setOverId(null)
     },

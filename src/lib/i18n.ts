@@ -534,6 +534,11 @@ const EN: Record<string, string> = {
   'Un ruido de fondo relajante y continuo, muy bajito.':
     'A calm, continuous background hum, very quiet.',
   Lluvia: 'Rain',
+  Estática: 'Static',
+  'Tu música': 'Your music',
+  'Enlace de música': 'Music link',
+  'Admite canciones, álbumes y listas de Spotify, y vídeos o listas de YouTube/YouTube Music. Aparece un reproductor pequeño; Spotify y YouTube no dejan que lo controlemos nosotros, así que tienes que darle a reproducir tú una vez.':
+    'Works with Spotify tracks, albums and playlists, and YouTube/YouTube Music videos or playlists. A small player appears; Spotify and YouTube do not let us control it ourselves, so you need to press play in it once.',
 
   // notas por asignatura y %
   'Todas las asignaturas': 'All subjects',
@@ -560,6 +565,12 @@ const EN: Record<string, string> = {
 
   // estilo
   Estilo: 'Style',
+  'Barra Lateral': 'Sidebar',
+  Temas: 'Themes',
+  Naturaleza: 'Nature',
+  Espacio: 'Space',
+  'Cambia casi toda la web: fondo animado propio y su propio sonido de ambiente. Los ajustes y la barra de arriba no cambian.':
+    'Changes almost the whole app: its own animated background and its own ambient sound. Settings and the top bar stay the same.',
   Clásico: 'Classic',
   'Carpetas de escritorio': 'Desktop folders',
   'Cambia el aspecto general de la navegación. No afecta al color ni al modo claro u oscuro.':

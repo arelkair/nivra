@@ -3,6 +3,7 @@ import { reorder, shortDate, type Notepad, type SubTask, textOn, type Subject, t
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playPop } from '../lib/sound'
 
 type Props = {
   tasks: Task[]
@@ -143,7 +144,10 @@ function Row({
     <li className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]">
       <button
         type="button"
-        onClick={() => onPatch(task.id, { done: !task.done })}
+        onClick={() => {
+          if (!task.done) playPop()
+          onPatch(task.id, { done: !task.done })
+        }}
         aria-pressed={task.done}
         aria-label={task.title}
         className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors ${

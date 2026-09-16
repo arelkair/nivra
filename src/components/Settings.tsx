@@ -168,7 +168,7 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
-          title={t('Estilo')}
+          title={t('Barra Lateral')}
           open={openSection === 'estilo'}
           animar={cfg.animations}
           onToggle={() => alterna('estilo')}
@@ -213,6 +213,58 @@ export function Settings({
         </Collapsible>
 
         <Collapsible
+          title={t('Temas')}
+          open={openSection === 'temas'}
+          animar={cfg.animations}
+          onToggle={() => alterna('temas')}
+        >
+          <div className="grid grid-cols-3 gap-3">
+            {(
+              [
+                { id: 'ninguno', label: t('Ninguno'), swatch: 'bg-black/[0.06] dark:bg-white/[0.08]' },
+                {
+                  id: 'naturaleza',
+                  label: t('Naturaleza'),
+                  swatch: 'bg-[linear-gradient(135deg,#8cc63f_0%,#d4af37_100%)]',
+                },
+                {
+                  id: 'espacio',
+                  label: t('Espacio'),
+                  swatch: 'bg-[linear-gradient(135deg,#0d0d1c_0%,#6366f1_60%,#a855f7_100%)]',
+                },
+              ] as const
+            ).map((th) => (
+              <button
+                key={th.id}
+                type="button"
+                onClick={() => {
+                  cfg.setThemePack(th.id)
+                  if (th.id === 'ninguno') cfg.setAmbientOn(false)
+                  else {
+                    cfg.setAmbientPreset(th.id)
+                    cfg.setAmbientOn(true)
+                  }
+                }}
+                aria-pressed={cfg.themePack === th.id}
+                className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-colors ${
+                  cfg.themePack === th.id
+                    ? 'border-neutral-900 dark:border-white'
+                    : `${line} hover:border-neutral-400`
+                }`}
+              >
+                <span className={`h-10 w-full rounded-lg ${th.swatch}`} />
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{th.label}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+            {t(
+              'Cambia casi toda la web: fondo animado propio y su propio sonido de ambiente. Los ajustes y la barra de arriba no cambian.',
+            )}
+          </p>
+        </Collapsible>
+
+        <Collapsible
           title={t('Fondo')}
           open={openSection === 'fondo'}
           animar={cfg.animations}
@@ -246,8 +298,8 @@ export function Settings({
             />
             {cfg.ambientOn && (
               <>
-                <div className="flex gap-2 py-1 pl-1">
-                  {(['lluvia', 'olas'] as const).map((p) => (
+                <div className="flex flex-wrap gap-2 py-1 pl-1">
+                  {(['lluvia', 'olas', 'estatico', 'enlace'] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
@@ -259,11 +311,36 @@ export function Settings({
                           : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.04]`
                       }`}
                     >
-                      {t(p === 'lluvia' ? 'Lluvia' : 'Olas')}
+                      {t(
+                        p === 'lluvia'
+                          ? 'Lluvia'
+                          : p === 'olas'
+                            ? 'Olas'
+                            : p === 'estatico'
+                              ? 'Estática'
+                              : 'Tu música',
+                      )}
                     </button>
                   ))}
                 </div>
-                <VolumeRow value={cfg.ambientVolume} onChange={cfg.setAmbientVolume} label={t('Volumen')} />
+                {cfg.ambientPreset === 'enlace' ? (
+                  <div className="flex flex-col gap-1.5 pl-1">
+                    <input
+                      defaultValue={cfg.customSoundUrl}
+                      onBlur={(e) => cfg.setCustomSoundUrl(e.target.value.trim())}
+                      placeholder="https://open.spotify.com/playlist/... o https://youtube.com/watch?v=..."
+                      aria-label={t('Enlace de música')}
+                      className={`${input} font-mono text-xs`}
+                    />
+                    <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+                      {t(
+                        'Admite canciones, álbumes y listas de Spotify, y vídeos o listas de YouTube/YouTube Music. Aparece un reproductor pequeño; Spotify y YouTube no dejan que lo controlemos nosotros, así que tienes que darle a reproducir tú una vez.',
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <VolumeRow value={cfg.ambientVolume} onChange={cfg.setAmbientVolume} label={t('Volumen')} />
+                )}
               </>
             )}
           </div>

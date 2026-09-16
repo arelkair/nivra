@@ -1,6 +1,7 @@
 import { dateKey, type Streak } from '../lib/store'
 import { Icon, card } from './ui'
 import { t, tp } from '../lib/i18n'
+import { playPop } from '../lib/sound'
 
 const DAYS_TO_RED = 120
 
@@ -28,9 +29,10 @@ export function Flame({
       <button
         type="button"
         disabled={doneToday}
-        onClick={() =>
+        onClick={() => {
+          playPop()
           setStreak((prev) => ({ count: prev.last === yesterday ? prev.count + 1 : 1, last: today }))
-        }
+        }}
         aria-label={doneToday ? t('Racha ya marcada hoy') : t('Marcar día')}
         title={
           doneToday

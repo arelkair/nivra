@@ -23,7 +23,8 @@ import { SHORTCUTS, isTyping, keyOf } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
 import { registerNotifier } from './lib/undo'
 import { playTick, startAmbient, stopAmbient, setAmbientVolume as applyAmbientVolume } from './lib/sound'
-import { SHAPES, SHAPE_SIZE, loadBackgroundImage } from './lib/background'
+import { SHAPES, SHAPE_SIZE, loadBackgroundImage, onBackgroundImageChange } from './lib/background'
+import { parseMusicUrl } from './lib/media'
 import {
   EXPENSE_CATS,
   INCOME_CATS,
@@ -193,7 +194,7 @@ function App() {
   useEffect(() => registerNotifier(notify), [notify])
 
   useEffect(() => {
-    if (!cfg.ambientOn) {
+    if (!cfg.ambientOn || cfg.ambientPreset === 'enlace') {
       stopAmbient()
       return
     }
@@ -202,8 +203,13 @@ function App() {
   }, [cfg.ambientOn, cfg.ambientPreset])
 
   useEffect(() => {
-    if (cfg.ambientOn) applyAmbientVolume(cfg.ambientVolume / 100)
-  }, [cfg.ambientOn, cfg.ambientVolume])
+    if (cfg.ambientOn && cfg.ambientPreset !== 'enlace') applyAmbientVolume(cfg.ambientVolume / 100)
+  }, [cfg.ambientOn, cfg.ambientPreset, cfg.ambientVolume])
+
+  const [musicPlayerOpen, setMusicPlayerOpen] = useState(true)
+  useEffect(() => setMusicPlayerOpen(true), [cfg.customSoundUrl])
+  const musicEmbed =
+    cfg.ambientOn && cfg.ambientPreset === 'enlace' ? parseMusicUrl(cfg.customSoundUrl) : null
 
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   useEffect(() => {
@@ -212,13 +218,17 @@ function App() {
       return
     }
     let url: string | null = null
-    loadBackgroundImage().then((blob) => {
-      if (blob) {
-        url = URL.createObjectURL(blob)
+    const load = () => {
+      loadBackgroundImage().then((blob) => {
+        if (url) URL.revokeObjectURL(url)
+        url = blob ? URL.createObjectURL(blob) : null
         setBackgroundUrl(url)
-      }
-    })
+      })
+    }
+    load()
+    const off = onBackgroundImageChange(load)
     return () => {
+      off()
       if (url) URL.revokeObjectURL(url)
     }
   }, [cfg.backgroundMode])
@@ -264,6 +274,10 @@ function App() {
     if (cfg.accent === 'basico') delete document.documentElement.dataset.accent
     else document.documentElement.dataset.accent = cfg.accent
   }, [cfg.accent])
+  useEffect(() => {
+    if (cfg.themePack === 'ninguno') delete document.documentElement.dataset.themePack
+    else document.documentElement.dataset.themePack = cfg.themePack
+  }, [cfg.themePack])
 
   const [events, setEvents] = useStored<NivraEvent[]>('nivra-events', [])
   const [tasks, setTasks] = useStored<Task[]>('nivra-tasks', [])
@@ -504,19 +518,25 @@ function App() {
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
 
-      {cfg.backgroundMode === 'forma' &&
+      {cfg.themePack !== 'ninguno' && (
+        <div
+          aria-hidden
+          className={`pointer-events-none fixed inset-0 z-0 nivra-theme-bg-${cfg.themePack}`}
+        />
+      )}
+      {cfg.themePack === 'ninguno' && cfg.backgroundMode === 'forma' &&
         (() => {
           const shape = SHAPES.find((s) => s.id === cfg.backgroundShape)
           if (!shape || shape.id === 'ninguno') return null
           return (
             <div
               aria-hidden
-              className="pointer-events-none fixed inset-0 z-0 text-neutral-400 opacity-[0.07] dark:text-neutral-500"
+              className="pointer-events-none fixed inset-0 z-0 text-neutral-500 opacity-[0.16] dark:text-neutral-300 dark:opacity-[0.14]"
               style={{ backgroundImage: shape.css, backgroundSize: SHAPE_SIZE[shape.id] ?? 'auto' }}
             />
           )
         })()}
-      {cfg.backgroundMode === 'imagen' && backgroundUrl && (
+      {cfg.themePack === 'ninguno' && cfg.backgroundMode === 'imagen' && backgroundUrl && (
         <div
           aria-hidden
           className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center opacity-20"
@@ -762,6 +782,33 @@ function App() {
         {isBirthday && <Confetti />}
         {cfg.toasts && (
           <Toasts toasts={toasts} onClose={(id) => setToasts((prev) => prev.filter((a) => a.id !== id))} />
+        )}
+
+        {musicEmbed && musicPlayerOpen && (
+          <div className="fixed bottom-4 left-4 z-40 w-72 overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-lg dark:border-white/10">
+            <div className="flex items-center justify-between px-3 py-1.5">
+              <span className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+                {t('Tu música')}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMusicPlayerOpen(false)}
+                aria-label={t('Cerrar')}
+                className="text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+              >
+                <Icon name="close" className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <iframe
+              key={musicEmbed.url}
+              src={musicEmbed.url}
+              title="music"
+              className="w-full border-0"
+              height={musicEmbed.provider === 'spotify' ? 152 : 160}
+              allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"
+              loading="lazy"
+            />
+          </div>
         )}
 
         {settingsOpen && (

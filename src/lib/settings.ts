@@ -24,9 +24,16 @@ export function useSettings() {
   const [uiSounds, setUiSounds] = useStored('nivra-ui-sounds', false)
   const [uiVolume, setUiVolume] = useStored('nivra-ui-volume', 15)
   const [ambientOn, setAmbientOn] = useStored('nivra-ambient', false)
-  const [ambientPreset, setAmbientPreset] = useStored<'lluvia' | 'olas'>('nivra-ambient-preset', 'lluvia')
+  const [ambientPreset, setAmbientPreset] = useStored<
+    'lluvia' | 'olas' | 'estatico' | 'enlace' | 'naturaleza' | 'espacio'
+  >('nivra-ambient-preset', 'lluvia')
   const [ambientVolume, setAmbientVolume] = useStored('nivra-ambient-volume', 20)
+  const [customSoundUrl, setCustomSoundUrl] = useStored('nivra-custom-sound-url', '')
   const [themeStyle, setThemeStyle] = useStored<'clasico' | 'carpetas'>('nivra-theme-style', 'clasico')
+  const [themePack, setThemePack] = useStored<'ninguno' | 'naturaleza' | 'espacio'>(
+    'nivra-theme-pack',
+    'ninguno',
+  )
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
   const [customKeys, setCustomKeys] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
@@ -76,8 +83,12 @@ export function useSettings() {
     setAmbientPreset,
     ambientVolume,
     setAmbientVolume,
+    customSoundUrl,
+    setCustomSoundUrl,
     themeStyle,
     setThemeStyle,
+    themePack,
+    setThemePack,
     shortcutsOn,
     setShortcutsOn,
     enabledShortcuts,

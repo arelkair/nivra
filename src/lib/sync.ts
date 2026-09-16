@@ -122,13 +122,38 @@ async function decrypt(text: string, k: CryptoKey) {
   return new TextDecoder().decode(flat)
 }
 
-async function rpc(fn: string, body: Record<string, unknown>) {
-  const r = await fetch(`${RPC}/${fn}`, {
-    method: 'POST',
-    headers: { apikey: PUBLIC_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`)
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+function assertSecureContext() {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    throw new Error(
+      'El cifrado del navegador no está disponible aquí. Si has abierto Nivra desde otro dispositivo usando una dirección IP local (no https), el navegador lo bloquea; abre la web con https:// o usa la app instalada.',
+    )
+  }
+}
+
+async function rpc(fn: string, body: Record<string, unknown>, retriesLeft = 2): Promise<unknown> {
+  let r: Response
+  try {
+    r = await fetch(`${RPC}/${fn}`, {
+      method: 'POST',
+      headers: { apikey: PUBLIC_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    if (retriesLeft > 0) {
+      await sleep(1200)
+      return rpc(fn, body, retriesLeft - 1)
+    }
+    throw new Error('No se pudo conectar con el servidor de sincronización. Comprueba tu conexión a internet.')
+  }
+  if (!r.ok) {
+    if (r.status >= 500 && retriesLeft > 0) {
+      await sleep(1200)
+      return rpc(fn, body, retriesLeft - 1)
+    }
+    throw new Error(`${r.status} ${await r.text()}`)
+  }
   return r.json()
 }
 
@@ -182,6 +207,7 @@ function apply(paquete: Payload) {
 const text = (p: Payload) => JSON.stringify(p)
 
 export async function pushChanges(state: SyncState, paquete = localPayload()) {
+  assertSecureContext()
   const code = normalizeCode(state.code)
   const ts = await rpc('vault_put', {
     vault_id: await identifier(code),
@@ -225,6 +251,7 @@ export async function runSync(state: SyncState) {
 }
 
 export async function connect(code: string) {
+  assertSecureContext()
   const clean = normalizeCode(code)
   if (clean.length !== 16) throw new Error('El código debe tener 16 caracteres.')
   const inicial: SyncState = { code: clean, lastSeen: null }

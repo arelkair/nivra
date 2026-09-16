@@ -1,6 +1,12 @@
 const DB_NAME = 'nivra-files'
 const STORE = 'background'
 const KEY = 'image'
+const EVENT_NAME = 'nivra-bg-image'
+
+export const onBackgroundImageChange = (fn: () => void) => {
+  addEventListener(EVENT_NAME, fn)
+  return () => removeEventListener(EVENT_NAME, fn)
+}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -20,6 +26,7 @@ export async function saveBackgroundImage(blob: Blob): Promise<void> {
     tx.onerror = () => reject(tx.error)
   })
   db.close()
+  dispatchEvent(new Event(EVENT_NAME))
 }
 
 export async function loadBackgroundImage(): Promise<Blob | null> {
@@ -43,6 +50,7 @@ export async function clearBackgroundImage(): Promise<void> {
     tx.onerror = () => reject(tx.error)
   })
   db.close()
+  dispatchEvent(new Event(EVENT_NAME))
 }
 
 export const SHAPES: { id: string; label: string; css: string }[] = [
@@ -50,28 +58,28 @@ export const SHAPES: { id: string; label: string; css: string }[] = [
   {
     id: 'puntos',
     label: 'Puntos',
-    css: 'radial-gradient(currentColor 1px, transparent 1px)',
+    css: 'radial-gradient(currentColor 1.8px, transparent 1.8px)',
   },
   {
     id: 'rejilla',
     label: 'Rejilla',
-    css: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
+    css: 'linear-gradient(currentColor 1.5px, transparent 1.5px), linear-gradient(90deg, currentColor 1.5px, transparent 1.5px)',
   },
   {
     id: 'diagonales',
     label: 'Diagonales',
-    css: 'repeating-linear-gradient(45deg, currentColor 0 1px, transparent 1px 16px)',
+    css: 'repeating-linear-gradient(45deg, currentColor 0 2px, transparent 2px 16px)',
   },
   {
     id: 'olas',
     label: 'Olas',
-    css: 'radial-gradient(circle at 50% 100%, currentColor 0, transparent 60%)',
+    css: 'repeating-radial-gradient(circle at 50% 50%, currentColor 0, currentColor 2px, transparent 2px, transparent 8px)',
   },
 ]
 
 export const SHAPE_SIZE: Record<string, string> = {
-  puntos: '18px 18px',
+  puntos: '16px 16px',
   rejilla: '24px 24px',
   diagonales: 'auto',
-  olas: '100% 200px',
+  olas: '30px 30px',
 }

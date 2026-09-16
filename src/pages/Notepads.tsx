@@ -3,6 +3,7 @@ import { moveById, pagesOf, sanitize, type Notepad, type NotepadPage } from '../
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
   notepads: Notepad[]
@@ -44,7 +45,10 @@ export function Notepads({ notepads, setNotepads }: Props) {
               setOverId(n.id)
             }}
             onDrop={() => {
-              if (draggingId) setNotepads((prev) => moveById(prev, draggingId, n.id))
+              if (draggingId) {
+                playDrop()
+                setNotepads((prev) => moveById(prev, draggingId, n.id))
+              }
               setDraggingId(null)
               setOverId(null)
             }}
@@ -266,7 +270,8 @@ export function Editor({
 
   const onChange = (html: string) => {
     last.current = html
-    onPages(pageList.map((p) => (p.id === currentPage.id ? { ...p, html } : p)))
+    const bookmarks = currentPage.bookmarks?.filter((b) => html.includes(`data-bookmark-id="${b.id}"`))
+    onPages(pageList.map((p) => (p.id === currentPage.id ? { ...p, html, bookmarks } : p)))
   }
 
   const apply = (command: string, value?: string) => {
@@ -303,6 +308,7 @@ export function Editor({
   }
 
   const insertBookmark = (title: string, color: string) => {
+    playPop()
     const el = ref.current
     if (!el) return
     el.focus()
@@ -396,10 +402,6 @@ export function Editor({
 
   const findNext = (back: boolean) => goToMatch(matchPos + (back ? -1 : 1))
 
-  useEffect(() => {
-    if (query) goToMatch(0)
-  }, [query])
-
   const palabrasPagina = countWords(currentPage.html)
   const palabrasTotal = pageList.reduce((s, p) => s + countWords(p.html), 0)
 
@@ -409,7 +411,8 @@ export function Editor({
   return (
     <>
     <section className={`${card} flex flex-col overflow-hidden ${compacto ? '' : 'min-h-0 flex-1'}`}>
-      <div className={`flex flex-wrap items-center gap-1.5 border-b p-2 ${line}`}>
+      <div className={`flex items-center gap-1.5 border-b p-2 ${line}`}>
+      <div className="flex flex-1 flex-wrap items-center gap-1.5">
         <button
           type="button"
           onClick={() => apply('formatBlock', 'h2')}
@@ -555,6 +558,7 @@ export function Editor({
           )}
         </button>
 
+      </div>
         <button
           type="button"
           onClick={() =>
@@ -565,7 +569,7 @@ export function Editor({
           }
           aria-label={t('Buscar en el bloc')}
           aria-pressed={searching}
-          className={`${btnClass} ${line} ml-auto ${searching ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
+          className={`${btnClass} ${line} shrink-0 ${searching ? 'bg-black/[0.06] dark:bg-white/[0.1]' : ''}`}
         >
           <Icon name="search" className="h-4 w-4" />
         </button>
@@ -578,6 +582,7 @@ export function Editor({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') findNext(e.shiftKey)
+              if (e.key === ' ' && query.trim()) goToMatch(0)
               if (e.key === 'Escape') {
                 setSearching(false)
                 setQuery('')

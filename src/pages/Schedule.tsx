@@ -3,6 +3,7 @@ import { DAYS, DEFAULT_PROFILE, blockProfile, weekIndex, type Block, type Profil
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop } from '../lib/sound'
 
 type Adding = { day: number; start?: string; end?: string }
 
@@ -26,6 +27,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
     setDragging(null)
     setOver(null)
     if (!id) return
+    playDrop()
     setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, day: dayIndex } : b)))
   }
 
