@@ -5,6 +5,7 @@ import type { Settings } from '../lib/settings'
 import { SHORTCUTS, keyOf } from '../lib/shortcuts'
 import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '../lib/store'
 import type { SyncState } from '../lib/sync'
+import { SHAPES, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
 import { LANGS, getLang, setLang, t, tp } from '../lib/i18n'
@@ -104,6 +105,31 @@ export function Settings({
               label={t('Sección de banco')}
               hint={t('Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.')}
             />
+            <Switch
+              checked={cfg.carouselEnabled}
+              onChange={cfg.setCarouselEnabled}
+              label={t('Carrusel de cuentas atrás')}
+              hint={t('En el dashboard, va cambiando de cuenta atrás en vez de mostrar siempre la misma.')}
+            />
+            {cfg.carouselEnabled && (
+              <div className="mb-2 flex items-center justify-between gap-4 py-1 pl-1">
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {t('Cambiar cada')}
+                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <input
+                    type="number"
+                    min={2}
+                    max={120}
+                    value={cfg.carouselSeconds}
+                    onChange={(e) => cfg.setCarouselSeconds(Math.max(2, Number(e.target.value) || 8))}
+                    aria-label={t('Segundos entre cuentas atrás')}
+                    className={`${input} h-9 w-20 text-center`}
+                  />
+                  <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('segundos')}</span>
+                </div>
+              </div>
+            )}
           </div>
         </Collapsible>
 
@@ -138,6 +164,63 @@ export function Settings({
                 </span>
               </button>
             ))}
+          </div>
+        </Collapsible>
+
+        <Collapsible
+          title={t('Fondo')}
+          open={openSection === 'fondo'}
+          animar={cfg.animations}
+          onToggle={() => alterna('fondo')}
+        >
+          <BackgroundPanel cfg={cfg} />
+        </Collapsible>
+
+        <Collapsible
+          title={t('Sonidos')}
+          open={openSection === 'sonidos'}
+          animar={cfg.animations}
+          onToggle={() => alterna('sonidos')}
+        >
+          <div className="flex flex-col gap-1">
+            <Switch
+              checked={cfg.uiSounds}
+              onChange={cfg.setUiSounds}
+              label={t('Sonidos de interfaz')}
+              hint={t('Un sonido muy suave al pulsar interruptores o cuando aparece un aviso.')}
+            />
+            {cfg.uiSounds && (
+              <VolumeRow value={cfg.uiVolume} onChange={cfg.setUiVolume} label={t('Volumen')} />
+            )}
+
+            <Switch
+              checked={cfg.ambientOn}
+              onChange={cfg.setAmbientOn}
+              label={t('Sonido de ambiente')}
+              hint={t('Un ruido de fondo relajante y continuo, muy bajito.')}
+            />
+            {cfg.ambientOn && (
+              <>
+                <div className="flex gap-2 py-1 pl-1">
+                  {(['lluvia', 'olas'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => cfg.setAmbientPreset(p)}
+                      aria-pressed={cfg.ambientPreset === p}
+                      className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+                        cfg.ambientPreset === p
+                          ? 'border-neutral-900 font-medium dark:border-white'
+                          : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.04]`
+                      }`}
+                    >
+                      {t(p === 'lluvia' ? 'Lluvia' : 'Olas')}
+                    </button>
+                  ))}
+                </div>
+                <VolumeRow value={cfg.ambientVolume} onChange={cfg.setAmbientVolume} label={t('Volumen')} />
+              </>
+            )}
           </div>
         </Collapsible>
 
@@ -425,6 +508,133 @@ function BackupPanel({
       </div>
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
         {t('Ábrelos con «Importar calendario» en Google Calendar o Apple Calendar.')}
+      </p>
+    </div>
+  )
+}
+
+function VolumeRow({
+  value,
+  onChange,
+  label,
+}: {
+  value: number
+  onChange: (v: number) => void
+  label: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-1 pl-1">
+      <span className="text-sm text-neutral-500 dark:text-neutral-400">{label}</span>
+      <div className="flex shrink-0 items-center gap-2">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={label}
+          className="h-1.5 w-28 accent-neutral-800 dark:accent-white"
+        />
+        <span className="w-8 font-mono text-xs text-neutral-400 tabular-nums">{value}%</span>
+      </div>
+    </div>
+  )
+}
+
+function BackgroundPanel({ cfg }: { cfg: Settings }) {
+  const [hasImage, setHasImage] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    loadBackgroundImage().then((blob) => setHasImage(!!blob))
+  }, [])
+
+  const onFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) return
+    await saveBackgroundImage(file)
+    setHasImage(true)
+    cfg.setBackgroundMode('imagen')
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        {(
+          [
+            { id: 'ninguno', label: t('Ninguno') },
+            { id: 'forma', label: t('Forma simple') },
+            { id: 'imagen', label: t('Imagen o gif') },
+          ] as const
+        ).map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => cfg.setBackgroundMode(m.id)}
+            aria-pressed={cfg.backgroundMode === m.id}
+            className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+              cfg.backgroundMode === m.id
+                ? 'border-neutral-900 font-medium dark:border-white'
+                : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.04]`
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {cfg.backgroundMode === 'forma' && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {SHAPES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => cfg.setBackgroundShape(s.id)}
+              aria-pressed={cfg.backgroundShape === s.id}
+              className={`rounded-lg border px-2 py-2 text-[0.65rem] transition-colors ${
+                cfg.backgroundShape === s.id
+                  ? 'border-neutral-900 font-medium dark:border-white'
+                  : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.04]`
+              }`}
+            >
+              {t(s.label)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {cfg.backgroundMode === 'imagen' && (
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onFile(file)
+              e.target.value = ''
+            }}
+          />
+          <button type="button" onClick={() => fileInput.current?.click()} className={`${button} text-sm`}>
+            {hasImage ? t('Cambiar imagen') : t('Subir imagen o gif')}
+          </button>
+          {hasImage && (
+            <button
+              type="button"
+              onClick={async () => {
+                await clearBackgroundImage()
+                setHasImage(false)
+              }}
+              className="text-xs text-neutral-400 transition-colors hover:text-red-500"
+            >
+              {t('Quitar')}
+            </button>
+          )}
+        </div>
+      )}
+
+      <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+        {t('Se ve de fondo, muy suave, detrás del contenido. Se queda solo en este dispositivo.')}
       </p>
     </div>
   )

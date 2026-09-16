@@ -22,6 +22,8 @@ import { showSystemNotice, markNoticesSent, pendingNotices } from './lib/notify'
 import { SHORTCUTS, isTyping, keyOf } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
 import { registerNotifier } from './lib/undo'
+import { playTick, startAmbient, stopAmbient, setAmbientVolume as applyAmbientVolume } from './lib/sound'
+import { SHAPES, SHAPE_SIZE, loadBackgroundImage } from './lib/background'
 import {
   EXPENSE_CATS,
   INCOME_CATS,
@@ -179,6 +181,7 @@ function App() {
   const notify = useCallback(
     (text: string, undo?: () => void) => {
       if (!cfg.toasts) return
+      playTick()
       const id = crypto.randomUUID()
       const durationMs = undo ? 8000 : 6000
       setToasts((prev) => [...prev, { id, text, undo, durationMs }])
@@ -188,6 +191,37 @@ function App() {
   )
 
   useEffect(() => registerNotifier(notify), [notify])
+
+  useEffect(() => {
+    if (!cfg.ambientOn) {
+      stopAmbient()
+      return
+    }
+    startAmbient(cfg.ambientPreset, cfg.ambientVolume / 100)
+    return () => stopAmbient()
+  }, [cfg.ambientOn, cfg.ambientPreset])
+
+  useEffect(() => {
+    if (cfg.ambientOn) applyAmbientVolume(cfg.ambientVolume / 100)
+  }, [cfg.ambientOn, cfg.ambientVolume])
+
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (cfg.backgroundMode !== 'imagen') {
+      setBackgroundUrl(null)
+      return
+    }
+    let url: string | null = null
+    loadBackgroundImage().then((blob) => {
+      if (blob) {
+        url = URL.createObjectURL(blob)
+        setBackgroundUrl(url)
+      }
+    })
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [cfg.backgroundMode])
 
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null)
   useEffect(() => {
@@ -262,7 +296,20 @@ function App() {
   const isBirthday =
     cfg.birthday !== '' && monthDay(cfg.birthday) === monthDay(dateKey(new Date()))
 
-  const mainCountdown = countdowns[0]
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  useEffect(() => {
+    if (!cfg.carouselEnabled || countdowns.length <= 1) return
+    const id = setInterval(
+      () => setCarouselIndex((i) => (i + 1) % countdowns.length),
+      Math.max(2, cfg.carouselSeconds) * 1000,
+    )
+    return () => clearInterval(id)
+  }, [cfg.carouselEnabled, cfg.carouselSeconds, countdowns.length])
+
+  const mainCountdown =
+    cfg.carouselEnabled && countdowns.length > 0
+      ? countdowns[carouselIndex % countdowns.length]
+      : countdowns[0]
   const allSpecialDays = useMemo(
     () => [...specialDays, ...countdowns.map((c) => c.target.slice(0, 10))],
     [specialDays, countdowns],
@@ -457,7 +504,27 @@ function App() {
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
 
-      <div className="flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-200">
+      {cfg.backgroundMode === 'forma' &&
+        (() => {
+          const shape = SHAPES.find((s) => s.id === cfg.backgroundShape)
+          if (!shape || shape.id === 'ninguno') return null
+          return (
+            <div
+              aria-hidden
+              className="pointer-events-none fixed inset-0 z-0 text-neutral-400 opacity-[0.07] dark:text-neutral-500"
+              style={{ backgroundImage: shape.css, backgroundSize: SHAPE_SIZE[shape.id] ?? 'auto' }}
+            />
+          )
+        })()}
+      {cfg.backgroundMode === 'imagen' && backgroundUrl && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center opacity-20"
+          style={{ backgroundImage: `url(${backgroundUrl})` }}
+        />
+      )}
+
+      <div className="relative z-10 flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-200">
         <aside
           className={`nivra-scroll fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto overscroll-contain border-r px-3 py-4 md:flex ${line}`}
         >

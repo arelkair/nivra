@@ -14,6 +14,18 @@ export function useSettings() {
   const [animations, setAnimations] = useStored('nivra-animations', true)
   const [navButtons, setNavButtons] = useStored('nivra-nav-buttons', true)
   const [bankEnabled, setBankEnabled] = useStored('nivra-bank-enabled', true)
+  const [carouselEnabled, setCarouselEnabled] = useStored('nivra-carousel', false)
+  const [carouselSeconds, setCarouselSeconds] = useStored('nivra-carousel-seconds', 8)
+  const [backgroundMode, setBackgroundMode] = useStored<'ninguno' | 'forma' | 'imagen'>(
+    'nivra-bg-mode',
+    'ninguno',
+  )
+  const [backgroundShape, setBackgroundShape] = useStored('nivra-bg-shape', 'puntos')
+  const [uiSounds, setUiSounds] = useStored('nivra-ui-sounds', false)
+  const [uiVolume, setUiVolume] = useStored('nivra-ui-volume', 15)
+  const [ambientOn, setAmbientOn] = useStored('nivra-ambient', false)
+  const [ambientPreset, setAmbientPreset] = useStored<'lluvia' | 'olas'>('nivra-ambient-preset', 'lluvia')
+  const [ambientVolume, setAmbientVolume] = useStored('nivra-ambient-volume', 20)
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
   const [customKeys, setCustomKeys] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
@@ -45,6 +57,24 @@ export function useSettings() {
     setNavButtons,
     bankEnabled,
     setBankEnabled,
+    carouselEnabled,
+    setCarouselEnabled,
+    carouselSeconds,
+    setCarouselSeconds,
+    backgroundMode,
+    setBackgroundMode,
+    backgroundShape,
+    setBackgroundShape,
+    uiSounds,
+    setUiSounds,
+    uiVolume,
+    setUiVolume,
+    ambientOn,
+    setAmbientOn,
+    ambientPreset,
+    setAmbientPreset,
+    ambientVolume,
+    setAmbientVolume,
     shortcutsOn,
     setShortcutsOn,
     enabledShortcuts,

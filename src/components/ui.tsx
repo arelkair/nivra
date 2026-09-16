@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { locale, t } from '../lib/i18n'
+import { playTick } from '../lib/sound'
 
 export const line = 'border-black/[0.07] dark:border-white/[0.08]'
 
@@ -156,7 +157,10 @@ export function Switch({
         role="switch"
         aria-checked={checked}
         aria-label={label}
-        onClick={() => onChange(!checked)}
+        onClick={() => {
+          playTick()
+          onChange(!checked)
+        }}
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
           checked ? 'bg-neutral-800 dark:bg-white' : 'bg-black/10 dark:bg-white/15'
         }`}

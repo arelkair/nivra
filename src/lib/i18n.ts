@@ -503,6 +503,38 @@ const EN: Record<string, string> = {
   'Útil si tienes una actividad que empieza pasada la medianoche.':
     'Useful if you have an activity that starts after midnight.',
 
+  // carrusel de cuentas atrás
+  'Carrusel de cuentas atrás': 'Countdown carousel',
+  'En el dashboard, va cambiando de cuenta atrás en vez de mostrar siempre la misma.':
+    'On the dashboard, it cycles through your countdowns instead of always showing the same one.',
+  'Cambiar cada': 'Switch every',
+  'Segundos entre cuentas atrás': 'Seconds between countdowns',
+
+  // fondo
+  Fondo: 'Background',
+  Ninguno: 'None',
+  'Forma simple': 'Simple shape',
+  'Imagen o gif': 'Image or gif',
+  Puntos: 'Dots',
+  Rejilla: 'Grid',
+  Diagonales: 'Diagonals',
+  Olas: 'Waves',
+  'Subir imagen o gif': 'Upload an image or gif',
+  'Cambiar imagen': 'Change image',
+  'Se ve de fondo, muy suave, detrás del contenido. Se queda solo en este dispositivo.':
+    'Shown very faintly behind the content. Stays only on this device.',
+
+  // sonidos
+  Sonidos: 'Sounds',
+  'Sonidos de interfaz': 'Interface sounds',
+  'Un sonido muy suave al pulsar interruptores o cuando aparece un aviso.':
+    'A very soft sound when you flip a switch or an alert appears.',
+  Volumen: 'Volume',
+  'Sonido de ambiente': 'Ambient sound',
+  'Un ruido de fondo relajante y continuo, muy bajito.':
+    'A calm, continuous background hum, very quiet.',
+  Lluvia: 'Rain',
+
   // ajustes de secciones
   'Sección de banco': 'Bank section',
   'Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.':
