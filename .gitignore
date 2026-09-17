@@ -25,7 +25,3 @@ dist-ssr
 
 # Tooling local
 .claude
-
-# Tauri
-src-tauri/target
-src-tauri/gen

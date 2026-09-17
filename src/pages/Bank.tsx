@@ -26,6 +26,7 @@ import {
   select,
 } from '../components/ui'
 import { t } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 export type BankTab = 'dinero' | 'ingresos' | 'gastos' | 'objetivos'
 
@@ -223,6 +224,7 @@ export function Bank({ initial, setInitial, movements, setMovements, tab, setTab
           onAdd={(m) => setMovements((prev) => [m, ...prev])}
           onEdit={(m) => setMovements((prev) => prev.map((x) => (x.id === m.id ? m : x)))}
           onRemove={(id) => {
+            playDrop()
             const before = movements
             setMovements((prev) => prev.filter((m) => m.id !== id))
             notifyWithUndo(t('Movimiento eliminado'), () => setMovements(() => before))
@@ -262,6 +264,7 @@ function MovementPanel({
           const data = new FormData(form)
           const amount = readAmount(data.get('amount'))
           if (amount === null) return
+          playPop()
           onAdd({
             id: crypto.randomUUID(),
             kind,
@@ -352,7 +355,7 @@ function MovementPanel({
                   type="button"
                   onClick={() => onRemove(m.id)}
                   aria-label={t('Eliminar movimiento')}
-                  className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >
                   <Icon name="trash" className="h-4 w-4" />
                 </button>

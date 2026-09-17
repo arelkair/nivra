@@ -22,16 +22,29 @@ export function parseMusicUrl(input: string): MusicEmbed | null {
   if (host === 'youtube.com' || host === 'music.youtube.com') {
     const list = u.searchParams.get('list')
     const v = u.searchParams.get('v')
-    if (v) return { provider: 'youtube', url: `https://www.youtube.com/embed/${v}${list ? `?list=${list}` : ''}` }
-    if (list) return { provider: 'youtube', url: `https://www.youtube.com/embed/videoseries?list=${list}` }
+    if (v) return { provider: 'youtube', url: youtubeEmbedUrl(v, list) }
+    if (list) return { provider: 'youtube', url: youtubeEmbedUrl('videoseries', list) }
     return null
   }
 
   if (host === 'youtu.be') {
     const id = u.pathname.slice(1)
-    if (id) return { provider: 'youtube', url: `https://www.youtube.com/embed/${id}` }
+    if (id) return { provider: 'youtube', url: youtubeEmbedUrl(id) }
     return null
   }
 
   return null
+}
+
+function youtubeEmbedUrl(id: string, list?: string | null) {
+  const params = new URLSearchParams({
+    enablejsapi: '1',
+    origin: typeof location !== 'undefined' ? location.origin : '',
+  })
+  if (list) params.set('list', list)
+  return `https://www.youtube.com/embed/${id}?${params.toString()}`
+}
+
+export function sendYoutubeCommand(iframe: HTMLIFrameElement | null, func: string, args: unknown[] = []) {
+  iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*')
 }

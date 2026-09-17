@@ -113,6 +113,16 @@ export function exportTimetableIcs(blocks: Block[]) {
   download(`nivra-horario-${today()}.ics`, lines.join('\r\n'), 'text/calendar;charset=utf-8')
 }
 
+export function clearAllData() {
+  const keys: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (k && k.startsWith('nivra-')) keys.push(k)
+  }
+  for (const k of keys) localStorage.removeItem(k)
+  indexedDB.deleteDatabase('nivra-files')
+}
+
 export async function importJson(fileInput: File) {
   const text = await fileInput.text()
   const storedData = JSON.parse(text) as Record<string, unknown>

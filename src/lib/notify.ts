@@ -79,7 +79,6 @@ export function pendingNotices(
     }
   }
 
-  // itemsDeDia rather than i.date === clave so recurring entries are counted.
   for (const i of itemsOfDay(datos.items, key)) {
     añadir(`hoy:${i.id}:${key}`, tp('{0} de hoy: {1}', t(TYPES[i.type].label), i.title), false)
   }
@@ -101,8 +100,6 @@ export function markNoticesSent(keys: string[]) {
 
 export async function showSystemNotice(text: string) {
   if (notificationPermission() !== 'granted') return false
-  // With an active service worker some browsers (Android Chrome) only allow
-  // registration.showNotification and reject the `new Notification` constructor.
   const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined
   if (reg) {
     await reg.showNotification('Nivra', { body: text, icon: '/favicon.svg' })

@@ -3,6 +3,7 @@ import { eur, type Subscription } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
   subs: Subscription[]
@@ -64,12 +65,13 @@ export function Subscriptions({ subs, setSubs }: Props) {
                 <button
                   type="button"
                   onClick={() => {
+                    playDrop()
                     const before = subs
                     setSubs((prev) => prev.filter((x) => x.id !== s.id))
                     notifyWithUndo(tp('«{0}» eliminada', s.title), () => setSubs(() => before))
                   }}
                   aria-label={`Eliminar ${s.title}`}
-                  className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >
                   <Icon name="trash" className="h-4 w-4" />
                 </button>
@@ -90,6 +92,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
             setEditingId(null)
           }}
           onSave={(s) => {
+            if (!editingItem) playPop()
             setSubs((prev) => (editingItem ? prev.map((x) => (x.id === s.id ? s : x)) : [...prev, s]))
             setCreating(false)
             setEditingId(null)

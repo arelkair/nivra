@@ -5,6 +5,38 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const STATE_KEY = 'nivra-sync'
 const TIMES_KEY = 'nivra-sync-times'
 const EVENT_NAME = 'nivra-sync'
+export const SYNC_VISUAL_KEY = 'nivra-sync-visual'
+
+const VISUAL_KEYS = new Set([
+  'nivra-accent',
+  'nivra-theme',
+  'nivra-theme-style',
+  'nivra-theme-pack',
+  'nivra-bg-mode',
+  'nivra-bg-shape',
+  'nivra-ui-sounds',
+  'nivra-ui-volume',
+  'nivra-ambient',
+  'nivra-ambient-preset',
+  'nivra-ambient-volume',
+  'nivra-custom-sound-url',
+  'nivra-embed-consent',
+  'nivra-carousel',
+  'nivra-carousel-seconds',
+  'nivra-clock',
+  'nivra-hour12',
+  'nivra-nav-buttons',
+  'nivra-search',
+  'nivra-animations',
+  'nivra-auto-theme',
+  'nivra-intro',
+  'nivra-shortcuts',
+  'nivra-shortcut-keys',
+  'nivra-shortcut-custom',
+  'nivra-toasts',
+  'nivra-notifs',
+  'nivra-lang',
+])
 
 export type SyncState = {
   code: string
@@ -46,13 +78,18 @@ const readTimes = () => readJson<Record<string, number>>(TIMES_KEY, {})
 const saveTimes = (t: Record<string, number>) =>
   localStorage.setItem(TIMES_KEY, JSON.stringify(t))
 
-const internal = (k: string) => k === STATE_KEY || k === TIMES_KEY
+const internal = (k: string) => k === STATE_KEY || k === TIMES_KEY || k === SYNC_VISUAL_KEY
+
+const syncsVisual = () => readJson<boolean>(SYNC_VISUAL_KEY, true) !== false
 
 function localValues() {
+  const includeVisual = syncsVisual()
   const out: Record<string, string> = {}
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
-    if (k && k.startsWith('nivra-') && !internal(k)) out[k] = localStorage.getItem(k) ?? ''
+    if (!k || !k.startsWith('nivra-') || internal(k)) continue
+    if (!includeVisual && VISUAL_KEYS.has(k)) continue
+    out[k] = localStorage.getItem(k) ?? ''
   }
   return out
 }
@@ -190,9 +227,11 @@ function mergeVaults(local: Payload, remote: Payload) {
 }
 
 function apply(paquete: Payload) {
+  const includeVisual = syncsVisual()
   const times = readTimes()
   let touched = false
   for (const [k, e] of Object.entries(paquete.keys)) {
+    if (!includeVisual && VISUAL_KEYS.has(k)) continue
     if (localStorage.getItem(k) !== e.v) {
       localStorage.setItem(k, e.v)
       touched = true
@@ -269,8 +308,6 @@ export async function connect(code: string) {
 
 let pendiente: ReturnType<typeof setTimeout> | null = null
 
-/** `inicial` flags the defaults created on startup. They must not win over data
- *  already present on another device, so they are stamped with time zero. */
 export function markChanged(storageKey: string, inicial = false) {
   const times = readTimes()
   times[storageKey] = inicial ? 0 : Date.now()

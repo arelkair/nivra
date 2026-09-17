@@ -54,9 +54,6 @@ const luminancia = (hex: string) => {
 const contraste = (a: number, b: number) =>
   (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 
-/** Texto legible sobre un fondo elegido por el usuario. Compara el contraste de
- *  ambas tintas en vez de usar un umbral fijo, asi que acierta tambien con los
- *  colores que el usuario elija a mano. */
 export function textOn(background: string): string {
   const hex = background.trim().replace('#', '')
   const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex
@@ -296,6 +293,7 @@ export type Block = {
   title: string
   profile?: string
   lateNight?: boolean
+  color?: string
 }
 
 export const blockProfile = (b: Block) => b.profile ?? DEFAULT_PROFILE

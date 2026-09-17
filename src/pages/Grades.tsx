@@ -3,6 +3,7 @@ import { dateKey, shortDate, type Grade, type Subject, type Work } from '../lib/
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Segmented, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
   grades: Grade[]
@@ -51,6 +52,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
           const value = Number(String(data.get('value') ?? '').replace(',', '.'))
           if (!Number.isFinite(value) || value < 1 || value > 10) return
           const weight = Number(String(data.get('weight') ?? '').replace(',', '.'))
+          playPop()
           setGrades((prev) => [
             {
               id: crypto.randomUUID(),
@@ -186,6 +188,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
           )}
 
           <GradeList title={t('Todas')} grades={visible} onDelete={(id, value) => {
+            playDrop()
             const before = grades
             setGrades((prev) => prev.filter((x) => x.id !== id))
             notifyWithUndo(tp('Nota {0} eliminada', value), () => setGrades(() => before))
@@ -212,6 +215,7 @@ export function Grades({ grades, setGrades, subjects, works }: Props) {
             title={t('Notas de la asignatura')}
             grades={subjectGrades}
             onDelete={(id, value) => {
+              playDrop()
               const before = grades
               setGrades((prev) => prev.filter((x) => x.id !== id))
               notifyWithUndo(tp('Nota {0} eliminada', value), () => setGrades(() => before))
@@ -261,7 +265,7 @@ function GradeList({
                 type="button"
                 onClick={() => onDelete(g.id, g.value)}
                 aria-label={`Eliminar nota ${g.value}`}
-                className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
               >
                 <Icon name="trash" className="h-4 w-4" />
               </button>

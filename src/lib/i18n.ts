@@ -18,6 +18,7 @@ const guardado = (): Lang => {
 }
 
 let lang: Lang = guardado()
+if (typeof document !== 'undefined') document.documentElement.lang = lang
 
 export const getLang = () => lang
 
@@ -29,7 +30,51 @@ export function setLang(next: Lang) {
 }
 
 const EN: Record<string, string> = {
-  // navegación y apartados
+  'Color de texto': 'Text colour',
+  'Lluvia y truenos': 'Rain and thunder',
+  'Fuego de hoguera': 'Campfire',
+  'Este sonido de ambiente se carga desde los servidores de YouTube y puede usar sus propias cookies.':
+    'This ambient sound loads from YouTube servers and may use its own cookies.',
+  'Cargar sonido de ambiente': 'Load ambient sound',
+  'El volumen solo se puede ajustar en enlaces de YouTube; Spotify no lo permite desde aquí.':
+    'Volume can only be adjusted for YouTube links; Spotify does not allow it from here.',
+  'Admite canciones, álbumes y listas de Spotify, y vídeos o listas de YouTube/YouTube Music. Aparece un reproductor pequeño.':
+    'Supports Spotify songs, albums and playlists, and YouTube/YouTube Music videos or playlists. A small player appears.',
+  Anterior: 'Previous',
+  Reproducir: 'Play',
+  Pausar: 'Pause',
+  Siguiente: 'Next',
+  Maximizar: 'Maximise',
+  Minimizar: 'Minimise',
+  'Color del bloque': 'Block colour',
+  'Barra inferior': 'Bottom bar',
+  'Menús transparentes': 'Transparent menus',
+  'Los paneles y ventanas emergentes se ven algo transparentes, con desenfoque de fondo.':
+    'Panels and pop-up windows look somewhat transparent, with a background blur.',
+  'Mantener el aspecto propio de este dispositivo': "Keep this device's own look",
+  'Colores, fondo, sonidos y temas no se sincronizan; el resto de tus datos (asignaturas, tareas, notas…) sí.':
+    "Colours, background, sounds and themes are not synced; the rest of your data (subjects, tasks, grades…) is.",
+  Cancelar: 'Cancel',
+  'Privacidad y datos': 'Privacy and data',
+  'Nivra no usa cookies ni rastreadores, ni analítica ni publicidad de ningún tipo.':
+    'Nivra does not use cookies or trackers, nor any analytics or advertising.',
+  'Todos tus datos se guardan solo en este dispositivo, en el almacenamiento local del navegador.':
+    "All your data is stored only on this device, in the browser's local storage.",
+  'Si activas la sincronización, tus datos se cifran en tu dispositivo antes de enviarse; el servidor (Supabase) solo guarda el resultado cifrado y nunca la clave.':
+    'If you turn on sync, your data is encrypted on your device before being sent; the server (Supabase) only stores the encrypted result and never the key.',
+  'Si pegas un enlace de Spotify o YouTube en los sonidos de ambiente, ese reproductor se carga desde sus propios servidores y puede usar sus propias cookies, según sus condiciones.':
+    'If you paste a Spotify or YouTube link in the ambient sounds, that player loads from their own servers and may use their own cookies, per their terms.',
+  'Puedes exportar o borrar todos tus datos en cualquier momento desde «Exportar o importar datos».':
+    'You can export or delete all your data at any time from "Export or import data".',
+  'Borrar datos': 'Delete data',
+  'Borrar todos los datos': 'Delete all data',
+  'Confirmar: borrar todo de este dispositivo': 'Confirm: delete everything on this device',
+  'Borra permanentemente todos los datos de Nivra guardados en este navegador. No afecta a otros dispositivos con los que hayas sincronizado.':
+    "Permanently deletes all Nivra data stored in this browser. It doesn't affect other devices you've synced with.",
+  'Este reproductor se carga desde los servidores de Spotify o YouTube y puede usar sus propias cookies.':
+    'This player loads from Spotify or YouTube servers and may use their own cookies.',
+  'Cargar reproductor': 'Load player',
+
   Principal: 'Main',
   Estudio: 'Study',
   Dinero: 'Money',
@@ -59,7 +104,6 @@ const EN: Record<string, string> = {
   Recordatorio: 'Reminder',
   Avisos: 'Alerts',
 
-  // acciones comunes
   Guardar: 'Save',
   Editar: 'Edit',
   Eliminar: 'Delete',
@@ -82,7 +126,6 @@ const EN: Record<string, string> = {
   Copiar: 'Copy',
   Unir: 'Link',
 
-  // campos
   Título: 'Title',
   Subtítulo: 'Subtitle',
   'Subtítulo (opcional)': 'Subtitle (optional)',
@@ -138,7 +181,6 @@ const EN: Record<string, string> = {
   'Categoría de gasto': 'Expense category',
   'Categoría de ingreso': 'Income category',
 
-  // nuevos
   'Nueva tarea': 'New task',
   'Nueva subtarea': 'New subtask',
   'Añadir tarea': 'Add task',
@@ -162,7 +204,6 @@ const EN: Record<string, string> = {
   'Nombre del bloc': 'Notepad name',
   'Nombre del horario': 'Timetable name',
 
-  // vacíos y ayudas
   'Sin tareas.': 'No tasks.',
   'Sin actividades.': 'No activities.',
   'Sin bloques.': 'No blocks.',
@@ -190,7 +231,6 @@ const EN: Record<string, string> = {
   Peores: 'Worst',
   Media: 'Average',
 
-  // ajustes
   Ajustes: 'Settings',
   General: 'General',
   Aplicación: 'Application',
@@ -252,7 +292,6 @@ const EN: Record<string, string> = {
   'Calendario (.ics)': 'Calendar (.ics)',
   'Horario (.ics)': 'Timetable (.ics)',
 
-  // sincronización
   'Crear mi código': 'Create my code',
   'Código de otro dispositivo': 'Code from another device',
   'Copiar código': 'Copy code',
@@ -271,7 +310,6 @@ const EN: Record<string, string> = {
   'Sin sincronizar todavía.': 'Not synced yet.',
   Desconectar: 'Disconnect',
 
-  // calendario
   'Mes anterior': 'Previous month',
   'Mes siguiente': 'Next month',
   'Semana anterior': 'Previous week',
@@ -290,14 +328,12 @@ const EN: Record<string, string> = {
   'Cada mes': 'Every month',
   'Cada año': 'Every year',
 
-  // meses y días
   enero: 'January', febrero: 'February', marzo: 'March', abril: 'April',
   mayo: 'May', junio: 'June', julio: 'July', agosto: 'August',
   septiembre: 'September', octubre: 'October', noviembre: 'November', diciembre: 'December',
   Lunes: 'Monday', Martes: 'Tuesday', Miércoles: 'Wednesday', Jueves: 'Thursday',
   Viernes: 'Friday', Sábado: 'Saturday', Domingo: 'Sunday',
 
-  // unidades
   año: 'year', años: 'years', mes: 'month', meses: 'months',
   día: 'day', días: 'days', hora: 'hour', horas: 'hours',
   minuto: 'minute', minutos: 'minutes', segundo: 'second', segundos: 'seconds',
@@ -306,11 +342,9 @@ const EN: Record<string, string> = {
   'esta semana': 'this week',
   'este mes': 'this month',
 
-  // colores
   Básico: 'Basic', Rojo: 'Red', Naranja: 'Orange', Amarillo: 'Yellow', Verde: 'Green',
   'Azul cielo': 'Sky blue', 'Azul marino': 'Navy', Púrpura: 'Purple', Rosa: 'Pink', Beige: 'Beige',
 
-  // editor
   Negrita: 'Bold', Cursiva: 'Italic', Subrayado: 'Underline', Tachado: 'Strikethrough',
   'Quitar formato': 'Clear formatting',
   'Buscar en el bloc': 'Search the notepad',
@@ -329,7 +363,6 @@ const EN: Record<string, string> = {
   'Sin blocs. Crea el primero con el botón +.':
     'No notepads. Create the first one with the + button.',
 
-  // atajos
   'Ir al dashboard': 'Go to the dashboard',
   'Ir al calendario': 'Go to the calendar',
   'Ir al horario': 'Go to the timetable',
@@ -353,7 +386,6 @@ const EN: Record<string, string> = {
   'Cerrar menú': 'Close menu',
   'Cerrar aviso': 'Dismiss alert',
 
-  // banco y objetivos
   'Dinero actual': 'Current balance',
   'Primera vez': 'First time',
   '¿Cuánto dinero tienes ahora?': 'How much money do you have now?',
@@ -375,7 +407,6 @@ const EN: Record<string, string> = {
   'Día de renovación': 'Renewal day',
   'Racha ya marcada hoy': 'Streak already marked today',
 
-  // otros
   'Fecha obligatoria. Sale en rojo.': 'Date required. Shown in red.',
   'Fecha opcional. Sale en verde.': 'Date optional. Shown in green.',
   'Examen o proyecto': 'Exam or project',
@@ -476,7 +507,6 @@ const EN: Record<string, string> = {
   'El enlace debe empezar por http:// o https://.': 'The link must start with http:// or https://.',
   'Abrir enlace de {0}': 'Open the link for {0}',
 
-  // marcadores, tablas, gráficas y texto desplegable
   'Añadir marcador aquí': 'Add bookmark here',
   'Ver marcadores de esta página': 'View this page’s bookmarks',
   'Nuevo marcador': 'New bookmark',
@@ -498,19 +528,16 @@ const EN: Record<string, string> = {
   'Toca para expandir': 'Tap to expand',
   'Escribe aquí…': 'Write here…',
 
-  // horario
   'Colocar al final del día': 'Place at the end of the day',
   'Útil si tienes una actividad que empieza pasada la medianoche.':
     'Useful if you have an activity that starts after midnight.',
 
-  // carrusel de cuentas atrás
   'Carrusel de cuentas atrás': 'Countdown carousel',
   'En el dashboard, va cambiando de cuenta atrás en vez de mostrar siempre la misma.':
     'On the dashboard, it cycles through your countdowns instead of always showing the same one.',
   'Cambiar cada': 'Switch every',
   'Segundos entre cuentas atrás': 'Seconds between countdowns',
 
-  // fondo
   Fondo: 'Background',
   Ninguno: 'None',
   'Forma simple': 'Simple shape',
@@ -524,7 +551,6 @@ const EN: Record<string, string> = {
   'Se ve de fondo, muy suave, detrás del contenido. Se queda solo en este dispositivo.':
     'Shown very faintly behind the content. Stays only on this device.',
 
-  // sonidos
   Sonidos: 'Sounds',
   'Sonidos de interfaz': 'Interface sounds',
   'Un sonido muy suave al pulsar interruptores o cuando aparece un aviso.':
@@ -540,7 +566,6 @@ const EN: Record<string, string> = {
   'Admite canciones, álbumes y listas de Spotify, y vídeos o listas de YouTube/YouTube Music. Aparece un reproductor pequeño; Spotify y YouTube no dejan que lo controlemos nosotros, así que tienes que darle a reproducir tú una vez.':
     'Works with Spotify tracks, albums and playlists, and YouTube/YouTube Music videos or playlists. A small player appears; Spotify and YouTube do not let us control it ourselves, so you need to press play in it once.',
 
-  // notas por asignatura y %
   'Todas las asignaturas': 'All subjects',
   '¿Qué % vale de la nota final? (opcional)': 'What % of the final grade is this worth? (optional)',
   'Porcentaje de la nota final': 'Percentage of the final grade',
@@ -554,7 +579,6 @@ const EN: Record<string, string> = {
   'Notas de la asignatura': 'Subject grades',
   'Nota {0} eliminada': 'Grade {0} deleted',
 
-  // horario en tabla
   'Horario libre': 'Free layout',
   'Horario en tabla': 'Table layout',
   'Nuevo bloque': 'New block',
@@ -563,7 +587,6 @@ const EN: Record<string, string> = {
     'Fixed hours always stay on the same row. A day with a different time just adds a new slot.',
   'Añadir bloque el {0} de {1} a {2}': 'Add a block on {0} from {1} to {2}',
 
-  // estilo
   Estilo: 'Style',
   'Barra Lateral': 'Sidebar',
   Temas: 'Themes',
@@ -576,21 +599,17 @@ const EN: Record<string, string> = {
   'Cambia el aspecto general de la navegación. No afecta al color ni al modo claro u oscuro.':
     'Changes the overall look of the navigation. Does not affect the accent colour or light/dark mode.',
 
-  // ajustes de secciones
   'Sección de banco': 'Bank section',
   'Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.':
     'Hides the bank, its stats and its shortcuts from the rest of the app.',
 
-  // arrastrar
   'Arrastra un bloc para reordenarlo.': 'Drag a notepad to reorder it.',
   'Arrastra una cuenta atrás para reordenarla.': 'Drag a countdown to reorder it.',
 }
 
-/** Como t(), pero sustituyendo {0}, {1}... por los valores dados. */
 export const tp = (s: string, ...args: (string | number)[]) =>
   args.reduce<string>((acc, v, i) => acc.split('{' + i + '}').join(String(v)), t(s))
 
-/** Iniciales de los dias: no valen para el diccionario porque se repiten. */
 export const weekdayLetters = () =>
   lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 

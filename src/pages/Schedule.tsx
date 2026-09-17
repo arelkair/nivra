@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DAYS, DEFAULT_PROFILE, blockProfile, weekIndex, type Block, type Profile } from '../lib/store'
+import { DAYS, DEFAULT_PROFILE, blockProfile, textOn, weekIndex, type Block, type Profile } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
@@ -34,6 +34,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
   const duplicate = (b: Block) =>
     setBlocks((prev) => [...prev, { ...b, id: crypto.randomUUID() }])
   const removeBlock = (b: Block) => {
+    playDrop()
     const before = blocks
     setBlocks((prev) => prev.filter((x) => x.id !== b.id))
     notifyWithUndo(tp('«{0}» eliminado', b.title), () => setBlocks(() => before))
@@ -151,32 +152,33 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                         setDragging(null)
                         setOver(null)
                       }}
-                      className={`group cursor-grab rounded-xl bg-black/[0.04] px-3 py-2.5 active:cursor-grabbing dark:bg-white/[0.06] ${
-                        dragging === b.id ? 'opacity-40' : ''
-                      }`}
+                      style={b.color ? { background: b.color } : undefined}
+                      className={`group cursor-grab rounded-xl px-3 py-2.5 active:cursor-grabbing ${
+                        b.color ? '' : 'bg-black/[0.04] dark:bg-white/[0.06]'
+                      } ${dragging === b.id ? 'opacity-40' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <span className="whitespace-nowrap font-mono text-[0.7rem] tabular-nums text-neutral-500 dark:text-neutral-400">
+                        <span
+                          className={`whitespace-nowrap font-mono text-[0.7rem] tabular-nums ${
+                            b.color ? textOn(b.color) : 'text-neutral-500 dark:text-neutral-400'
+                          }`}
+                        >
                           {b.start}–{b.end}
                         </span>
-                        <span className="flex shrink-0 gap-1">
+                        <span className={`flex shrink-0 gap-1 ${b.color ? textOn(b.color) : ''}`}>
                           <button
                             type="button"
                             onClick={() => duplicate(b)}
                             aria-label={`Duplicar ${b.title}`}
-                            className="text-neutral-300 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                            className={`transition-colors ${b.color ? 'opacity-70 hover:opacity-100' : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white'}`}
                           >
                             <Icon name="copy" className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              const before = blocks
-                              setBlocks((prev) => prev.filter((x) => x.id !== b.id))
-                              notifyWithUndo(tp('«{0}» eliminado', b.title), () => setBlocks(() => before))
-                            }}
+                            onClick={() => removeBlock(b)}
                             aria-label={`Eliminar ${b.title}`}
-                            className="text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                            className={`transition-colors ${b.color ? 'opacity-70 hover:opacity-100' : 'text-neutral-500 hover:text-red-500 dark:text-neutral-600'}`}
                           >
                             <Icon name="trash" className="h-3.5 w-3.5" />
                           </button>
@@ -185,7 +187,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                       <button
                         type="button"
                         onClick={() => setEditingItem(b)}
-                        className="mt-0.5 w-full truncate text-left text-sm"
+                        className={`mt-0.5 w-full truncate text-left text-sm ${b.color ? textOn(b.color) : ''}`}
                         title={t('Editar')}
                       >
                         {b.title}
@@ -223,9 +225,10 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
               const lateNight = data.get('lateNight') === 'on'
+              const color = data.get('useColor') === 'on' ? String(data.get('color') ?? '') : undefined
               setBlocks((prev) => [
                 ...prev,
-                { id: crypto.randomUUID(), day: dayIndex, start, end, title, profile: active, lateNight },
+                { id: crypto.randomUUID(), day: dayIndex, start, end, title, profile: active, lateNight, color },
               ])
               setAdding(null)
             }}
@@ -264,6 +267,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
               {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
             </p>
+            <BlockColorField />
             <button type="submit" className={`${button} mt-2`}>
               {t('Añadir')}
             </button>
@@ -284,9 +288,12 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
               const lateNight = data.get('lateNight') === 'on'
+              const color = data.get('useColor') === 'on' ? String(data.get('color') ?? '') : undefined
               setBlocks((prev) =>
                 prev.map((x) =>
-                  x.id === editingItem.id ? { ...x, title, start, end, day: dayIndex, lateNight } : x,
+                  x.id === editingItem.id
+                    ? { ...x, title, start, end, day: dayIndex, lateNight, color }
+                    : x,
                 ),
               )
               setEditingItem(null)
@@ -337,6 +344,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
               {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
             </p>
+            <BlockColorField initial={editingItem.color} />
             <button type="submit" className={`${button} mt-2`}>
               {t('Guardar')}
             </button>
@@ -412,6 +420,33 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
   )
 }
 
+function BlockColorField({ initial }: { initial?: string }) {
+  const [useColor, setUseColor] = useState(!!initial)
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <label className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+        <input
+          name="useColor"
+          type="checkbox"
+          checked={useColor}
+          onChange={(e) => setUseColor(e.target.checked)}
+          className="h-4 w-4 rounded"
+        />
+        {t('Color del bloque')}
+      </label>
+      {useColor && (
+        <input
+          name="color"
+          type="color"
+          defaultValue={initial ?? '#3b82f6'}
+          aria-label={t('Color del bloque')}
+          className="h-7 w-7 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+        />
+      )}
+    </div>
+  )
+}
+
 function TableSchedule({
   visible,
   onQuickAdd,
@@ -475,7 +510,12 @@ function TableSchedule({
                         }`}
                       >
                         {block ? (
-                          <div className="group flex items-center gap-1 rounded-lg bg-black/[0.04] px-2 py-1.5 dark:bg-white/[0.06]">
+                          <div
+                            style={block.color ? { background: block.color } : undefined}
+                            className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 ${
+                              block.color ? textOn(block.color) : 'bg-black/[0.04] dark:bg-white/[0.06]'
+                            }`}
+                          >
                             <button
                               type="button"
                               onClick={() => onEdit(block)}
@@ -488,7 +528,9 @@ function TableSchedule({
                               type="button"
                               onClick={() => onDelete(block)}
                               aria-label={`Eliminar ${block.title}`}
-                              className="shrink-0 text-neutral-300 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-neutral-600"
+                              className={`shrink-0 opacity-0 transition-opacity group-hover:opacity-100 ${
+                                block.color ? '' : 'text-neutral-500 hover:text-red-500 dark:text-neutral-600'
+                              }`}
                             >
                               <Icon name="trash" className="h-3 w-3" />
                             </button>
@@ -498,7 +540,7 @@ function TableSchedule({
                             type="button"
                             onClick={() => onQuickAdd(dayIndex, row.start, row.end)}
                             aria-label={tp('Añadir bloque el {0} de {1} a {2}', t(DAYS[dayIndex]), row.start, row.end)}
-                            className="grid h-8 w-full place-items-center rounded-lg text-neutral-300 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-700 dark:hover:bg-white/[0.05] dark:hover:text-white"
+                            className="grid h-8 w-full place-items-center rounded-lg text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-700 dark:hover:bg-white/[0.05] dark:hover:text-white"
                           >
                             <Icon name="plus" className="h-3 w-3" />
                           </button>

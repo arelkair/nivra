@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   withDashes,
   connect,
@@ -7,10 +6,13 @@ import {
   normalizeCode,
   newCode,
   pushChanges,
+  SYNC_VISUAL_KEY,
   type SyncState,
 } from '../lib/sync'
-import { Icon, Label, button, input, line } from './ui'
+import { useStored } from '../lib/store'
+import { Icon, Label, Switch, button, input, line } from './ui'
 import { locale, t, tp } from '../lib/i18n'
+import { useState } from 'react'
 
 export function SyncPanel({
   status,
@@ -22,6 +24,7 @@ export function SyncPanel({
   const [visible, setVisible] = useState(false)
   const [working, setWorking] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [syncVisual, setSyncVisual] = useStored(SYNC_VISUAL_KEY, true)
 
   const create = async () => {
     setWorking(true)
@@ -93,6 +96,15 @@ export function SyncPanel({
                 ? `Al día · ${new Date(status.lastSeen).toLocaleTimeString(locale())} · se comprueba cada 4 s`
                 : 'Sin sincronizar todavía.'}
           </p>
+
+          <Switch
+            checked={!syncVisual}
+            onChange={(v) => setSyncVisual(!v)}
+            label={t('Mantener el aspecto propio de este dispositivo')}
+            hint={t(
+              'Colores, fondo, sonidos y temas no se sincronizan; el resto de tus datos (asignaturas, tareas, notas…) sí.',
+            )}
+          />
 
           <button
             type="button"

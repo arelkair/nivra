@@ -13,6 +13,7 @@ export function useSettings() {
   const [searchOn, setSearchOn] = useStored('nivra-search', true)
   const [animations, setAnimations] = useStored('nivra-animations', true)
   const [navButtons, setNavButtons] = useStored('nivra-nav-buttons', true)
+  const [transparentMenus, setTransparentMenus] = useStored('nivra-transparent-menus', false)
   const [bankEnabled, setBankEnabled] = useStored('nivra-bank-enabled', true)
   const [carouselEnabled, setCarouselEnabled] = useStored('nivra-carousel', false)
   const [carouselSeconds, setCarouselSeconds] = useStored('nivra-carousel-seconds', 8)
@@ -25,11 +26,14 @@ export function useSettings() {
   const [uiVolume, setUiVolume] = useStored('nivra-ui-volume', 15)
   const [ambientOn, setAmbientOn] = useStored('nivra-ambient', false)
   const [ambientPreset, setAmbientPreset] = useStored<
-    'lluvia' | 'olas' | 'estatico' | 'enlace' | 'naturaleza' | 'espacio'
+    'lluvia' | 'lluvia-truenos' | 'olas' | 'fuego' | 'estatico' | 'enlace' | 'naturaleza' | 'espacio'
   >('nivra-ambient-preset', 'lluvia')
   const [ambientVolume, setAmbientVolume] = useStored('nivra-ambient-volume', 20)
   const [customSoundUrl, setCustomSoundUrl] = useStored('nivra-custom-sound-url', '')
-  const [themeStyle, setThemeStyle] = useStored<'clasico' | 'carpetas'>('nivra-theme-style', 'clasico')
+  const [themeStyle, setThemeStyle] = useStored<'clasico' | 'carpetas' | 'barra'>(
+    'nivra-theme-style',
+    'clasico',
+  )
   const [themePack, setThemePack] = useStored<'ninguno' | 'naturaleza' | 'espacio'>(
     'nivra-theme-pack',
     'ninguno',
@@ -63,6 +67,8 @@ export function useSettings() {
     setAnimations,
     navButtons,
     setNavButtons,
+    transparentMenus,
+    setTransparentMenus,
     bankEnabled,
     setBankEnabled,
     carouselEnabled,
