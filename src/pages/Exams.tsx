@@ -3,6 +3,7 @@ import { TYPES, reorder, shortDate, type Grade, type Notepad, textOn, type Subje
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
   works: Work[]
@@ -21,6 +22,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
   const patch = (id: string, changes: Partial<Work>) =>
     setWorks((prev) => prev.map((w) => (w.id === id ? { ...w, ...changes } : w)))
   const remove = (id: string) => {
+    playDrop()
     const before = works
     const title = works.find((w) => w.id === id)?.title ?? ''
     setWorks((prev) => prev.filter((w) => w.id !== id))
@@ -43,6 +45,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
           const date = String(data.get('date') ?? '')
           if (!title) return
           if (kind === 'examen' && !date) return
+          playPop()
           setWorks((prev) => [
             ...prev,
             {
@@ -226,7 +229,7 @@ function Row({
           type="button"
           onClick={() => onMove(-1)}
           aria-label={`Subir ${work.title}`}
-          className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
         >
           <Icon name="up" className="h-3 w-3" />
         </button>
@@ -234,7 +237,7 @@ function Row({
           type="button"
           onClick={() => onMove(1)}
           aria-label={`Bajar ${work.title}`}
-          className="text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
         >
           <Icon name="down" className="h-3 w-3" />
         </button>
@@ -244,7 +247,7 @@ function Row({
         type="button"
         onClick={() => onRemove(work.id)}
         aria-label={`Eliminar ${work.title}`}
-        className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+        className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
       >
         <Icon name="trash" className="h-4 w-4" />
       </button>

@@ -19,8 +19,7 @@ export function useSync() {
       try {
         const r = await runSync(current)
         if (alive) setStatus(r.state)
-      } catch {
-      }
+      } catch {}
       working = false
     }
 

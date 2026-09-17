@@ -3,6 +3,7 @@ import { dateKey, shortDate, type Reminder, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
   reminders: Reminder[]
@@ -68,12 +69,13 @@ export function Reminders({ reminders, setReminders, works }: Props) {
                   <button
                     type="button"
                     onClick={() => {
+                      playDrop()
                       const before = reminders
                       setReminders((prev) => prev.filter((x) => x.id !== r.id))
                       notifyWithUndo(tp('«{0}» eliminado', r.title), () => setReminders(() => before))
                     }}
                     aria-label={`Eliminar ${r.title}`}
-                    className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                   >
                     <Icon name="trash" className="h-4 w-4" />
                   </button>
@@ -93,6 +95,7 @@ export function Reminders({ reminders, setReminders, works }: Props) {
             setEditingId(null)
           }}
           onSave={(r) => {
+            if (!editing) playPop()
             setReminders((prev) => (editing ? prev.map((x) => (x.id === r.id ? r : x)) : [...prev, r]))
             setCreating(false)
             setEditingId(null)

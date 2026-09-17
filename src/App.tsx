@@ -12,6 +12,8 @@ import { Subscriptions } from './pages/Subscriptions'
 import { Tasks } from './pages/Tasks'
 import { Wishlist } from './pages/Wishlist'
 import { Intro } from './components/Intro'
+import { InitiativeIntro } from './components/InitiativeIntro'
+import { InitiativeDashboard } from './components/InitiativeDashboard'
 import { Search, type Destination, type SearchResult } from './components/Search'
 import { Settings } from './components/Settings'
 import { FloatingNote } from './components/FloatingNote'
@@ -24,7 +26,8 @@ import { useSync } from './lib/useSync'
 import { registerNotifier } from './lib/undo'
 import { playTick, startAmbient, stopAmbient, setAmbientVolume as applyAmbientVolume } from './lib/sound'
 import { SHAPES, SHAPE_SIZE, loadBackgroundImage, onBackgroundImageChange } from './lib/background'
-import { parseMusicUrl } from './lib/media'
+import { parseMusicUrl, sendYoutubeCommand } from './lib/media'
+import { AMBIENT_VIDEOS, ambientEmbedUrl, type AmbientVideoPreset } from './lib/ambientVideos'
 import {
   EXPENSE_CATS,
   INCOME_CATS,
@@ -54,6 +57,7 @@ import {
 import { t, tp } from './lib/i18n'
 
 const SETUP_KEY = 'nivra-setup-done'
+const INITIATIVE_PENDING_KEY = 'nivra-initiative-pending'
 
 type Page = { id: PageId; label: string; short: string; icon: string }
 
@@ -122,12 +126,20 @@ const DAY_START = 7
 const DAY_END = 20
 const isDaytime = (d: Date) => d.getHours() >= DAY_START && d.getHours() < DAY_END
 
+const isAmbientVideoPreset = (p: string): p is AmbientVideoPreset => p in AMBIENT_VIDEOS
+
 const headerButton =
   'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-black/[0.07] text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 disabled:opacity-30 disabled:hover:bg-transparent dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
 
 function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
-  const [introDone, setIntroDone] = useState(false)
+  const [introDone, setIntroDone] = useState(() => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1')
+  const [initiativeIntro, setInitiativeIntro] = useState(
+    () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1',
+  )
+  useEffect(() => {
+    sessionStorage.removeItem(INITIATIVE_PENDING_KEY)
+  }, [])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [floatingNote, setFloatingNote] = useState(false)
@@ -151,8 +163,6 @@ function App() {
     const onPop = (e: PopStateEvent) => {
       const i = (e.state as { nivra?: number } | null)?.nivra
       if (typeof i !== 'number') return
-      // A reload keeps browser entries from the previous session, so the index is
-      // clamped to the history that actually exists to avoid rendering a blank page.
       setIndex(Math.min(Math.max(i, 0), historyLength.current - 1))
     }
     addEventListener('popstate', onPop)
@@ -193,23 +203,36 @@ function App() {
 
   useEffect(() => registerNotifier(notify), [notify])
 
+  const ambientVideoId = isAmbientVideoPreset(cfg.ambientPreset) ? AMBIENT_VIDEOS[cfg.ambientPreset] : null
+
   useEffect(() => {
-    if (!cfg.ambientOn || cfg.ambientPreset === 'enlace') {
+    if (!cfg.ambientOn || cfg.ambientPreset !== 'estatico') {
       stopAmbient()
       return
     }
-    startAmbient(cfg.ambientPreset, cfg.ambientVolume / 100)
+    startAmbient(cfg.ambientVolume / 100)
     return () => stopAmbient()
   }, [cfg.ambientOn, cfg.ambientPreset])
 
   useEffect(() => {
-    if (cfg.ambientOn && cfg.ambientPreset !== 'enlace') applyAmbientVolume(cfg.ambientVolume / 100)
+    if (cfg.ambientOn && cfg.ambientPreset === 'estatico') applyAmbientVolume(cfg.ambientVolume / 100)
   }, [cfg.ambientOn, cfg.ambientPreset, cfg.ambientVolume])
 
+  const ambientIframe = useRef<HTMLIFrameElement>(null)
+  useEffect(() => {
+    if (cfg.ambientOn && ambientVideoId) sendYoutubeCommand(ambientIframe.current, 'setVolume', [cfg.ambientVolume])
+  }, [cfg.ambientOn, ambientVideoId, cfg.ambientVolume])
+
   const [musicPlayerOpen, setMusicPlayerOpen] = useState(true)
+  const [musicMinimized, setMusicMinimized] = useState(false)
   useEffect(() => setMusicPlayerOpen(true), [cfg.customSoundUrl])
   const musicEmbed =
     cfg.ambientOn && cfg.ambientPreset === 'enlace' ? parseMusicUrl(cfg.customSoundUrl) : null
+  const [embedConsent, setEmbedConsent] = useStored('nivra-embed-consent', false)
+  const musicIframe = useRef<HTMLIFrameElement>(null)
+  useEffect(() => {
+    if (musicEmbed?.provider === 'youtube') sendYoutubeCommand(musicIframe.current, 'setVolume', [cfg.ambientVolume])
+  }, [cfg.ambientVolume, musicEmbed?.provider])
 
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   useEffect(() => {
@@ -258,8 +281,6 @@ function App() {
       appliedStretch.current = null
       return
     }
-    // Only switches when crossing dawn or dusk, so a manual change made midway
-    // through a stretch survives until the next one instead of being undone.
     const apply = () => {
       const stretch = isDaytime(new Date()) ? 'light' : 'dark'
       if (stretch === appliedStretch.current) return
@@ -278,6 +299,10 @@ function App() {
     if (cfg.themePack === 'ninguno') delete document.documentElement.dataset.themePack
     else document.documentElement.dataset.themePack = cfg.themePack
   }, [cfg.themePack])
+  useEffect(() => {
+    if (cfg.transparentMenus) document.documentElement.dataset.transparentMenus = 'true'
+    else delete document.documentElement.dataset.transparentMenus
+  }, [cfg.transparentMenus])
 
   const [events, setEvents] = useStored<NivraEvent[]>('nivra-events', [])
   const [tasks, setTasks] = useStored<Task[]>('nivra-tasks', [])
@@ -517,6 +542,14 @@ function App() {
   return (
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
+      {initiativeIntro && (
+        <InitiativeIntro
+          onDone={(useExisting) => {
+            localStorage.setItem('nivra-initiative-use-data', String(useExisting))
+            setInitiativeIntro(false)
+          }}
+        />
+      )}
 
       {cfg.themePack !== 'ninguno' && (
         <div
@@ -531,7 +564,7 @@ function App() {
           return (
             <div
               aria-hidden
-              className="pointer-events-none fixed inset-0 z-0 text-neutral-500 opacity-[0.16] dark:text-neutral-300 dark:opacity-[0.14]"
+              className="pointer-events-none fixed inset-0 z-0 text-neutral-500 opacity-[0.16] dark:text-neutral-500 dark:opacity-[0.14]"
               style={{ backgroundImage: shape.css, backgroundSize: SHAPE_SIZE[shape.id] ?? 'auto' }}
             />
           )
@@ -544,24 +577,47 @@ function App() {
         />
       )}
 
+      {cfg.initiativeEnabled && (
+        <InitiativeDashboard
+          tasks={tasks}
+          items={items}
+          countdowns={countdowns}
+          works={works}
+          streak={streak}
+          onDisable={() => {
+            localStorage.setItem('nivra-initiative', 'false')
+            location.reload()
+          }}
+        />
+      )}
+
+      {!cfg.initiativeEnabled && (
       <div className="relative z-10 flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-200">
-        <aside
-          className={`nivra-scroll fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto overscroll-contain border-r px-3 py-4 md:flex ${line}`}
+        {cfg.themeStyle !== 'barra' && (
+          <aside
+            className={`nivra-scroll fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto overscroll-contain border-r px-3 py-4 md:flex ${line}`}
+          >
+            <span className="font-display mb-7 px-3 text-2xl font-semibold tracking-tight">Nivra</span>
+
+            <Navigation
+              page={page}
+              irA={irA}
+              bankTab={bankTab}
+              setBankTab={setBankTab}
+              bankInitial={bankInitial}
+              bankEnabled={cfg.bankEnabled}
+              themeStyle={cfg.themeStyle}
+            />
+          </aside>
+        )}
+
+        <div
+          className={
+            cfg.themeStyle === 'barra'
+              ? 'flex h-full min-w-0 flex-1 flex-col pb-16'
+              : 'flex h-full min-w-0 flex-1 flex-col md:ml-60'
+          }
         >
-          <span className="font-display mb-7 px-3 text-2xl font-semibold tracking-tight">Nivra</span>
-
-          <Navigation
-            page={page}
-            irA={irA}
-            bankTab={bankTab}
-            setBankTab={setBankTab}
-            bankInitial={bankInitial}
-            bankEnabled={cfg.bankEnabled}
-            themeStyle={cfg.themeStyle}
-          />
-        </aside>
-
-        <div className="flex h-full min-w-0 flex-1 flex-col md:ml-60">
           <header
             className={`flex shrink-0 items-center justify-between gap-2 border-b px-3 py-3 sm:gap-4 sm:px-8 ${line}`}
           >
@@ -601,7 +657,7 @@ function App() {
               </span>
               <p className="hidden min-w-0 items-center gap-2 text-sm md:flex">
                 <span className="text-neutral-400 dark:text-neutral-500">{currentGroup && t(currentGroup.title)}</span>
-                <Icon name="right" className="h-3 w-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
+                <Icon name="right" className="h-3 w-3 shrink-0 text-neutral-500 dark:text-neutral-600" />
                 <span className="truncate font-medium">{currentPage && t(currentPage.label)}</span>
               </p>
             </div>
@@ -733,6 +789,10 @@ function App() {
           </main>
         </div>
 
+        {cfg.themeStyle === 'barra' && (
+          <BottomTaskbar page={page} irA={irA} bankEnabled={cfg.bankEnabled} />
+        )}
+
         {menuOpen && (
           <div className="fixed inset-0 z-30 md:hidden">
             <button
@@ -742,7 +802,7 @@ function App() {
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <div
-              className={`nivra-scroll animate-[fade-in_0.2s_ease-out] absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r bg-[var(--paper)] px-3 py-4 ${line}`}
+              className={`nivra-menu nivra-scroll animate-[fade-in_0.2s_ease-out] absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r bg-[var(--paper)] px-3 py-4 ${line}`}
             >
               <div className="mb-6 flex items-center justify-between px-3">
                 <span className="font-display text-2xl font-semibold tracking-tight">Nivra</span>
@@ -784,48 +844,151 @@ function App() {
           <Toasts toasts={toasts} onClose={(id) => setToasts((prev) => prev.filter((a) => a.id !== id))} />
         )}
 
+        {cfg.ambientOn && ambientVideoId && embedConsent && (
+          <iframe
+            ref={ambientIframe}
+            key={ambientVideoId}
+            src={ambientEmbedUrl(ambientVideoId)}
+            title="ambient"
+            aria-hidden
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="fixed h-px w-px opacity-0"
+            allow="autoplay"
+            loading="lazy"
+          />
+        )}
+
+        {cfg.ambientOn && ambientVideoId && !embedConsent && (
+          <div className="fixed right-4 bottom-24 z-40 flex w-72 flex-col gap-2 rounded-2xl border bg-[var(--surface)] p-3 shadow-lg dark:border-white/10">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              {t(
+                'Este sonido de ambiente se carga desde los servidores de YouTube y puede usar sus propias cookies.',
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => setEmbedConsent(true)}
+              className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-neutral-900"
+            >
+              {t('Cargar sonido de ambiente')}
+            </button>
+          </div>
+        )}
+
         {musicEmbed && musicPlayerOpen && (
-          <div className="fixed bottom-4 left-4 z-40 w-72 overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-lg dark:border-white/10">
-            <div className="flex items-center justify-between px-3 py-1.5">
-              <span className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+          <div className="fixed right-4 bottom-24 z-40 w-72 overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-lg dark:border-white/10">
+            <div className={`flex items-center justify-between gap-1 px-3 py-1.5 ${musicMinimized ? '' : 'border-b'} ${line}`}>
+              <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
                 {t('Tu música')}
               </span>
+              {embedConsent && musicEmbed.provider === 'youtube' && musicMinimized && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'previousVideo')}
+                    aria-label={t('Anterior')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="left" className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'playVideo')}
+                    aria-label={t('Reproducir')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="right" className="h-3.5 w-3.5 rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'pauseVideo')}
+                    aria-label={t('Pausar')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="close" className="h-3.5 w-3.5 -rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'nextVideo')}
+                    aria-label={t('Siguiente')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="right" className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => setMusicMinimized((v) => !v)}
+                aria-label={musicMinimized ? t('Maximizar') : t('Minimizar')}
+                className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+              >
+                <Icon name={musicMinimized ? 'up' : 'down'} className="h-3.5 w-3.5" />
+              </button>
               <button
                 type="button"
                 onClick={() => setMusicPlayerOpen(false)}
                 aria-label={t('Cerrar')}
-                className="text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
               >
                 <Icon name="close" className="h-3.5 w-3.5" />
               </button>
             </div>
-            <iframe
-              key={musicEmbed.url}
-              src={musicEmbed.url}
-              title="music"
-              className="w-full border-0"
-              height={musicEmbed.provider === 'spotify' ? 152 : 160}
-              allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"
-              loading="lazy"
-            />
+            {embedConsent ? (
+              <div className={musicMinimized ? 'h-0 overflow-hidden' : ''}>
+                <iframe
+                  ref={musicIframe}
+                  key={musicEmbed.url}
+                  src={musicEmbed.url}
+                  title={musicEmbed.provider === 'spotify' ? 'Spotify' : 'YouTube'}
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  className="w-full border-0"
+                  height={musicEmbed.provider === 'spotify' ? 152 : 160}
+                  allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 px-3 pb-3">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {t(
+                    'Este reproductor se carga desde los servidores de Spotify o YouTube y puede usar sus propias cookies.',
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setEmbedConsent(true)}
+                  className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-neutral-900"
+                >
+                  {t('Cargar reproductor')}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {settingsOpen && (
-          <Settings
-            cfg={cfg}
-            sync={sync}
-            setSync={setSync}
-            installPrompt={installPrompt}
-            onInstalled={() => setInstallPrompt(null)}
-            onClose={() => setSettingsOpen(false)}
-            onNotify={notify}
-            items={items}
-            anniversaries={anniversaries}
-            blocks={blocks}
-          />
-        )}
       </div>
+      )}
+
+      {settingsOpen && (
+        <Settings
+          cfg={cfg}
+          sync={sync}
+          setSync={setSync}
+          installPrompt={installPrompt}
+          onInstalled={() => setInstallPrompt(null)}
+          onClose={() => setSettingsOpen(false)}
+          onNotify={notify}
+          items={items}
+          anniversaries={anniversaries}
+          blocks={blocks}
+          onActivateInitiative={() => {
+            localStorage.setItem('nivra-initiative', 'true')
+            sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
+            location.reload()
+          }}
+        />
+      )}
     </>
   )
 }
@@ -845,7 +1008,7 @@ function Navigation({
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
   bankEnabled: boolean
-  themeStyle: 'clasico' | 'carpetas'
+  themeStyle: 'clasico' | 'carpetas' | 'barra'
 }) {
   const navItem = (activo: boolean) =>
     `flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
@@ -907,7 +1070,7 @@ function Navigation({
                         <Icon name={p.icon} className="h-5 w-5" />
                       </span>
                     </span>
-                    <span className="max-w-full truncate text-[0.65rem] text-neutral-600 dark:text-neutral-300">
+                    <span className="max-w-full truncate text-[0.65rem] text-neutral-600 dark:text-neutral-500">
                       {t(p.short)}
                     </span>
                   </button>
@@ -948,6 +1111,40 @@ function Navigation({
               </div>
             ))}
           </nav>
+  )
+}
+
+function BottomTaskbar({
+  page,
+  irA,
+  bankEnabled,
+}: {
+  page: PageId
+  irA: (p: PageId) => void
+  bankEnabled: boolean
+}) {
+  return (
+    <nav
+      className={`nivra-scroll fixed inset-x-0 bottom-0 z-20 flex items-center gap-1 overflow-x-auto border-t bg-[var(--paper)] px-2 py-1.5 ${line}`}
+    >
+      {PAGES.filter((p) => p.id !== 'banco' || bankEnabled).map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          onClick={() => irA(p.id)}
+          aria-label={t(p.label)}
+          aria-current={page === p.id}
+          className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[0.6rem] transition-colors ${
+            page === p.id
+              ? 'bg-black/[0.06] font-medium text-neutral-900 dark:bg-white/[0.10] dark:text-white'
+              : 'text-neutral-500 hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
+          }`}
+        >
+          <Icon name={p.icon} className="h-[18px] w-[18px]" />
+          {t(p.short)}
+        </button>
+      ))}
+    </nav>
   )
 }
 

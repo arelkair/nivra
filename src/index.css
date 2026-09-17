@@ -253,6 +253,15 @@ body {
   font-family: 'Fraunces', ui-serif, Georgia, serif;
 }
 
+[data-transparent-menus='true'] .nivra-menu {
+  background-color: color-mix(in oklab, var(--surface) 72%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.font-initiative {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

@@ -297,6 +297,18 @@ export function Editor({
   const savedRange = useRef<Range | null>(null)
   const [bookmarkDialog, setBookmarkDialog] = useState(false)
   const [bookmarksPanel, setBookmarksPanel] = useState(false)
+  const [colorPicker, setColorPicker] = useState(false)
+  const [lastColor, setLastColor] = useState(COLORS[0])
+
+  useEffect(() => {
+    if (!colorPicker) return
+    const close = () => setColorPicker(false)
+    const id = setTimeout(() => addEventListener('click', close), 0)
+    return () => {
+      clearTimeout(id)
+      removeEventListener('click', close)
+    }
+  }, [colorPicker])
 
   const openBookmarkDialog = () => {
     const sel = window.getSelection()
@@ -475,16 +487,35 @@ export function Editor({
 
         <span className={`mx-1 h-6 w-px ${'bg-black/10 dark:bg-white/15'}`} />
 
-        {COLORS.map((c) => (
+        <div className="relative">
           <button
-            key={c}
             type="button"
-            onClick={() => apply('foreColor', c)}
-            aria-label={`Color ${c}`}
-            className="h-6 w-6 rounded-full border border-black/10 transition-transform hover:scale-110 dark:border-white/20"
-            style={{ background: c }}
-          />
-        ))}
+            onClick={() => setColorPicker((v) => !v)}
+            aria-label={t('Color de texto')}
+            aria-pressed={colorPicker}
+            className={`${btnClass} ${line}`}
+          >
+            <span className="h-4 w-4 rounded-full border border-black/10 dark:border-white/20" style={{ background: lastColor }} />
+          </button>
+          {colorPicker && (
+            <div className={`absolute top-full left-0 z-10 mt-1 flex gap-1.5 rounded-xl border bg-[var(--surface)] p-2 shadow-lg ${line}`}>
+              {COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    apply('foreColor', c)
+                    setLastColor(c)
+                    setColorPicker(false)
+                  }}
+                  aria-label={`Color ${c}`}
+                  className="h-6 w-6 shrink-0 rounded-full border border-black/10 transition-transform hover:scale-110 dark:border-white/20"
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         <span className={`mx-1 h-6 w-px ${'bg-black/10 dark:bg-white/15'}`} />
 
@@ -791,7 +822,7 @@ export function Editor({
                   type="button"
                   onClick={() => deleteBookmark(b.id)}
                   aria-label={tp('Eliminar marcador «{0}»', b.title)}
-                  className="shrink-0 rounded-lg p-2 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 rounded-lg p-2 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                 >
                   <Icon name="trash" className="h-3.5 w-3.5" />
                 </button>

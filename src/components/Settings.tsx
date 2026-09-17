@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { exportCsv, exportCalendarIcs, exportTimetableIcs, exportJson, importJson } from '../lib/backup'
+import { exportCsv, exportCalendarIcs, exportTimetableIcs, exportJson, importJson, clearAllData } from '../lib/backup'
 import { askNotificationPermission, notificationPermission, notificationsSupported } from '../lib/notify'
 import type { Settings } from '../lib/settings'
 import { SHORTCUTS, keyOf } from '../lib/shortcuts'
 import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '../lib/store'
 import type { SyncState } from '../lib/sync'
 import { SHAPES, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
+import { playDrop, playPop } from '../lib/sound'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
 import { LANGS, getLang, setLang, t, tp } from '../lib/i18n'
@@ -21,6 +22,7 @@ type Props = {
   items: CalItem[]
   anniversaries: Anniversary[]
   blocks: Block[]
+  onActivateInitiative: () => void
 }
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
@@ -38,12 +40,13 @@ export function Settings({
   items,
   anniversaries,
   blocks,
+  onActivateInitiative,
 }: Props) {
   const [openSection, setOpenSection] = useState<string | null>(null)
   const alterna = (id: string) => setOpenSection((prev) => (prev === id ? null : id))
 
   return (
-    <Modal title={t('Ajustes')} onClose={onClose}>
+    <Modal title={t('Ajustes')} onClose={onClose} size="wide">
       <div className="flex flex-col gap-2">
         <Collapsible title={t('General')} open={openSection === 'general'} animar={cfg.animations} onToggle={() => alterna('general')}>
           <div className="flex flex-col gap-1">
@@ -98,6 +101,12 @@ export function Settings({
               checked={cfg.navButtons}
               onChange={cfg.setNavButtons}
               label={t('Botones de atrás y adelante')}
+            />
+            <Switch
+              checked={cfg.transparentMenus}
+              onChange={cfg.setTransparentMenus}
+              label={t('Menús transparentes')}
+              hint={t('Los paneles y ventanas emergentes se ven algo transparentes, con desenfoque de fondo.')}
             />
             <Switch
               checked={cfg.bankEnabled}
@@ -167,6 +176,25 @@ export function Settings({
           </div>
         </Collapsible>
 
+        <div className="hidden md:block">
+          <Collapsible
+            title={t('Initiative')}
+            open={openSection === 'initiative'}
+            animar={cfg.animations}
+            onToggle={() => alterna('initiative')}
+          >
+            <Switch
+              checked={cfg.initiativeEnabled}
+              onChange={(v) => {
+                cfg.setInitiativeEnabled(v)
+                if (v) onActivateInitiative()
+              }}
+              label={t('Activar Initiative (beta)')}
+              hint={t('Una UI totalmente renovada y con funciones extra.')}
+            />
+          </Collapsible>
+        </div>
+
         <Collapsible
           title={t('Barra Lateral')}
           open={openSection === 'estilo'}
@@ -178,6 +206,7 @@ export function Settings({
               [
                 { id: 'clasico', label: t('Clásico') },
                 { id: 'carpetas', label: t('Carpetas de escritorio') },
+                { id: 'barra', label: t('Barra inferior') },
               ] as const
             ).map((s) => (
               <button
@@ -196,11 +225,16 @@ export function Settings({
                     <div className="h-full w-3 rounded bg-black/20 dark:bg-white/20" />
                     <div className="flex-1 rounded bg-black/[0.06] dark:bg-white/[0.08]" />
                   </div>
-                ) : (
+                ) : s.id === 'carpetas' ? (
                   <div className="grid h-12 w-full grid-cols-3 gap-1">
                     {Array.from({ length: 6 }, (_, i) => (
                       <div key={i} className="rounded bg-black/20 dark:bg-white/20" />
                     ))}
+                  </div>
+                ) : (
+                  <div className="flex h-12 w-full flex-col justify-end gap-1">
+                    <div className="flex-1 rounded bg-black/[0.06] dark:bg-white/[0.08]" />
+                    <div className="h-3 w-full rounded bg-black/20 dark:bg-white/20" />
                   </div>
                 )}
                 <span className="text-xs text-neutral-500 dark:text-neutral-400">{s.label}</span>
@@ -299,7 +333,7 @@ export function Settings({
             {cfg.ambientOn && (
               <>
                 <div className="flex flex-wrap gap-2 py-1 pl-1">
-                  {(['lluvia', 'olas', 'estatico', 'enlace'] as const).map((p) => (
+                  {(['lluvia', 'lluvia-truenos', 'olas', 'fuego', 'estatico', 'enlace'] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
@@ -314,11 +348,15 @@ export function Settings({
                       {t(
                         p === 'lluvia'
                           ? 'Lluvia'
-                          : p === 'olas'
-                            ? 'Olas'
-                            : p === 'estatico'
-                              ? 'Estática'
-                              : 'Tu música',
+                          : p === 'lluvia-truenos'
+                            ? 'Lluvia y truenos'
+                            : p === 'olas'
+                              ? 'Olas'
+                              : p === 'fuego'
+                                ? 'Fuego de hoguera'
+                                : p === 'estatico'
+                                  ? 'Estática'
+                                  : 'Tu música',
                       )}
                     </button>
                   ))}
@@ -334,8 +372,12 @@ export function Settings({
                     />
                     <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
                       {t(
-                        'Admite canciones, álbumes y listas de Spotify, y vídeos o listas de YouTube/YouTube Music. Aparece un reproductor pequeño; Spotify y YouTube no dejan que lo controlemos nosotros, así que tienes que darle a reproducir tú una vez.',
+                        'Admite canciones, álbumes y listas de Spotify, y vídeos o listas de YouTube/YouTube Music. Aparece un reproductor pequeño.',
                       )}
+                    </p>
+                    <VolumeRow value={cfg.ambientVolume} onChange={cfg.setAmbientVolume} label={t('Volumen')} />
+                    <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+                      {t('El volumen solo se puede ajustar en enlaces de YouTube; Spotify no lo permite desde aquí.')}
                     </p>
                   </div>
                 ) : (
@@ -357,6 +399,7 @@ export function Settings({
               const form = ev.currentTarget
               const name = String(new FormData(form).get('name') ?? '').trim()
               if (!name) return
+              playPop()
               cfg.setSubjects((prev) => [
                 ...prev,
                 {
@@ -397,15 +440,18 @@ export function Settings({
                     type="button"
                     onClick={() => cfg.setSubjects((prev) => reorder(prev, i, -1))}
                     aria-label={`Subir ${s.name}`}
-                    className="shrink-0 text-neutral-300 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                    className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
                   >
                     <Icon name="up" className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => cfg.setSubjects((prev) => prev.filter((x) => x.id !== s.id))}
+                    onClick={() => {
+                      playDrop()
+                      cfg.setSubjects((prev) => prev.filter((x) => x.id !== s.id))
+                    }}
                     aria-label={`Eliminar ${s.name}`}
-                    className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                   >
                     <Icon name="trash" className="h-4 w-4" />
                   </button>
@@ -451,6 +497,29 @@ export function Settings({
           animar={cfg.animations} onToggle={() => alterna('copia')}
         >
           <BackupPanel onNotify={onNotify} items={items} anniversaries={anniversaries} blocks={blocks} />
+        </Collapsible>
+
+        <Collapsible
+          title={t('Privacidad y datos')}
+          open={openSection === 'privacidad'}
+          animar={cfg.animations}
+          onToggle={() => alterna('privacidad')}
+        >
+          <ul className="flex flex-col gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+            <li>{t('Nivra no usa cookies ni rastreadores, ni analítica ni publicidad de ningún tipo.')}</li>
+            <li>{t('Todos tus datos se guardan solo en este dispositivo, en el almacenamiento local del navegador.')}</li>
+            <li>
+              {t(
+                'Si activas la sincronización, tus datos se cifran en tu dispositivo antes de enviarse; el servidor (Supabase) solo guarda el resultado cifrado y nunca la clave.',
+              )}
+            </li>
+            <li>
+              {t(
+                'Si pegas un enlace de Spotify o YouTube en los sonidos de ambiente, ese reproductor se carga desde sus propios servidores y puede usar sus propias cookies, según sus condiciones.',
+              )}
+            </li>
+            <li>{t('Puedes exportar o borrar todos tus datos en cualquier momento desde «Exportar o importar datos».')}</li>
+          </ul>
         </Collapsible>
 
         <Collapsible
@@ -554,6 +623,7 @@ function BackupPanel({
   blocks: Block[]
 }) {
   const fileInput = useRef<HTMLInputElement>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   return (
     <div className="flex flex-col gap-2">
@@ -630,6 +700,39 @@ function BackupPanel({
       </div>
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
         {t('Ábrelos con «Importar calendario» en Google Calendar o Apple Calendar.')}
+      </p>
+
+      <p className="mt-3 text-[0.7rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+        {t('Borrar datos')}
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          if (!confirmingDelete) {
+            setConfirmingDelete(true)
+            return
+          }
+          clearAllData()
+          location.reload()
+        }}
+        className={`${confirmingDelete ? button : ghost} w-full !text-red-500`}
+      >
+        <span className="flex items-center justify-center gap-2">
+          <Icon name="trash" className="h-4 w-4" />
+          {confirmingDelete ? t('Confirmar: borrar todo de este dispositivo') : t('Borrar todos los datos')}
+        </span>
+      </button>
+      {confirmingDelete && (
+        <button
+          type="button"
+          onClick={() => setConfirmingDelete(false)}
+          className="text-[0.7rem] text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+        >
+          {t('Cancelar')}
+        </button>
+      )}
+      <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+        {t('Borra permanentemente todos los datos de Nivra guardados en este navegador. No afecta a otros dispositivos con los que hayas sincronizado.')}
       </p>
     </div>
   )
@@ -878,7 +981,7 @@ function ShortcutKeys({ cfg, onNotify }: { cfg: Settings; onNotify: (t: string) 
                   })
                 }
                 aria-label={`Restaurar tecla de ${a.label}`}
-                className="shrink-0 text-neutral-300 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
               >
                 <Icon name="close" className="h-3.5 w-3.5" />
               </button>

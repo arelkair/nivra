@@ -3,6 +3,7 @@ import { dateKey, eur, shortDate, weekIndex, type Goal, type Movement } from '..
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, Segmented, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
+import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
   goals: Goal[]
@@ -38,6 +39,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
   const ideas = goals.filter((g) => g.kind === 'idea')
 
   const remove = (id: string) => {
+    playDrop()
     const before = goals
     const title = goals.find((g) => g.id === id)?.title ?? ''
     setGoals((prev) => prev.filter((g) => g.id !== id))
@@ -73,7 +75,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                       type="button"
                       onClick={() => remove(g.id)}
                       aria-label={`Eliminar ${savingGoal.title}`}
-                      className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                      className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                     >
                       <Icon name="trash" className="h-4 w-4" />
                     </button>
@@ -118,7 +120,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                       type="button"
                       onClick={() => remove(g.id)}
                       aria-label={`Eliminar ${limit.title}`}
-                      className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                      className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                     >
                       <Icon name="trash" className="h-4 w-4" />
                     </button>
@@ -162,7 +164,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                     type="button"
                     onClick={() => remove(g.id)}
                     aria-label={`Eliminar ${idea.title}`}
-                    className="shrink-0 text-neutral-300 transition-colors hover:text-red-500 dark:text-neutral-600"
+                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
                   >
                     <Icon name="trash" className="h-4 w-4" />
                   </button>
@@ -184,6 +186,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
               const data = new FormData(ev.currentTarget)
               const title = String(data.get('title') ?? '').trim()
               if (!title) return
+              playPop()
               const id = crypto.randomUUID()
 
               if (goalKind === 'idea') {
