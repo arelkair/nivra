@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Icon } from '../components/ui'
 import { LANGS, getLang, setLang, t } from '../lib/i18n'
 
@@ -8,8 +9,9 @@ const FEATURES = [
   { icon: 'dashboard', title: 'Privado', desc: 'Todo en tu navegador.' },
 ]
 
-export function SetupScreen({ onDone, delay }: { onDone: () => void; delay: number }) {
+export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void; delay: number }) {
   const lang = getLang()
+  const [name, setName] = useState('')
 
   return (
     <div className="flex min-h-svh items-center bg-[var(--paper)] px-6 py-16 text-neutral-900 sm:px-10  dark:text-neutral-200">
@@ -66,15 +68,34 @@ export function SetupScreen({ onDone, delay }: { onDone: () => void; delay: numb
           ))}
         </ul>
 
-        <button
-          type="button"
-          onClick={onDone}
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault()
+            onDone(name.trim())
+          }}
           style={{ animationDelay: `${delay + 0.55}s` }}
-          className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex w-full items-center justify-between rounded-2xl bg-neutral-900 px-6 py-4 text-white transition-opacity hover:opacity-80 active:scale-[.99] sm:w-fit sm:gap-16 dark:bg-neutral-100 dark:text-neutral-900"
+          className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3"
         >
-          {t('Entrar')}
-          <Icon name="right" className="h-4 w-4" />
-        </button>
+          <label className="flex flex-col gap-2">
+            <span className="text-[0.68rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+              {t('¿Cuál es tu nombre?')}
+            </span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={30}
+              autoComplete="given-name"
+              className="w-full rounded-xl border border-black/[0.07] bg-[var(--sunken)] px-4 py-3 text-base outline-none transition-colors focus:border-neutral-400 dark:border-white/[0.08] dark:focus:border-neutral-600"
+            />
+          </label>
+          <button
+            type="submit"
+            className="flex w-full items-center justify-between rounded-2xl bg-neutral-900 px-6 py-4 text-white transition-opacity hover:opacity-80 active:scale-[.99] sm:w-fit sm:gap-16 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            {t('Continuar')}
+            <Icon name="right" className="h-4 w-4" />
+          </button>
+        </form>
       </div>
     </div>
   )

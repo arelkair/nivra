@@ -263,6 +263,13 @@ body {
   backdrop-filter: blur(var(--menu-blur));
 }
 
+.initiative-mode body,
+.initiative-mode .font-mono,
+.initiative-mode .font-display,
+.initiative-mode .font-initiative {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
 .font-initiative {
   font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 }

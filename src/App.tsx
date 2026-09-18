@@ -177,6 +177,10 @@ function App() {
   }, [])
 
   useEffect(() => {
+    document.documentElement.classList.toggle('initiative-mode', cfg.initiativeEnabled)
+  }, [cfg.initiativeEnabled])
+
+  useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const i = (e.state as { nivra?: number } | null)?.nivra
       if (typeof i !== 'number') return
@@ -408,7 +412,7 @@ function App() {
     () => [...specialDays, ...countdowns.map((c) => c.target.slice(0, 10))],
     [specialDays, countdowns],
   )
-  const subscriptionDays = useMemo(() => subs.map((s) => s.day), [subs])
+  const subscriptionDays = useMemo(() => subs.filter((s) => !s.paused).map((s) => s.day), [subs])
   const todayKey = dateKey(new Date())
   const remindersHoy = useMemo(
     () => reminders.filter((r) => r.date === todayKey),
@@ -416,7 +420,10 @@ function App() {
   )
 
   useEffect(() => {
-    const dueCharges = duePayments(subs, new Date())
+    const dueCharges = duePayments(
+      subs.filter((x) => !x.paused),
+      new Date(),
+    )
     if (dueCharges.length === 0) return
     setMovements((prev) => [
       ...dueCharges
@@ -582,7 +589,8 @@ function App() {
         {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
         <SetupScreen
           delay={cfg.intro ? 2.25 : 0}
-          onDone={() => {
+          onDone={(name) => {
+            cfg.setUserName(name)
             localStorage.setItem(SETUP_KEY, '1')
             setSetupDone(true)
           }}
@@ -662,8 +670,44 @@ function App() {
           tasks={tasks}
           items={items}
           countdowns={countdowns}
+          setCountdowns={setCountdowns}
+          userName={cfg.userName}
+          setUserName={cfg.setUserName}
           works={works}
           streak={streak}
+          setStreak={setStreak}
+          grades={grades}
+          setGrades={setGrades}
+          bankEnabled={cfg.bankEnabled}
+          bankInitial={bankInitial}
+          setBankInitial={setBankInitial}
+          movements={movements}
+          setMovements={setMovements}
+          subs={subs}
+          setSubs={setSubs}
+          wishes={wishes}
+          setWishes={setWishes}
+          goals={goals}
+          setGoals={setGoals}
+          blocks={blocks}
+          setBlocks={setBlocks}
+          profiles={profiles}
+          setProfiles={setProfiles}
+          activeProfile={profile}
+          setActiveProfile={setProfile}
+          setWorks={setWorks}
+          subjects={cfg.subjects}
+          setTasks={setTasks}
+          setEvents={setEvents}
+          notepads={notepads}
+          freeDays={freeDays}
+          setFreeDays={setFreeDays}
+          specialDays={specialDays}
+          setSpecialDays={setSpecialDays}
+          autoSpecial={allSpecialDays}
+          subDays={subscriptionDays}
+          anniversaries={anniversaries}
+          setAnniversaries={setAnniversaries}
           onDisable={() => {
             localStorage.setItem('nivra-initiative', 'false')
             location.reload()
@@ -923,19 +967,6 @@ function App() {
         )}
 
         {isBirthday && <Confetti />}
-        {cfg.toasts && (
-          <Toasts
-            toasts={toasts}
-            onClose={(id) => setToasts((prev) => prev.filter((a) => a.id !== id))}
-            offsetBottom={
-              musicEmbed && musicPlayerOpen && cfg.backgroundMode !== 'video'
-                ? musicMinimized
-                  ? 160
-                  : 220
-                : 16
-            }
-          />
-        )}
 
         {cfg.ambientOn && ambientVideoId && embedConsent && (
           <iframe
@@ -1112,6 +1143,20 @@ function App() {
 
       </div>
       )}
+
+    {cfg.toasts && (
+      <Toasts
+        toasts={toasts}
+        onClose={(id) => setToasts((prev) => prev.filter((a) => a.id !== id))}
+        offsetBottom={
+          !cfg.initiativeEnabled && musicEmbed && musicPlayerOpen && cfg.backgroundMode !== 'video'
+            ? musicMinimized
+              ? 160
+              : 220
+            : 16
+        }
+      />
+    )}
 
       {settingsOpen && (
         <Settings

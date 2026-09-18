@@ -206,7 +206,7 @@ export function Settings({
           </div>
         </Collapsible>
 
-        <div className="hidden md:block">
+        <div>
           <Collapsible
             title={t('Initiative')}
             open={openSection === 'initiative'}

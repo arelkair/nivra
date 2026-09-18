@@ -72,6 +72,7 @@ export type Subscription = {
   price: number
   day: number
   lastCharged?: string
+  paused?: boolean
 }
 
 export type Goal =
@@ -118,6 +119,8 @@ export type Wish = {
   desc?: string
   price?: number
   url?: string
+  priority?: 'alta' | 'media' | 'baja'
+  bought?: string
 }
 
 export type Grade = {
