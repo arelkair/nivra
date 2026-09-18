@@ -5,7 +5,7 @@ import type { Settings } from '../lib/settings'
 import { SHORTCUTS, keyOf } from '../lib/shortcuts'
 import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '../lib/store'
 import type { SyncState } from '../lib/sync'
-import { SHAPES, GRADIENTS, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
+import { SHAPES, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
 import { playDrop, playPop } from '../lib/sound'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
@@ -22,7 +22,6 @@ type Props = {
   items: CalItem[]
   anniversaries: Anniversary[]
   blocks: Block[]
-  onEditDashboard: () => void
   onActivateInitiative: () => void
 }
 
@@ -41,7 +40,6 @@ export function Settings({
   items,
   anniversaries,
   blocks,
-  onEditDashboard,
   onActivateInitiative,
 }: Props) {
   const [openSection, setOpenSection] = useState<string | null>(null)
@@ -112,6 +110,12 @@ export function Settings({
               <VolumeRow value={cfg.menuOpacity} onChange={cfg.setMenuOpacity} label={t('Opacidad')} />
               <VolumeRow value={cfg.menuBlur} onChange={cfg.setMenuBlur} label={t('Desenfoque')} />
             </div>
+            <Switch
+              checked={cfg.transparentMenus}
+              onChange={cfg.setTransparentMenus}
+              label={t('Menús transparentes')}
+              hint={t('Los paneles y ventanas emergentes se ven algo transparentes, con desenfoque de fondo.')}
+            />
             <Switch
               checked={cfg.bankEnabled}
               onChange={cfg.setBankEnabled}
@@ -206,7 +210,7 @@ export function Settings({
           </div>
         </Collapsible>
 
-        <div>
+        <div className="hidden md:block">
           <Collapsible
             title={t('Initiative')}
             open={openSection === 'initiative'}

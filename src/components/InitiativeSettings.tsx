@@ -2,17 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Icon } from './ui'
 import { t } from '../lib/i18n'
 
-export function InitiativeSettings({
-  onClose,
-  onDisable,
-  name,
-  onName,
-}: {
-  onClose: () => void
-  onDisable: () => void
-  name: string
-  onName: (name: string) => void
-}) {
+export function InitiativeSettings({ onClose, onDisable }: { onClose: () => void; onDisable: () => void }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     ref.current?.showModal()
@@ -36,16 +26,6 @@ export function InitiativeSettings({
           <Icon name="close" className="h-5 w-5" />
         </button>
       </div>
-
-      <label className="mb-4 flex flex-col gap-1.5">
-        <span className="text-xs text-neutral-500">{t('¿Cuál es tu nombre?')}</span>
-        <input
-          value={name}
-          onChange={(e) => onName(e.target.value)}
-          maxLength={30}
-          className="w-full rounded-xl border border-black/[0.1] bg-transparent px-3 py-2 text-base outline-none focus:border-black/40 sm:text-sm"
-        />
-      </label>
 
       <p className="mb-4 text-sm text-neutral-500">
         {t('Initiative sigue en fase beta. Por ahora, esto es todo lo que puedes ajustar aquí.')}

@@ -27,9 +27,8 @@ import { SHORTCUTS, isTyping, keyOf } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
 import { registerNotifier } from './lib/undo'
 import { playTick, startAmbient, stopAmbient, setAmbientVolume as applyAmbientVolume } from './lib/sound'
-import { SHAPES, SHAPE_SIZE, GRADIENTS, loadBackgroundImage, onBackgroundImageChange } from './lib/background'
+import { SHAPES, SHAPE_SIZE, loadBackgroundImage, onBackgroundImageChange } from './lib/background'
 import { parseMusicUrl, sendYoutubeCommand } from './lib/media'
-import { attachYoutubePlayer, type YTPlayer } from './lib/youtubePlayer'
 import { AMBIENT_VIDEOS, ambientEmbedUrl, type AmbientVideoPreset } from './lib/ambientVideos'
 import {
   EXPENSE_CATS,
@@ -137,12 +136,6 @@ const DAY_END = 20
 const isDaytime = (d: Date) => d.getHours() >= DAY_START && d.getHours() < DAY_END
 
 const isAmbientVideoPreset = (p: string): p is AmbientVideoPreset => p in AMBIENT_VIDEOS
-
-const formatTime = (seconds: number) => {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
 
 const headerButton =
   'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-black/[0.07] text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 disabled:opacity-30 disabled:hover:bg-transparent dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
@@ -255,43 +248,10 @@ function App() {
   const musicEmbed =
     cfg.ambientOn && cfg.ambientPreset === 'enlace' ? parseMusicUrl(cfg.customSoundUrl) : null
   const [embedConsent, setEmbedConsent] = useStored('nivra-embed-consent', false)
-  const ytPlayerRef = useRef<YTPlayer | null>(null)
-  const [musicPlaying, setMusicPlaying] = useState(false)
-  const [musicTime, setMusicTime] = useState(0)
-  const [musicDuration, setMusicDuration] = useState(0)
-
+  const musicIframe = useRef<HTMLIFrameElement>(null)
   useEffect(() => {
-    ytPlayerRef.current = null
-    setMusicPlaying(false)
-    setMusicTime(0)
-    setMusicDuration(0)
-    if (musicEmbed?.provider !== 'youtube' || !embedConsent) return
-    let cancelled = false
-    attachYoutubePlayer('nivra-music-player').then((player) => {
-      if (cancelled) return
-      ytPlayerRef.current = player
-      player.setVolume(cfg.ambientVolume)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [musicEmbed?.url, embedConsent])
-
-  useEffect(() => {
-    if (musicEmbed?.provider !== 'youtube') return
-    const id = setInterval(() => {
-      const player = ytPlayerRef.current
-      if (!player) return
-      setMusicPlaying(player.getPlayerState() === 1)
-      setMusicTime(player.getCurrentTime() || 0)
-      setMusicDuration(player.getDuration() || 0)
-    }, 500)
-    return () => clearInterval(id)
-  }, [musicEmbed?.provider])
-
-  useEffect(() => {
-    ytPlayerRef.current?.setVolume(cfg.ambientVolume)
-  }, [cfg.ambientVolume])
+    if (musicEmbed?.provider === 'youtube') sendYoutubeCommand(musicIframe.current, 'setVolume', [cfg.ambientVolume])
+  }, [cfg.ambientVolume, musicEmbed?.provider])
 
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   useEffect(() => {
@@ -359,9 +319,9 @@ function App() {
     else document.documentElement.dataset.themePack = cfg.themePack
   }, [cfg.themePack])
   useEffect(() => {
-    document.documentElement.style.setProperty('--menu-opacity', `${cfg.menuOpacity}%`)
-    document.documentElement.style.setProperty('--menu-blur', `${(cfg.menuBlur / 100) * 24}px`)
-  }, [cfg.menuOpacity, cfg.menuBlur])
+    if (cfg.transparentMenus) document.documentElement.dataset.transparentMenus = 'true'
+    else delete document.documentElement.dataset.transparentMenus
+  }, [cfg.transparentMenus])
 
   const [events, setEvents] = useStored<NivraEvent[]>('nivra-events', [])
   const [tasks, setTasks] = useStored<Task[]>('nivra-tasks', [])
@@ -641,73 +601,14 @@ function App() {
           style={{ backgroundImage: `url(${backgroundUrl})` }}
         />
       )}
-      {cfg.themePack === 'ninguno' && cfg.backgroundMode === 'degradado' && (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-0 opacity-20"
-          style={{ background: GRADIENTS.find((g) => g.id === cfg.backgroundGradient)?.css }}
-        />
-      )}
-      {cfg.themePack === 'ninguno' &&
-        cfg.backgroundMode === 'video' &&
-        musicEmbed?.provider === 'youtube' &&
-        embedConsent && (
-          <iframe
-            id="nivra-music-player"
-            key={musicEmbed.url}
-            src={musicEmbed.url}
-            title={t('Fondo de vídeo')}
-            aria-hidden
-            referrerPolicy="strict-origin-when-cross-origin"
-            className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-70"
-            allow="autoplay; encrypted-media"
-            loading="lazy"
-          />
-        )}
 
       {cfg.initiativeEnabled && (
         <InitiativeDashboard
           tasks={tasks}
           items={items}
           countdowns={countdowns}
-          setCountdowns={setCountdowns}
-          userName={cfg.userName}
-          setUserName={cfg.setUserName}
           works={works}
           streak={streak}
-          setStreak={setStreak}
-          grades={grades}
-          setGrades={setGrades}
-          bankEnabled={cfg.bankEnabled}
-          bankInitial={bankInitial}
-          setBankInitial={setBankInitial}
-          movements={movements}
-          setMovements={setMovements}
-          subs={subs}
-          setSubs={setSubs}
-          wishes={wishes}
-          setWishes={setWishes}
-          goals={goals}
-          setGoals={setGoals}
-          blocks={blocks}
-          setBlocks={setBlocks}
-          profiles={profiles}
-          setProfiles={setProfiles}
-          activeProfile={profile}
-          setActiveProfile={setProfile}
-          setWorks={setWorks}
-          subjects={cfg.subjects}
-          setTasks={setTasks}
-          setEvents={setEvents}
-          notepads={notepads}
-          freeDays={freeDays}
-          setFreeDays={setFreeDays}
-          specialDays={specialDays}
-          setSpecialDays={setSpecialDays}
-          autoSpecial={allSpecialDays}
-          subDays={subscriptionDays}
-          anniversaries={anniversaries}
-          setAnniversaries={setAnniversaries}
           onDisable={() => {
             localStorage.setItem('nivra-initiative', 'false')
             location.reload()
@@ -729,7 +630,7 @@ function App() {
               bankTab={bankTab}
               setBankTab={setBankTab}
               bankInitial={bankInitial}
-              flags={navFlags}
+              bankEnabled={cfg.bankEnabled}
               themeStyle={cfg.themeStyle}
             />
           </aside>
@@ -917,7 +818,7 @@ function App() {
         </div>
 
         {cfg.themeStyle === 'barra' && (
-          <BottomTaskbar page={page} irA={irA} flags={navFlags} />
+          <BottomTaskbar page={page} irA={irA} bankEnabled={cfg.bankEnabled} />
         )}
 
         {menuOpen && (
@@ -982,6 +883,20 @@ function App() {
           />
         )}
 
+        {cfg.ambientOn && ambientVideoId && embedConsent && (
+          <iframe
+            ref={ambientIframe}
+            key={ambientVideoId}
+            src={ambientEmbedUrl(ambientVideoId)}
+            title="ambient"
+            aria-hidden
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="fixed h-px w-px opacity-0"
+            allow="autoplay"
+            loading="lazy"
+          />
+        )}
+
         {cfg.ambientOn && ambientVideoId && !embedConsent && (
           <div className="fixed right-4 bottom-24 z-40 flex w-72 flex-col gap-2 rounded-2xl border bg-[var(--surface)] p-3 shadow-lg dark:border-white/10">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -999,120 +914,69 @@ function App() {
           </div>
         )}
 
-        {musicEmbed && musicPlayerOpen && cfg.backgroundMode !== 'video' && (
-          <div className="fixed right-4 bottom-4 z-40 w-72 overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-lg dark:border-white/10">
-            {showMiniPlayer ? (
-              <div className="flex flex-col gap-1.5 p-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
-                    {t('Tu música')}
-                  </span>
+        {musicEmbed && musicPlayerOpen && (
+          <div className="fixed right-4 bottom-24 z-40 w-72 overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-lg dark:border-white/10">
+            <div className={`flex items-center justify-between gap-1 px-3 py-1.5 ${musicMinimized ? '' : 'border-b'} ${line}`}>
+              <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+                {t('Tu música')}
+              </span>
+              {embedConsent && musicEmbed.provider === 'youtube' && musicMinimized && (
+                <>
                   <button
                     type="button"
-                    onClick={() => setMusicMinimized(false)}
-                    aria-label={t('Maximizar')}
-                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-                  >
-                    <Icon name="up" className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMusicPlayerOpen(false)}
-                    aria-label={t('Cerrar')}
-                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-                  >
-                    <Icon name="close" className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const ratio = (e.clientX - rect.left) / rect.width
-                    if (musicDuration > 0) ytPlayerRef.current?.seekTo(ratio * musicDuration, true)
-                  }}
-                  aria-label={t('Avanzar en el vídeo')}
-                  className="group relative h-1.5 w-full rounded-full bg-black/[0.08] dark:bg-white/[0.12]"
-                >
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-full bg-neutral-900 dark:bg-white"
-                    style={{ width: `${musicDuration > 0 ? (musicTime / musicDuration) * 100 : 0}%` }}
-                  />
-                </button>
-                <div className="flex items-center justify-between font-mono text-[0.6rem] text-neutral-400 dark:text-neutral-500">
-                  <span>{formatTime(musicTime)}</span>
-                  <span>{formatTime(musicDuration)}</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => ytPlayerRef.current?.previousVideo()}
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'previousVideo')}
                     aria-label={t('Anterior')}
-                    className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-white"
-                  >
-                    <Icon name="left" className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      musicPlaying ? ytPlayerRef.current?.pauseVideo() : ytPlayerRef.current?.playVideo()
-                    }
-                    aria-label={musicPlaying ? t('Pausar') : t('Reproducir')}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-                  >
-                    <Icon name={musicPlaying ? 'pause' : 'play'} className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => ytPlayerRef.current?.nextVideo()}
-                    aria-label={t('Siguiente')}
-                    className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-white"
-                  >
-                    <Icon name="right" className="h-4 w-4" />
-                  </button>
-                  <Icon name="volume" className="ml-1 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={cfg.ambientVolume}
-                    onChange={(e) => cfg.setAmbientVolume(Number(e.target.value))}
-                    aria-label={t('Volumen')}
-                    className="h-1 flex-1 accent-neutral-800 dark:accent-white"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className={`flex items-center justify-between gap-1 px-3 py-1.5 ${line} border-b`}>
-                <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
-                  {t('Tu música')}
-                </span>
-                {embedConsent && musicEmbed.provider === 'youtube' && (
-                  <button
-                    type="button"
-                    onClick={() => setMusicMinimized(true)}
-                    aria-label={t('Minimizar')}
                     className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
                   >
-                    <Icon name="down" className="h-3.5 w-3.5" />
+                    <Icon name="left" className="h-3.5 w-3.5" />
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setMusicPlayerOpen(false)}
-                  aria-label={t('Cerrar')}
-                  className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-                >
-                  <Icon name="close" className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'playVideo')}
+                    aria-label={t('Reproducir')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="right" className="h-3.5 w-3.5 rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'pauseVideo')}
+                    aria-label={t('Pausar')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="close" className="h-3.5 w-3.5 -rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendYoutubeCommand(musicIframe.current, 'nextVideo')}
+                    aria-label={t('Siguiente')}
+                    className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                  >
+                    <Icon name="right" className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => setMusicMinimized((v) => !v)}
+                aria-label={musicMinimized ? t('Maximizar') : t('Minimizar')}
+                className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+              >
+                <Icon name={musicMinimized ? 'up' : 'down'} className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMusicPlayerOpen(false)}
+                aria-label={t('Cerrar')}
+                className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+              >
+                <Icon name="close" className="h-3.5 w-3.5" />
+              </button>
+            </div>
             {embedConsent ? (
-              <div className={showMiniPlayer ? 'h-0 overflow-hidden' : ''}>
+              <div className={musicMinimized ? 'h-0 overflow-hidden' : ''}>
                 <iframe
-                  id="nivra-music-player"
+                  ref={musicIframe}
                   key={musicEmbed.url}
                   src={musicEmbed.url}
                   title={musicEmbed.provider === 'spotify' ? 'Spotify' : 'YouTube'}
@@ -1120,6 +984,7 @@ function App() {
                   className="w-full border-0"
                   height={musicEmbed.provider === 'spotify' ? 152 : 160}
                   allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"
+                  loading="lazy"
                 />
               </div>
             ) : (
@@ -1144,20 +1009,6 @@ function App() {
       </div>
       )}
 
-    {cfg.toasts && (
-      <Toasts
-        toasts={toasts}
-        onClose={(id) => setToasts((prev) => prev.filter((a) => a.id !== id))}
-        offsetBottom={
-          !cfg.initiativeEnabled && musicEmbed && musicPlayerOpen && cfg.backgroundMode !== 'video'
-            ? musicMinimized
-              ? 160
-              : 220
-            : 16
-        }
-      />
-    )}
-
       {settingsOpen && (
         <Settings
           cfg={cfg}
@@ -1170,23 +1021,11 @@ function App() {
           items={items}
           anniversaries={anniversaries}
           blocks={blocks}
-          onEditDashboard={() => {
-            setSettingsOpen(false)
-            setDashboardEditorOpen(true)
-          }}
           onActivateInitiative={() => {
             localStorage.setItem('nivra-initiative', 'true')
             sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
             location.reload()
           }}
-        />
-      )}
-
-      {dashboardEditorOpen && (
-        <DashboardEditor
-          slots={cfg.dashboardSlots}
-          setSlots={cfg.setDashboardSlots}
-          onClose={() => setDashboardEditorOpen(false)}
         />
       )}
     </>
@@ -1207,7 +1046,7 @@ function Navigation({
   bankTab: BankTab
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
-  flags: { bankEnabled: boolean; labEnabled: boolean }
+  bankEnabled: boolean
   themeStyle: 'clasico' | 'carpetas' | 'barra'
 }) {
   const navItem = (activo: boolean) =>
@@ -1321,17 +1160,17 @@ function Navigation({
 function BottomTaskbar({
   page,
   irA,
-  flags,
+  bankEnabled,
 }: {
   page: PageId
   irA: (p: PageId) => void
-  flags: { bankEnabled: boolean; labEnabled: boolean }
+  bankEnabled: boolean
 }) {
   return (
     <nav
-      className={`nivra-menu nivra-scroll fixed inset-x-0 bottom-0 z-20 flex items-center justify-center gap-1 overflow-x-auto border-t bg-[var(--paper)] px-2 py-1.5 ${line}`}
+      className={`nivra-scroll fixed inset-x-0 bottom-0 z-20 flex items-center gap-1 overflow-x-auto border-t bg-[var(--paper)] px-2 py-1.5 ${line}`}
     >
-      {PAGES.filter((p) => pageAvailable(p.id, flags)).map((p) => (
+      {PAGES.filter((p) => p.id !== 'banco' || bankEnabled).map((p) => (
         <button
           key={p.id}
           type="button"

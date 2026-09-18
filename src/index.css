@@ -253,21 +253,9 @@ body {
   font-family: 'Fraunces', ui-serif, Georgia, serif;
 }
 
-:root {
-  --menu-opacity: 100%;
-  --menu-blur: 0px;
-}
-
-.nivra-menu {
-  background-color: color-mix(in oklab, var(--surface) var(--menu-opacity), transparent);
-  backdrop-filter: blur(var(--menu-blur));
-}
-
-.initiative-mode body,
-.initiative-mode .font-mono,
-.initiative-mode .font-display,
-.initiative-mode .font-initiative {
-  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+[data-transparent-menus='true'] .nivra-menu {
+  background-color: color-mix(in oklab, var(--surface) 72%, transparent);
+  backdrop-filter: blur(16px);
 }
 
 .font-initiative {

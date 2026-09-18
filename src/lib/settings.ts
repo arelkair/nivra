@@ -14,8 +14,7 @@ export function useSettings() {
   const [searchOn, setSearchOn] = useStored('nivra-search', true)
   const [animations, setAnimations] = useStored('nivra-animations', true)
   const [navButtons, setNavButtons] = useStored('nivra-nav-buttons', true)
-  const [menuOpacity, setMenuOpacity] = useStored('nivra-menu-opacity', 100)
-  const [menuBlur, setMenuBlur] = useStored('nivra-menu-blur', 0)
+  const [transparentMenus, setTransparentMenus] = useStored('nivra-transparent-menus', false)
   const [bankEnabled, setBankEnabled] = useStored('nivra-bank-enabled', true)
   const [labEnabled, setLabEnabled] = useStored('nivra-lab-enabled', false)
   const [examCountdowns, setExamCountdowns] = useStored('nivra-exam-countdowns', false)
@@ -47,7 +46,6 @@ export function useSettings() {
     'nivra-theme-pack',
     'ninguno',
   )
-  const [userName, setUserName] = useStored('nivra-name', '')
   const [initiativeEnabled, setInitiativeEnabled] = useStored('nivra-initiative', false)
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
@@ -78,10 +76,8 @@ export function useSettings() {
     setAnimations,
     navButtons,
     setNavButtons,
-    menuOpacity,
-    setMenuOpacity,
-    menuBlur,
-    setMenuBlur,
+    transparentMenus,
+    setTransparentMenus,
     bankEnabled,
     setBankEnabled,
     labEnabled,
@@ -116,8 +112,6 @@ export function useSettings() {
     setThemeStyle,
     themePack,
     setThemePack,
-    userName,
-    setUserName,
     initiativeEnabled,
     setInitiativeEnabled,
     shortcutsOn,

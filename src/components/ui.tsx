@@ -365,7 +365,7 @@ export function Modal({
       ref={ref}
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
       onClick={(e) => e.target === ref.current && onClose()}
-      className={`nivra-menu m-auto flex max-h-[85vh] flex-col ${size === 'wide' ? 'w-[min(100%-1.5rem,44rem)]' : 'w-[min(100%-1.5rem,30rem)]'} rounded-3xl border bg-[var(--surface)] p-5 text-neutral-800 backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-7 ${line} dark:text-neutral-100`}
+      className={`nivra-menu m-auto ${size === 'wide' ? 'w-[min(100%-1.5rem,44rem)]' : 'w-[min(100%-1.5rem,30rem)]'} rounded-3xl border bg-[var(--surface)] p-5 text-neutral-800 backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-7 ${line} dark:text-neutral-100`}
     >
       <div className="mb-5 flex shrink-0 items-start justify-between gap-4">
         <h3 className="mr-auto text-lg font-semibold first-letter:uppercase sm:text-xl">{title}</h3>

@@ -193,13 +193,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                       <button
                         type="button"
                         onClick={() => setEditingItem(b)}
-                        style={{
-                          color: b.textColor ?? undefined,
-                          background: b.textBg ?? undefined,
-                        }}
-                        className={`mt-0.5 block w-full truncate rounded-lg px-1.5 py-0.5 text-left text-sm ${
-                          !b.textColor && b.color ? textOn(b.color) : ''
-                        }`}
+                        className={`mt-0.5 w-full truncate text-left text-sm ${b.color ? textOn(b.color) : ''}`}
                         title={t('Editar')}
                       >
                         {b.title}
@@ -237,10 +231,10 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
               const lateNight = data.get('lateNight') === 'on'
-              const colors = readColors(data)
+              const color = data.get('useColor') === 'on' ? String(data.get('color') ?? '') : undefined
               setBlocks((prev) => [
                 ...prev,
-                { id: crypto.randomUUID(), day: dayIndex, start, end, title, profile: active, lateNight, ...colors },
+                { id: crypto.randomUUID(), day: dayIndex, start, end, title, profile: active, lateNight, color },
               ])
               setAdding(null)
             }}
@@ -279,7 +273,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
               {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
             </p>
-            <BlockColorFields />
+            <BlockColorField />
             <button type="submit" className={`${button} mt-2`}>
               {t('Añadir')}
             </button>
@@ -300,11 +294,11 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
               const lateNight = data.get('lateNight') === 'on'
-              const colors = readColors(data)
+              const color = data.get('useColor') === 'on' ? String(data.get('color') ?? '') : undefined
               setBlocks((prev) =>
                 prev.map((x) =>
                   x.id === editingItem.id
-                    ? { ...x, title, start, end, day: dayIndex, lateNight, ...colors }
+                    ? { ...x, title, start, end, day: dayIndex, lateNight, color }
                     : x,
                 ),
               )
@@ -356,7 +350,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
               {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
             </p>
-            <BlockColorFields initial={editingItem} />
+            <BlockColorField initial={editingItem.color} />
             <button type="submit" className={`${button} mt-2`}>
               {t('Guardar')}
             </button>
@@ -432,64 +426,29 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
   )
 }
 
-function ColorField({
-  name,
-  label,
-  initial,
-  fallback,
-}: {
-  name: string
-  label: string
-  initial?: string
-  fallback: string
-}) {
-  const [use, setUse] = useState(!!initial)
+function BlockColorField({ initial }: { initial?: string }) {
+  const [useColor, setUseColor] = useState(!!initial)
   return (
     <div className="mt-1 flex items-center gap-2">
-      <label className="flex flex-1 items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+      <label className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
         <input
-          name={`use-${name}`}
+          name="useColor"
           type="checkbox"
-          checked={use}
-          onChange={(e) => setUse(e.target.checked)}
+          checked={useColor}
+          onChange={(e) => setUseColor(e.target.checked)}
           className="h-4 w-4 rounded"
         />
-        {label}
+        {t('Color del bloque')}
       </label>
-      {use && (
+      {useColor && (
         <input
-          name={name}
+          name="color"
           type="color"
-          defaultValue={initial ?? fallback}
-          aria-label={label}
+          defaultValue={initial ?? '#3b82f6'}
+          aria-label={t('Color del bloque')}
           className="h-7 w-7 cursor-pointer rounded-lg border-0 bg-transparent p-0"
         />
       )}
-    </div>
-  )
-}
-
-function BlockColorFields({ initial }: { initial?: Block }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <ColorField
-        name="color"
-        label={t('Color del bloque')}
-        initial={initial?.color}
-        fallback="#3b82f6"
-      />
-      <ColorField
-        name="textColor"
-        label={t('Color del texto')}
-        initial={initial?.textColor}
-        fallback="#ffffff"
-      />
-      <ColorField
-        name="textBg"
-        label={t('Color del recuadro del texto')}
-        initial={initial?.textBg}
-        fallback="#1e3a8a"
-      />
     </div>
   )
 }
