@@ -72,6 +72,31 @@ const EN: Record<string, string> = {
   'Fondo de vídeo': 'Video background',
   'Avanzar en el vídeo': 'Seek video',
   'Configurar dashboard': 'Configure dashboard',
+  Initiative: 'Initiative',
+  'Activar Initiative (beta)': 'Enable Initiative (beta)',
+  'Una UI totalmente renovada y con funciones extra.': 'A fully revamped UI with extra features.',
+  'Cargando Initiative.': 'Loading Initiative.',
+  Continuar: 'Continue',
+  'Próximamente en Initiative.': 'Coming soon to Initiative.',
+  'Colores, fondo, sonidos, temas e Initiative no se sincronizan; el resto de tus datos (asignaturas, tareas, notas…) sí.':
+    "Colours, background, sounds, themes and Initiative are not synced; the rest of your data (subjects, tasks, grades…) is.",
+  'Bienvenido a Initiative, la nueva capa de personalización para Nivra.':
+    'Welcome to Initiative, the new personalization layer for Nivra.',
+  'Initiative es un cambio radical en la interfaz, donde se prioriza una estética mucho más minimalista y futurista.':
+    'Initiative is a radical interface overhaul, prioritizing a much more minimalist and futuristic aesthetic.',
+  'Initiative también incluye nuevas e interesantes funciones para Nivra. Aunque por el momento están en fase beta, pero puedes probarlas perfectamente.':
+    'Initiative also brings new and interesting features for Nivra. They are currently in beta, but you can perfectly try them out.',
+  '¿Deseas usar tu información existente en Initiative?': 'Do you want to use your existing data in Initiative?',
+  Sí: 'Yes',
+  'Perfecto.': 'Great.',
+  'Bien, continuemos.': "Alright, let's continue.",
+  'Cargando información existente en Initiative.': 'Loading existing data into Initiative.',
+  'Información cargada con éxito.': 'Data loaded successfully.',
+  beta: 'beta',
+  'Tareas pendientes': 'Pending tasks',
+  'Próxima cuenta atrás': 'Next countdown',
+  'Más funciones de Initiative llegarán pronto, pues sigue en fase temprana de desarrollo.':
+    'More Initiative features are coming soon, since it is still in early development.',
   'Arrastra un bloque sobre otro para intercambiarlos de sitio. Pulsa un bloque para cambiar su contenido.':
     'Drag a block onto another to swap them. Click a block to change its content.',
   Contenido: 'Content',
@@ -86,8 +111,6 @@ const EN: Record<string, string> = {
     'Choose which blocks appear on the dashboard, their size and where each one goes.',
   'Editar dashboard': 'Edit dashboard',
   'Mantener el aspecto propio de este dispositivo': "Keep this device's own look",
-  'Colores, fondo, sonidos y temas no se sincronizan; el resto de tus datos (asignaturas, tareas, notas…) sí.':
-    "Colours, background, sounds and themes are not synced; the rest of your data (subjects, tasks, grades…) is.",
   Cancelar: 'Cancel',
   'Privacidad y datos': 'Privacy and data',
   'Nivra no usa cookies ni rastreadores, ni analítica ni publicidad de ningún tipo.':

@@ -263,6 +263,10 @@ body {
   backdrop-filter: blur(var(--menu-blur));
 }
 
+.font-initiative {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

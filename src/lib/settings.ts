@@ -47,6 +47,7 @@ export function useSettings() {
     'nivra-theme-pack',
     'ninguno',
   )
+  const [initiativeEnabled, setInitiativeEnabled] = useStored('nivra-initiative', false)
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
   const [customKeys, setCustomKeys] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
@@ -114,6 +115,8 @@ export function useSettings() {
     setThemeStyle,
     themePack,
     setThemePack,
+    initiativeEnabled,
+    setInitiativeEnabled,
     shortcutsOn,
     setShortcutsOn,
     enabledShortcuts,

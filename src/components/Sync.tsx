@@ -102,7 +102,7 @@ export function SyncPanel({
             onChange={(v) => setSyncVisual(!v)}
             label={t('Mantener el aspecto propio de este dispositivo')}
             hint={t(
-              'Colores, fondo, sonidos y temas no se sincronizan; el resto de tus datos (asignaturas, tareas, notas…) sí.',
+              'Colores, fondo, sonidos, temas e Initiative no se sincronizan; el resto de tus datos (asignaturas, tareas, notas…) sí.',
             )}
           />
 

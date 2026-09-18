@@ -23,6 +23,7 @@ type Props = {
   anniversaries: Anniversary[]
   blocks: Block[]
   onEditDashboard: () => void
+  onActivateInitiative: () => void
 }
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
@@ -41,6 +42,7 @@ export function Settings({
   anniversaries,
   blocks,
   onEditDashboard,
+  onActivateInitiative,
 }: Props) {
   const [openSection, setOpenSection] = useState<string | null>(null)
   const alterna = (id: string) => setOpenSection((prev) => (prev === id ? null : id))
@@ -203,6 +205,25 @@ export function Settings({
             ))}
           </div>
         </Collapsible>
+
+        <div className="hidden md:block">
+          <Collapsible
+            title={t('Initiative')}
+            open={openSection === 'initiative'}
+            animar={cfg.animations}
+            onToggle={() => alterna('initiative')}
+          >
+            <Switch
+              checked={cfg.initiativeEnabled}
+              onChange={(v) => {
+                cfg.setInitiativeEnabled(v)
+                if (v) onActivateInitiative()
+              }}
+              label={t('Activar Initiative (beta)')}
+              hint={t('Una UI totalmente renovada y con funciones extra.')}
+            />
+          </Collapsible>
+        </div>
 
         <Collapsible
           title={t('Barra Lateral')}

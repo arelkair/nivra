@@ -12,6 +12,8 @@ import { Subscriptions } from './pages/Subscriptions'
 import { Tasks } from './pages/Tasks'
 import { Wishlist } from './pages/Wishlist'
 import { Intro } from './components/Intro'
+import { InitiativeIntro } from './components/InitiativeIntro'
+import { InitiativeDashboard } from './components/InitiativeDashboard'
 import { Search, type Destination, type SearchResult } from './components/Search'
 import { Lab } from './pages/Lab'
 import { Settings } from './components/Settings'
@@ -58,6 +60,7 @@ import {
 import { t, tp } from './lib/i18n'
 
 const SETUP_KEY = 'nivra-setup-done'
+const INITIATIVE_PENDING_KEY = 'nivra-initiative-pending'
 
 type Page = { id: PageId; label: string; short: string; icon: string }
 
@@ -146,7 +149,13 @@ const headerButton =
 
 function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
-  const [introDone, setIntroDone] = useState(false)
+  const [introDone, setIntroDone] = useState(() => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1')
+  const [initiativeIntro, setInitiativeIntro] = useState(
+    () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1',
+  )
+  useEffect(() => {
+    sessionStorage.removeItem(INITIATIVE_PENDING_KEY)
+  }, [])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [dashboardEditorOpen, setDashboardEditorOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -590,6 +599,14 @@ function App() {
   return (
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
+      {initiativeIntro && (
+        <InitiativeIntro
+          onDone={(useExisting) => {
+            localStorage.setItem('nivra-initiative-use-data', String(useExisting))
+            setInitiativeIntro(false)
+          }}
+        />
+      )}
 
       {cfg.themePack !== 'ninguno' && (
         <div
@@ -640,6 +657,21 @@ function App() {
           />
         )}
 
+      {cfg.initiativeEnabled && (
+        <InitiativeDashboard
+          tasks={tasks}
+          items={items}
+          countdowns={countdowns}
+          works={works}
+          streak={streak}
+          onDisable={() => {
+            localStorage.setItem('nivra-initiative', 'false')
+            location.reload()
+          }}
+        />
+      )}
+
+      {!cfg.initiativeEnabled && (
       <div className="relative z-10 flex h-svh overflow-hidden text-neutral-800 dark:text-neutral-200">
         {cfg.themeStyle !== 'barra' && (
           <aside
@@ -1079,6 +1111,7 @@ function App() {
         )}
 
       </div>
+      )}
 
       {settingsOpen && (
         <Settings
@@ -1095,6 +1128,11 @@ function App() {
           onEditDashboard={() => {
             setSettingsOpen(false)
             setDashboardEditorOpen(true)
+          }}
+          onActivateInitiative={() => {
+            localStorage.setItem('nivra-initiative', 'true')
+            sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
+            location.reload()
           }}
         />
       )}
