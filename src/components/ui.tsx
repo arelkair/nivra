@@ -4,7 +4,7 @@ import { playTick } from '../lib/sound'
 
 export const line = 'border-black/[0.07] dark:border-white/[0.08]'
 
-export const card = `rounded-2xl border bg-[var(--surface)] ${line}`
+export const card = `nivra-menu rounded-2xl border bg-[var(--surface)] ${line}`
 
 export const input =
   'w-full rounded-xl border border-black/[0.07] bg-[var(--sunken)] px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-400 sm:px-4 sm:py-3 dark:border-white/[0.08] dark:focus:border-neutral-600'
@@ -292,9 +292,20 @@ export function Collapsible({
 
 export type Toast = { id: string; text: string; undo?: () => void; durationMs: number }
 
-export function Toasts({ toasts, onClose }: { toasts: Toast[]; onClose: (id: string) => void }) {
+export function Toasts({
+  toasts,
+  onClose,
+  offsetBottom,
+}: {
+  toasts: Toast[]
+  onClose: (id: string) => void
+  offsetBottom?: number
+}) {
   return (
-    <div className="nivra-scroll pointer-events-none fixed right-4 bottom-4 z-40 flex max-h-[80svh] flex-col gap-2 overflow-y-auto overscroll-contain">
+    <div
+      style={offsetBottom ? { bottom: `${offsetBottom}px` } : undefined}
+      className="nivra-scroll pointer-events-none fixed right-4 bottom-4 z-40 flex max-h-[80svh] flex-col gap-2 overflow-y-auto overscroll-contain"
+    >
       {toasts.map((a) => (
         <div
           key={a.id}
@@ -354,9 +365,9 @@ export function Modal({
       ref={ref}
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
       onClick={(e) => e.target === ref.current && onClose()}
-      className={`nivra-menu m-auto ${size === 'wide' ? 'w-[min(100%-1.5rem,44rem)]' : 'w-[min(100%-1.5rem,30rem)]'} rounded-3xl border bg-[var(--surface)] p-5 text-neutral-800 backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-7 ${line} dark:text-neutral-100`}
+      className={`nivra-menu m-auto flex max-h-[85vh] flex-col ${size === 'wide' ? 'w-[min(100%-1.5rem,44rem)]' : 'w-[min(100%-1.5rem,30rem)]'} rounded-3xl border bg-[var(--surface)] p-5 text-neutral-800 backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-7 ${line} dark:text-neutral-100`}
     >
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-5 flex shrink-0 items-start justify-between gap-4">
         <h3 className="mr-auto text-lg font-semibold first-letter:uppercase sm:text-xl">{title}</h3>
         {actions}
         <button
@@ -368,7 +379,7 @@ export function Modal({
           <Icon name="close" />
         </button>
       </div>
-      {children}
+      <div className="nivra-scroll min-h-0 flex-1 overflow-y-auto">{children}</div>
     </dialog>
   )
 }
@@ -440,6 +451,20 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
+  play: <path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none" />,
+  pause: (
+    <>
+      <rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor" stroke="none" />
+      <rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  volume: (
+    <>
+      <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none" />
+      <path d="M17 8a5 5 0 0 1 0 8" />
+    </>
+  ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   left: <path d="M14.5 5L8 12l6.5 7" />,
   right: <path d="M9.5 5l6.5 7-6.5 7" />,

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TYPES, reorder, shortDate, type Grade, type Notepad, textOn, type Subject, type Work } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
@@ -12,9 +12,10 @@ type Props = {
   notepads: Notepad[]
   setNotepads: (update: (prev: Notepad[]) => Notepad[]) => void
   grades: Grade[]
+  showCountdowns: boolean
 }
 
-export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades }: Props) {
+export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades, showCountdowns }: Props) {
   const [kind, setKind] = useState<'examen' | 'proyecto'>('examen')
   const [editingId, setEditingId] = useState<string | null>(null)
   const editing = works.find((w) => w.id === editingId)
@@ -128,6 +129,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
                 onOpen={setEditingId}
                 onRemove={remove}
                 onMove={(step) => moveWork(w.id, step)}
+                showCountdown={showCountdowns}
               />
             ))}
           </ul>
@@ -151,6 +153,7 @@ export function Exams({ works, setWorks, subjects, notepads, setNotepads, grades
                 onOpen={setEditingId}
                 onRemove={remove}
                 onMove={(step) => moveWork(w.id, step)}
+                showCountdown={showCountdowns}
               />
             ))}
           </ul>
@@ -178,6 +181,7 @@ function Row({
   onOpen,
   onRemove,
   onMove,
+  showCountdown,
 }: {
   work: Work
   subjects: Subject[]
@@ -185,6 +189,7 @@ function Row({
   onOpen: (id: string) => void
   onRemove: (id: string) => void
   onMove: (step: number) => void
+  showCountdown: boolean
 }) {
   const subject = subjects.find((s) => s.id === work.subject)
   return (
@@ -211,6 +216,7 @@ function Row({
           {work.desc && <span className="truncate">{work.desc}</span>}
         </span>
       </button>
+      {showCountdown && work.date && <ExamCountdown target={work.date} />}
       {grade !== undefined && (
         <span
           title={t('Nota obtenida')}
@@ -252,6 +258,52 @@ function Row({
         <Icon name="trash" className="h-4 w-4" />
       </button>
     </li>
+  )
+}
+
+function remainingBreakdown(target: Date, now: Date) {
+  if (target <= now) return null
+  let months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth())
+  const anchor = new Date(now)
+  anchor.setMonth(anchor.getMonth() + months)
+  if (anchor > target) {
+    months--
+    anchor.setMonth(anchor.getMonth() - 1)
+  }
+  let ms = target.getTime() - anchor.getTime()
+  const days = Math.floor(ms / 86400000)
+  ms -= days * 86400000
+  const hours = Math.floor(ms / 3600000)
+  ms -= hours * 3600000
+  const minutes = Math.floor(ms / 60000)
+  ms -= minutes * 60000
+  const seconds = Math.floor(ms / 1000)
+  return { months, days, hours, minutes, seconds }
+}
+
+function ExamCountdown({ target }: { target: string }) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const remaining = remainingBreakdown(new Date(`${target}T23:59:59`), now)
+  if (!remaining) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const parts = [
+    remaining.months > 0 ? `${remaining.months}m` : null,
+    remaining.days > 0 || remaining.months > 0 ? `${remaining.days}d` : null,
+  ].filter(Boolean)
+
+  return (
+    <span
+      title={t('Tiempo restante')}
+      className="shrink-0 rounded-md bg-black/[0.04] px-2 py-0.5 font-mono text-[0.7rem] tabular-nums text-neutral-500 dark:bg-white/[0.06] dark:text-neutral-400"
+    >
+      {parts.length > 0 && `${parts.join(' ')} `}
+      {pad(remaining.hours)}:{pad(remaining.minutes)}:{pad(remaining.seconds)}
+    </span>
   )
 }
 

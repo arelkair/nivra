@@ -294,6 +294,8 @@ export type Block = {
   profile?: string
   lateNight?: boolean
   color?: string
+  textColor?: string
+  textBg?: string
 }
 
 export const blockProfile = (b: Block) => b.profile ?? DEFAULT_PROFILE

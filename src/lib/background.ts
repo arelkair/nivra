@@ -83,3 +83,12 @@ export const SHAPE_SIZE: Record<string, string> = {
   diagonales: 'auto',
   olas: '30px 30px',
 }
+
+export const GRADIENTS: { id: string; label: string; css: string }[] = [
+  { id: 'atardecer', label: 'Atardecer', css: 'linear-gradient(135deg,#f97316,#ec4899)' },
+  { id: 'oceano', label: 'Océano', css: 'linear-gradient(135deg,#0ea5e9,#1e40af)' },
+  { id: 'aurora', label: 'Aurora', css: 'linear-gradient(135deg,#22c55e,#a855f7)' },
+  { id: 'bosque', label: 'Bosque', css: 'linear-gradient(135deg,#166534,#84cc16)' },
+  { id: 'noche', label: 'Noche', css: 'linear-gradient(135deg,#0f172a,#312e81)' },
+  { id: 'algodon', label: 'Algodón', css: 'linear-gradient(135deg,#fda4af,#c4b5fd)' },
+]

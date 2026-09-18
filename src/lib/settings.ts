@@ -1,4 +1,5 @@
 import { useStored, type Subject } from './store'
+import { DEFAULT_DASHBOARD_LAYOUT, type DashboardCell } from './dashboardLayout'
 
 export function useSettings() {
   const [intro, setIntro] = useStored('nivra-intro', true)
@@ -13,15 +14,22 @@ export function useSettings() {
   const [searchOn, setSearchOn] = useStored('nivra-search', true)
   const [animations, setAnimations] = useStored('nivra-animations', true)
   const [navButtons, setNavButtons] = useStored('nivra-nav-buttons', true)
-  const [transparentMenus, setTransparentMenus] = useStored('nivra-transparent-menus', false)
+  const [menuOpacity, setMenuOpacity] = useStored('nivra-menu-opacity', 100)
+  const [menuBlur, setMenuBlur] = useStored('nivra-menu-blur', 0)
   const [bankEnabled, setBankEnabled] = useStored('nivra-bank-enabled', true)
+  const [examCountdowns, setExamCountdowns] = useStored('nivra-exam-countdowns', false)
+  const [dashboardLayout, setDashboardLayout] = useStored<DashboardCell[]>(
+    'nivra-dashboard-layout',
+    DEFAULT_DASHBOARD_LAYOUT,
+  )
   const [carouselEnabled, setCarouselEnabled] = useStored('nivra-carousel', false)
   const [carouselSeconds, setCarouselSeconds] = useStored('nivra-carousel-seconds', 8)
-  const [backgroundMode, setBackgroundMode] = useStored<'ninguno' | 'forma' | 'imagen'>(
+  const [backgroundMode, setBackgroundMode] = useStored<'ninguno' | 'forma' | 'imagen' | 'degradado' | 'video'>(
     'nivra-bg-mode',
     'ninguno',
   )
   const [backgroundShape, setBackgroundShape] = useStored('nivra-bg-shape', 'puntos')
+  const [backgroundGradient, setBackgroundGradient] = useStored('nivra-bg-gradient', 'atardecer')
   const [uiSounds, setUiSounds] = useStored('nivra-ui-sounds', false)
   const [uiVolume, setUiVolume] = useStored('nivra-ui-volume', 15)
   const [ambientOn, setAmbientOn] = useStored('nivra-ambient', false)
@@ -67,10 +75,16 @@ export function useSettings() {
     setAnimations,
     navButtons,
     setNavButtons,
-    transparentMenus,
-    setTransparentMenus,
+    menuOpacity,
+    setMenuOpacity,
+    menuBlur,
+    setMenuBlur,
     bankEnabled,
     setBankEnabled,
+    examCountdowns,
+    setExamCountdowns,
+    dashboardLayout,
+    setDashboardLayout,
     carouselEnabled,
     setCarouselEnabled,
     carouselSeconds,
@@ -79,6 +93,8 @@ export function useSettings() {
     setBackgroundMode,
     backgroundShape,
     setBackgroundShape,
+    backgroundGradient,
+    setBackgroundGradient,
     uiSounds,
     setUiSounds,
     uiVolume,

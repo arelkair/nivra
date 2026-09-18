@@ -20,6 +20,7 @@ import { Countdowns } from '../components/Countdowns'
 import { Flame } from '../components/Flame'
 import { Empty, Icon, Label, card, line } from '../components/ui'
 import { locale, t } from '../lib/i18n'
+import { GRID_SIZE, type DashboardCell, type WidgetType } from '../lib/dashboardLayout'
 
 type Props = {
   items: CalItem[]
@@ -35,6 +36,7 @@ type Props = {
   setStreak: (update: (prev: Streak) => Streak) => void
   profile: string
   onGo: (page: PageId) => void
+  layout: DashboardCell[]
 }
 
 export function Dashboard({
@@ -51,6 +53,7 @@ export function Dashboard({
   setStreak,
   profile,
   onGo,
+  layout,
 }: Props) {
   const today = new Date()
   const todayKey = dateKey(today)
@@ -65,14 +68,143 @@ export function Dashboard({
     .sort((a, b) => a.date!.localeCompare(b.date!))
     .slice(0, 5)
 
-  const stats = [
-    ...(bankEnabled
-      ? [{ value: balance === null ? '—' : eur(balance), label: 'dinero', page: 'banco' as PageId }]
-      : []),
-    { value: todayItems.length, label: 'hoy', page: 'calendario' as PageId },
-    { value: pending.length, label: 'tareas', page: 'tareas' as PageId },
-    { value: nextWorks.length, label: 'por venir', page: 'examenes' as PageId },
-  ]
+  const widgetContent = (widgetType: WidgetType, delay: number) => {
+    switch (widgetType) {
+      case 'dinero':
+        return (
+          <StatTile
+            value={bankEnabled ? (balance === null ? '—' : eur(balance)) : '—'}
+            label={t('dinero')}
+            onClick={() => onGo('banco')}
+            delay={delay}
+          />
+        )
+      case 'hoy-resumen':
+        return (
+          <StatTile value={todayItems.length} label={t('hoy')} onClick={() => onGo('calendario')} delay={delay} />
+        )
+      case 'tareas-resumen':
+        return (
+          <StatTile value={pending.length} label={t('tareas')} onClick={() => onGo('tareas')} delay={delay} />
+        )
+      case 'porvenir-resumen':
+        return (
+          <StatTile
+            value={nextWorks.length}
+            label={t('por venir')}
+            onClick={() => onGo('examenes')}
+            delay={delay}
+          />
+        )
+      case 'cuentas-atras':
+        return (
+          <div style={{ animationDelay: `${delay}s` }} className="animate-[fade-in_0.4s_ease-out_both] h-full">
+            <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
+          </div>
+        )
+      case 'hoy-detalle':
+        return (
+          <Panel title={t('Hoy')} delay={delay}>
+            {todayItems.length === 0 ? (
+              <Empty>{t('Sin actividades.')}</Empty>
+            ) : (
+              <ul className="flex flex-col">
+                {todayItems.map((e) => (
+                  <Row key={e.id}>
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
+                    <span className="min-w-0 flex-1 truncate">{e.title}</span>
+                    <span className="shrink-0 text-[0.7rem] text-neutral-400">{t(TYPES[e.type].label)}</span>
+                  </Row>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )
+      case 'horario':
+        return (
+          <Panel title={t('Horario')} delay={delay}>
+            {todayBlocks.length === 0 ? (
+              <Empty>{t('Sin bloques.')}</Empty>
+            ) : (
+              <ul className="flex flex-col">
+                {todayBlocks.map((b) => (
+                  <Row key={b.id}>
+                    <span className="w-24 shrink-0 font-mono text-xs tabular-nums text-neutral-400 dark:text-neutral-500">
+                      {b.start}–{b.end}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{b.title}</span>
+                  </Row>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )
+      case 'examenes':
+        return (
+          <Panel title={t('Exámenes y proyectos')} delay={delay}>
+            {nextWorks.length === 0 ? (
+              <Empty>{t('Nada por venir.')}</Empty>
+            ) : (
+              <ul className="flex flex-col">
+                {nextWorks.map((w) => (
+                  <Row key={w.id}>
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[w.kind].dot}`} />
+                    <span className="min-w-0 flex-1 truncate">{w.title}</span>
+                    <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
+                      {shortDate(w.date!)}
+                    </span>
+                  </Row>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )
+      case 'proximo':
+        return (
+          <Panel title={t('Próximo')} delay={delay}>
+            {upcoming.length === 0 ? (
+              <Empty>{t('Sin actividades.')}</Empty>
+            ) : (
+              <ul className="flex flex-col">
+                {upcoming.map(({ date, item }) => (
+                  <Row key={item.id + date}>
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[item.type].dot}`} />
+                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                    <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">{shortDate(date)}</span>
+                  </Row>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )
+      case 'pendiente':
+        return (
+          <Panel title={t('Pendiente')} delay={delay}>
+            {pending.length === 0 ? (
+              <Empty>{t('Sin tareas.')}</Empty>
+            ) : (
+              <ul className="flex flex-col">
+                {pending.slice(0, 5).map((task) => (
+                  <Row key={task.id}>
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+                    <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                    {task.date && (
+                      <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
+                        {shortDate(task.date)}
+                      </span>
+                    )}
+                  </Row>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )
+      case 'racha':
+        return <Flame streak={streak} setStreak={setStreak} delay={delay} />
+      default:
+        return null
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 lg:h-full lg:min-h-0">
@@ -108,121 +240,51 @@ export function Dashboard({
         </h2>
       </header>
 
-      <div className="animate-[fade-in_0.4s_ease-out_0.05s_both] grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {stats.map((s) => (
-          <button
-            key={s.label}
-            type="button"
-            onClick={() => onGo(s.page)}
-            className={`${card} px-4 py-4 text-left transition-colors hover:border-black/15 sm:px-5 sm:py-6 dark:hover:border-white/20`}
+      <div
+        className="grid flex-1 gap-3 sm:gap-4 lg:min-h-0"
+        style={{
+          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+          gridTemplateRows: `repeat(${GRID_SIZE}, minmax(96px, auto))`,
+        }}
+      >
+        {layout.map((cell, i) => (
+          <div
+            key={cell.id}
+            style={{
+              gridColumn: `${cell.col + 1} / span ${cell.colSpan}`,
+              gridRow: `${cell.row + 1} / span ${cell.rowSpan}`,
+            }}
+            className="min-h-0 min-w-0"
           >
-            <p className="truncate font-mono text-xl font-medium tracking-tight tabular-nums sm:text-3xl">
-              {s.value}
-            </p>
-            <p className="mt-1 text-[0.7rem] text-neutral-400 sm:text-xs dark:text-neutral-500">
-              {t(s.label)}
-            </p>
-          </button>
+            {widgetContent(cell.type, i * 0.04)}
+          </div>
         ))}
       </div>
-
-      <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
-        <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
-      </div>
-
-      <div className="grid gap-4 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-3 xl:grid-cols-3 xl:grid-rows-2">
-        <Panel title={t('Hoy')} delay={0.1}>
-          {todayItems.length === 0 ? (
-            <Empty>{t('Sin actividades.')}</Empty>
-          ) : (
-            <ul className="flex flex-col">
-              {todayItems.map((e) => (
-                <Row key={e.id}>
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
-                  <span className="min-w-0 flex-1 truncate">{e.title}</span>
-                  <span className="shrink-0 text-[0.7rem] text-neutral-400">{t(TYPES[e.type].label)}</span>
-                </Row>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title={t('Horario')} delay={0.15}>
-          {todayBlocks.length === 0 ? (
-            <Empty>{t('Sin bloques.')}</Empty>
-          ) : (
-            <ul className="flex flex-col">
-              {todayBlocks.map((b) => (
-                <Row key={b.id}>
-                  <span className="w-24 shrink-0 font-mono text-xs tabular-nums text-neutral-400 dark:text-neutral-500">
-                    {b.start}–{b.end}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{b.title}</span>
-                </Row>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title={t('Exámenes y proyectos')} delay={0.2}>
-          {nextWorks.length === 0 ? (
-            <Empty>{t('Nada por venir.')}</Empty>
-          ) : (
-            <ul className="flex flex-col">
-              {nextWorks.map((w) => (
-                <Row key={w.id}>
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[w.kind].dot}`} />
-                  <span className="min-w-0 flex-1 truncate">{w.title}</span>
-                  <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
-                    {shortDate(w.date!)}
-                  </span>
-                </Row>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title={t('Próximo')} delay={0.25}>
-          {upcoming.length === 0 ? (
-            <Empty>{t('Sin actividades.')}</Empty>
-          ) : (
-            <ul className="flex flex-col">
-              {upcoming.map(({ date, item }) => (
-                <Row key={item.id + date}>
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[item.type].dot}`} />
-                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                  <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
-                    {shortDate(date)}
-                  </span>
-                </Row>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title={t('Pendiente')} delay={0.3}>
-          {pending.length === 0 ? (
-            <Empty>{t('Sin tareas.')}</Empty>
-          ) : (
-            <ul className="flex flex-col">
-              {pending.slice(0, 5).map((t) => (
-                <Row key={t.id}>
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-                  <span className="min-w-0 flex-1 truncate">{t.title}</span>
-                  {t.date && (
-                    <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
-                      {shortDate(t.date)}
-                    </span>
-                  )}
-                </Row>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Flame streak={streak} setStreak={setStreak} delay={0.35} />
-      </div>
     </div>
+  )
+}
+
+function StatTile({
+  value,
+  label,
+  onClick,
+  delay,
+}: {
+  value: string | number
+  label: string
+  onClick: () => void
+  delay: number
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{ animationDelay: `${delay}s` }}
+      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex h-full w-full flex-col justify-center px-4 py-4 text-left transition-colors hover:border-black/15 sm:px-5 sm:py-6 dark:hover:border-white/20`}
+    >
+      <p className="truncate font-mono text-xl font-medium tracking-tight tabular-nums sm:text-3xl">{value}</p>
+      <p className="mt-1 text-[0.7rem] text-neutral-400 sm:text-xs dark:text-neutral-500">{label}</p>
+    </button>
   )
 }
 
@@ -246,7 +308,7 @@ function Panel({
   return (
     <section
       style={{ animationDelay: `${delay}s` }}
-      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex min-h-0 flex-col p-5 sm:p-6`}
+      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex h-full min-h-0 flex-col p-5 sm:p-6`}
     >
       <Label>{title}</Label>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>

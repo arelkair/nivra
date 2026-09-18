@@ -5,7 +5,7 @@ import type { Settings } from '../lib/settings'
 import { SHORTCUTS, keyOf } from '../lib/shortcuts'
 import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '../lib/store'
 import type { SyncState } from '../lib/sync'
-import { SHAPES, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
+import { SHAPES, GRADIENTS, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
 import { playDrop, playPop } from '../lib/sound'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
@@ -22,6 +22,7 @@ type Props = {
   items: CalItem[]
   anniversaries: Anniversary[]
   blocks: Block[]
+  onEditDashboard: () => void
 }
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
@@ -39,6 +40,7 @@ export function Settings({
   items,
   anniversaries,
   blocks,
+  onEditDashboard,
 }: Props) {
   const [openSection, setOpenSection] = useState<string | null>(null)
   const alterna = (id: string) => setOpenSection((prev) => (prev === id ? null : id))
@@ -100,17 +102,25 @@ export function Settings({
               onChange={cfg.setNavButtons}
               label={t('Botones de atrás y adelante')}
             />
-            <Switch
-              checked={cfg.transparentMenus}
-              onChange={cfg.setTransparentMenus}
-              label={t('Menús transparentes')}
-              hint={t('Los paneles y ventanas emergentes se ven algo transparentes, con desenfoque de fondo.')}
-            />
+            <div className="py-1">
+              <span className="block text-sm font-medium">{t('Menús y paneles')}</span>
+              <span className="block text-xs text-neutral-400 dark:text-neutral-500">
+                {t('Controla la opacidad y el desenfoque de fondo de casi toda la web: ajustes, tarjetas, bloc de notas, etc.')}
+              </span>
+              <VolumeRow value={cfg.menuOpacity} onChange={cfg.setMenuOpacity} label={t('Opacidad')} />
+              <VolumeRow value={cfg.menuBlur} onChange={cfg.setMenuBlur} label={t('Desenfoque')} />
+            </div>
             <Switch
               checked={cfg.bankEnabled}
               onChange={cfg.setBankEnabled}
               label={t('Sección de banco')}
               hint={t('Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.')}
+            />
+            <Switch
+              checked={cfg.examCountdowns}
+              onChange={cfg.setExamCountdowns}
+              label={t('Cuenta atrás en exámenes y proyectos')}
+              hint={t('Muestra a la derecha de cada uno cuánto falta exactamente, hasta meses.')}
             />
             <Switch
               checked={cfg.carouselEnabled}
@@ -147,6 +157,20 @@ export function Settings({
           onToggle={() => alterna('app')}
         >
           <InstallPanel installPrompt={installPrompt} onInstalled={onInstalled} onNotify={onNotify} />
+        </Collapsible>
+
+        <Collapsible
+          title={t('Dashboard')}
+          open={openSection === 'dashboard'}
+          animar={cfg.animations}
+          onToggle={() => alterna('dashboard')}
+        >
+          <p className="mb-3 text-sm text-neutral-500 dark:text-neutral-400">
+            {t('Elige qué bloques aparecen en el dashboard, su tamaño y dónde va cada uno.')}
+          </p>
+          <button type="button" onClick={onEditDashboard} className={`${button} w-full`}>
+            {t('Editar dashboard')}
+          </button>
         </Collapsible>
 
         <Collapsible title={t('Color')} open={openSection === 'color'} animar={cfg.animations} onToggle={() => alterna('color')}>
@@ -768,6 +792,8 @@ function BackgroundPanel({ cfg }: { cfg: Settings }) {
             { id: 'ninguno', label: t('Ninguno') },
             { id: 'forma', label: t('Forma simple') },
             { id: 'imagen', label: t('Imagen o gif') },
+            { id: 'degradado', label: t('Degradado') },
+            { id: 'video', label: t('Vídeo de tu música') },
           ] as const
         ).map((m) => (
           <button
@@ -835,6 +861,35 @@ function BackgroundPanel({ cfg }: { cfg: Settings }) {
             </button>
           )}
         </div>
+      )}
+
+      {cfg.backgroundMode === 'degradado' && (
+        <div className="grid grid-cols-3 gap-2">
+          {GRADIENTS.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => cfg.setBackgroundGradient(g.id)}
+              aria-pressed={cfg.backgroundGradient === g.id}
+              className={`flex flex-col items-center gap-1.5 rounded-lg border p-1.5 transition-colors ${
+                cfg.backgroundGradient === g.id
+                  ? 'border-neutral-900 dark:border-white'
+                  : `${line} hover:border-neutral-400`
+              }`}
+            >
+              <span className="h-8 w-full rounded-md" style={{ background: g.css }} />
+              <span className="text-[0.65rem] text-neutral-500 dark:text-neutral-400">{t(g.label)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {cfg.backgroundMode === 'video' && (
+        <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          {t(
+            'Usa el vídeo que tengas puesto en Sonidos → Sonido de ambiente → Tu música. Si no hay ningún enlace puesto, no se verá nada.',
+          )}
+        </p>
       )}
 
       <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
