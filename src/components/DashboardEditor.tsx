@@ -1,181 +1,126 @@
 import { useState } from 'react'
 import {
-  DEFAULT_DASHBOARD_LAYOUT,
-  GRID_SIZE,
+  DEFAULT_DASHBOARD_SLOTS,
+  GROUP_TYPES,
   WIDGET_LABELS,
-  WIDGET_TYPES,
-  areaFree,
-  type DashboardCell,
+  groupOfSlot,
+  normalizeSlots,
   type WidgetType,
 } from '../lib/dashboardLayout'
-import { Icon, Modal, button, ghost, line, select } from './ui'
+import { Modal, button, ghost, line, select } from './ui'
 import { t } from '../lib/i18n'
 
 type Props = {
-  layout: DashboardCell[]
-  setLayout: (update: (prev: DashboardCell[]) => DashboardCell[]) => void
+  slots: WidgetType[]
+  setSlots: (update: (prev: WidgetType[]) => WidgetType[]) => void
   onClose: () => void
 }
 
-export function DashboardEditor({ layout, setLayout, onClose }: Props) {
-  const [selected, setSelected] = useState<string | null>(null)
+export function DashboardEditor({ slots, setSlots, onClose }: Props) {
+  const list = normalizeSlots(slots)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
 
-  const move = (id: string, dRow: number, dCol: number) => {
-    setLayout((prev) => {
-      const cell = prev.find((c) => c.id === id)
-      if (!cell) return prev
-      const row = cell.row + dRow
-      const col = cell.col + dCol
-      if (!areaFree(prev, id, row, col, cell.rowSpan, cell.colSpan)) return prev
-      return prev.map((c) => (c.id === id ? { ...c, row, col } : c))
+  const swap = (from: number, to: number) => {
+    if (from === to || groupOfSlot(from) !== groupOfSlot(to)) return
+    setSlots((prev) => {
+      const next = [...normalizeSlots(prev)]
+      ;[next[from], next[to]] = [next[to], next[from]]
+      return next
     })
+    setSelected(to)
   }
 
-  const resize = (id: string, dRowSpan: number, dColSpan: number) => {
-    setLayout((prev) => {
-      const cell = prev.find((c) => c.id === id)
-      if (!cell) return prev
-      const rowSpan = cell.rowSpan + dRowSpan
-      const colSpan = cell.colSpan + dColSpan
-      if (rowSpan < 1 || colSpan < 1) return prev
-      if (!areaFree(prev, id, cell.row, cell.col, rowSpan, colSpan)) return prev
-      return prev.map((c) => (c.id === id ? { ...c, rowSpan, colSpan } : c))
-    })
+  const change = (index: number, type: WidgetType) => {
+    setSlots((prev) => normalizeSlots(prev).map((entry, i) => (i === index ? type : entry)))
   }
 
-  const changeType = (id: string, widgetType: WidgetType) => {
-    setLayout((prev) => prev.map((c) => (c.id === id ? { ...c, type: widgetType } : c)))
+  const slot = (index: number, heightClass: string) => {
+    const type = list[index]
+    const canDrop =
+      dragIndex !== null && dragIndex !== index && groupOfSlot(dragIndex) === groupOfSlot(index)
+    return (
+      <button
+        key={index}
+        type="button"
+        draggable
+        onClick={() => setSelected(selected === index ? null : index)}
+        onDragStart={(e) => {
+          setDragIndex(index)
+          e.dataTransfer.effectAllowed = 'move'
+          e.dataTransfer.setData('text/plain', String(index))
+        }}
+        onDragOver={(e) => {
+          if (canDrop) {
+            e.preventDefault()
+            setOverIndex(index)
+          }
+        }}
+        onDragLeave={() => setOverIndex((prev) => (prev === index ? null : prev))}
+        onDrop={(e) => {
+          e.preventDefault()
+          if (dragIndex !== null) swap(dragIndex, index)
+          setDragIndex(null)
+          setOverIndex(null)
+        }}
+        onDragEnd={() => {
+          setDragIndex(null)
+          setOverIndex(null)
+        }}
+        className={`${heightClass} flex cursor-grab items-center justify-center rounded-xl border px-2 text-center text-xs transition-colors active:cursor-grabbing ${
+          overIndex === index
+            ? 'border-neutral-900 bg-black/[0.06] dark:border-white dark:bg-white/[0.1]'
+            : selected === index
+              ? 'border-neutral-900 bg-black/[0.04] font-medium dark:border-white dark:bg-white/[0.06]'
+              : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.05] ${
+                  type === 'vacio' ? 'border-dashed' : ''
+                }`
+        } ${dragIndex === index ? 'opacity-40' : ''}`}
+      >
+        {t(WIDGET_LABELS[type])}
+      </button>
+    )
   }
-
-  const remove = (id: string) => {
-    setLayout((prev) => prev.filter((c) => c.id !== id))
-    setSelected(null)
-  }
-
-  const addAt = (row: number, col: number, widgetType: WidgetType) => {
-    setLayout((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), type: widgetType, row, col, rowSpan: 1, colSpan: 1 },
-    ])
-  }
-
-  const cellAt = (row: number, col: number) =>
-    layout.find((c) => row >= c.row && row < c.row + c.rowSpan && col >= c.col && col < c.col + c.colSpan)
-
-  const isOrigin = (c: DashboardCell, row: number, col: number) => c.row === row && c.col === col
 
   return (
     <Modal title={t('Configurar dashboard')} onClose={onClose} size="wide">
       <div className="flex flex-col gap-4">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t(
-            'Pulsa un bloque para moverlo o cambiar su tamaño y su contenido. Pulsa un hueco vacío para añadir uno nuevo.',
+            'Arrastra un bloque sobre otro para intercambiarlos de sitio. Pulsa un bloque para cambiar su contenido.',
           )}
         </p>
 
-        <div
-          className="grid gap-2"
-          style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`, gridTemplateRows: `repeat(${GRID_SIZE}, 4.5rem)` }}
-        >
-          {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => {
-            const row = Math.floor(i / GRID_SIZE)
-            const col = i % GRID_SIZE
-            const cell = cellAt(row, col)
-            if (cell && !isOrigin(cell, row, col)) return null
-
-            if (!cell) {
-              return (
-                <button
-                  key={`empty-${row}-${col}`}
-                  type="button"
-                  onClick={() => addAt(row, col, WIDGET_TYPES[0])}
-                  aria-label={t('Añadir bloque')}
-                  style={{ gridColumn: col + 1, gridRow: row + 1 }}
-                  className={`grid place-items-center rounded-xl border border-dashed text-neutral-300 transition-colors hover:border-neutral-400 hover:text-neutral-600 dark:text-neutral-700 dark:hover:text-neutral-400 ${line}`}
-                >
-                  <Icon name="plus" className="h-4 w-4" />
-                </button>
-              )
-            }
-
-            return (
-              <button
-                key={cell.id}
-                type="button"
-                onClick={() => setSelected(selected === cell.id ? null : cell.id)}
-                style={{
-                  gridColumn: `${cell.col + 1} / span ${cell.colSpan}`,
-                  gridRow: `${cell.row + 1} / span ${cell.rowSpan}`,
-                }}
-                className={`flex flex-col items-center justify-center gap-1 rounded-xl border px-2 py-1 text-center text-xs transition-colors ${
-                  selected === cell.id
-                    ? 'border-neutral-900 bg-black/[0.04] font-medium dark:border-white dark:bg-white/[0.06]'
-                    : `${line} text-neutral-500 hover:bg-black/[0.03] dark:text-neutral-400 dark:hover:bg-white/[0.05]`
-                }`}
-              >
-                {t(WIDGET_LABELS[cell.type])}
-              </button>
-            )
-          })}
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-4 gap-2">{[0, 1, 2, 3].map((i) => slot(i, 'h-14'))}</div>
+          <div className="grid grid-cols-1">{slot(4, 'h-14')}</div>
+          <div className="grid grid-cols-3 gap-2">{[5, 6, 7, 8, 9, 10].map((i) => slot(i, 'h-20'))}</div>
         </div>
 
-        {selected &&
-          (() => {
-            const cell = layout.find((c) => c.id === selected)
-            if (!cell) return null
-            return (
-              <div className={`flex flex-col gap-3 rounded-2xl border p-4 ${line}`}>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={cell.type}
-                    onChange={(e) => changeType(cell.id, e.target.value as WidgetType)}
-                    aria-label={t('Contenido')}
-                    className={`${select} flex-1`}
-                  >
-                    {WIDGET_TYPES.map((widgetType) => (
-                      <option key={widgetType} value={widgetType}>
-                        {t(WIDGET_LABELS[widgetType])}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => remove(cell.id)}
-                    aria-label={t('Eliminar bloque')}
-                    className="shrink-0 text-neutral-400 transition-colors hover:text-red-500"
-                  >
-                    <Icon name="trash" className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-neutral-400">{t('Mover')}</span>
-                    <MiniButton onClick={() => move(cell.id, 0, -1)} icon="left" label={t('Mover a la izquierda')} />
-                    <MiniButton onClick={() => move(cell.id, 0, 1)} icon="right" label={t('Mover a la derecha')} />
-                    <MiniButton onClick={() => move(cell.id, -1, 0)} icon="up" label={t('Mover arriba')} />
-                    <MiniButton onClick={() => move(cell.id, 1, 0)} icon="down" label={t('Mover abajo')} />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-neutral-400">{t('Ancho')}</span>
-                    <MiniButton onClick={() => resize(cell.id, 0, -1)} icon="minus" label={t('Menos ancho')} />
-                    <MiniButton onClick={() => resize(cell.id, 0, 1)} icon="plus" label={t('Más ancho')} />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-neutral-400">{t('Alto')}</span>
-                    <MiniButton onClick={() => resize(cell.id, -1, 0)} icon="minus" label={t('Menos alto')} />
-                    <MiniButton onClick={() => resize(cell.id, 1, 0)} icon="plus" label={t('Más alto')} />
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
+        {selected !== null && (
+          <div className={`flex items-center gap-3 rounded-2xl border p-4 ${line}`}>
+            <span className="shrink-0 text-xs text-neutral-400">{t('Contenido')}</span>
+            <select
+              value={list[selected]}
+              onChange={(e) => change(selected, e.target.value as WidgetType)}
+              aria-label={t('Contenido')}
+              className={`${select} flex-1`}
+            >
+              {GROUP_TYPES[groupOfSlot(selected)].map((type) => (
+                <option key={type} value={type}>
+                  {t(WIDGET_LABELS[type])}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => {
-              setLayout(() => DEFAULT_DASHBOARD_LAYOUT)
+              setSlots(() => DEFAULT_DASHBOARD_SLOTS)
               setSelected(null)
             }}
             className={`${ghost} flex-1`}
@@ -188,26 +133,5 @@ export function DashboardEditor({ layout, setLayout, onClose }: Props) {
         </div>
       </div>
     </Modal>
-  )
-}
-
-function MiniButton({
-  onClick,
-  icon,
-  label,
-}: {
-  onClick: () => void
-  icon: string
-  label: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className={`grid h-7 w-7 place-items-center rounded-lg border text-neutral-500 transition-colors hover:bg-black/[0.04] hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/[0.06] dark:hover:text-white ${line}`}
-    >
-      <Icon name={icon} className="h-3.5 w-3.5" />
-    </button>
   )
 }

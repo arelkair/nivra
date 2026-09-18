@@ -117,6 +117,12 @@ export function Settings({
               hint={t('Oculta el banco, sus estadísticas y sus atajos del resto de la aplicación.')}
             />
             <Switch
+              checked={cfg.labEnabled}
+              onChange={cfg.setLabEnabled}
+              label={t('Nivra Lab')}
+              hint={t('Añade el Laboratorio: calculadoras, temporizadores, generadores, conversores y herramientas de estudio.')}
+            />
+            <Switch
               checked={cfg.examCountdowns}
               onChange={cfg.setExamCountdowns}
               label={t('Cuenta atrás en exámenes y proyectos')}

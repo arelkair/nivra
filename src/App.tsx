@@ -13,6 +13,7 @@ import { Tasks } from './pages/Tasks'
 import { Wishlist } from './pages/Wishlist'
 import { Intro } from './components/Intro'
 import { Search, type Destination, type SearchResult } from './components/Search'
+import { Lab } from './pages/Lab'
 import { Settings } from './components/Settings'
 import { DashboardEditor } from './components/DashboardEditor'
 import { FloatingNote } from './components/FloatingNote'
@@ -93,9 +94,16 @@ const GROUPS: { title: string; pages: Page[] }[] = [
       { id: 'recordatorios', label: 'Recordatorios', short: 'Avisos', icon: 'bell' },
     ],
   },
+  {
+    title: 'Nivra Lab',
+    pages: [{ id: 'lab', label: 'Laboratorio', short: 'Lab', icon: 'lab' }],
+  },
 ]
 
 const PAGES = GROUPS.flatMap((g) => g.pages)
+
+const pageAvailable = (id: PageId, flags: { bankEnabled: boolean; labEnabled: boolean }) =>
+  (id !== 'banco' || flags.bankEnabled) && (id !== 'lab' || flags.labEnabled)
 
 const BANK_TABS: { id: BankTab; label: string }[] = [
   { id: 'dinero', label: 'Dinero' },
@@ -169,9 +177,14 @@ function App() {
     return () => removeEventListener('popstate', onPop)
   }, [])
 
+  const navFlags = useMemo(
+    () => ({ bankEnabled: cfg.bankEnabled, labEnabled: cfg.labEnabled }),
+    [cfg.bankEnabled, cfg.labEnabled],
+  )
+
   const irA = useCallback(
     (destino: PageId) => {
-      if (destino === 'banco' && !cfg.bankEnabled) return
+      if (!pageAvailable(destino, navFlags)) return
       setMenuOpen(false)
       if (pageHistory[index] === destino) return
       if (destino === 'banco') setBankTab('dinero')
@@ -180,14 +193,14 @@ function App() {
       setIndex(next)
       history.pushState({ nivra: next }, '')
     },
-    [index, pageHistory, cfg.bankEnabled],
+    [index, pageHistory, navFlags],
   )
   const back = useCallback(() => history.back(), [])
   const forward = useCallback(() => history.forward(), [])
 
   useEffect(() => {
-    if (page === 'banco' && !cfg.bankEnabled) irA('dashboard')
-  }, [page, cfg.bankEnabled, irA])
+    if (!pageAvailable(page, navFlags)) irA('dashboard')
+  }, [page, navFlags, irA])
 
   const notify = useCallback(
     (text: string, undo?: () => void) => {
@@ -572,6 +585,8 @@ function App() {
   const currentGroup = GROUPS.find((g) => g.pages.some((p) => p.id === page))
   const currentPage = PAGES.find((p) => p.id === page)
 
+  const showMiniPlayer = embedConsent && musicEmbed?.provider === 'youtube' && musicMinimized
+
   return (
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
@@ -638,7 +653,7 @@ function App() {
               bankTab={bankTab}
               setBankTab={setBankTab}
               bankInitial={bankInitial}
-              bankEnabled={cfg.bankEnabled}
+              flags={navFlags}
               themeStyle={cfg.themeStyle}
             />
           </aside>
@@ -747,7 +762,7 @@ function App() {
                 setStreak={setStreak}
                 profile={profile}
                 onGo={irA}
-                layout={cfg.dashboardLayout}
+                slots={cfg.dashboardSlots}
               />
             )}
             {page === 'calendario' && (
@@ -818,6 +833,7 @@ function App() {
                 <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
               </div>
             )}
+            {page === 'lab' && cfg.labEnabled && <Lab subjects={cfg.subjects} />}
             {page === 'recordatorios' && (
               <Reminders reminders={reminders} setReminders={setReminders} works={works} />
             )}
@@ -825,7 +841,7 @@ function App() {
         </div>
 
         {cfg.themeStyle === 'barra' && (
-          <BottomTaskbar page={page} irA={irA} bankEnabled={cfg.bankEnabled} />
+          <BottomTaskbar page={page} irA={irA} flags={navFlags} />
         )}
 
         {menuOpen && (
@@ -859,7 +875,7 @@ function App() {
                   setMenuOpen(false)
                 }}
                 bankInitial={bankInitial}
-                bankEnabled={cfg.bankEnabled}
+                flags={navFlags}
                 themeStyle={cfg.themeStyle}
               />
             </div>
@@ -922,7 +938,7 @@ function App() {
 
         {musicEmbed && musicPlayerOpen && cfg.backgroundMode !== 'video' && (
           <div className="fixed right-4 bottom-4 z-40 w-72 overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-lg dark:border-white/10">
-            {embedConsent && musicEmbed.provider === 'youtube' && musicMinimized ? (
+            {showMiniPlayer ? (
               <div className="flex flex-col gap-1.5 p-2.5">
                 <div className="flex items-center gap-2">
                   <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
@@ -1006,59 +1022,58 @@ function App() {
                 </div>
               </div>
             ) : (
-              <>
-                <div className={`flex items-center justify-between gap-1 px-3 py-1.5 ${line} border-b`}>
-                  <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
-                    {t('Tu música')}
-                  </span>
-                  {embedConsent && musicEmbed.provider === 'youtube' && (
-                    <button
-                      type="button"
-                      onClick={() => setMusicMinimized(true)}
-                      aria-label={t('Minimizar')}
-                      className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
-                    >
-                      <Icon name="down" className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+              <div className={`flex items-center justify-between gap-1 px-3 py-1.5 ${line} border-b`}>
+                <span className="min-w-0 flex-1 truncate text-[0.65rem] text-neutral-400 dark:text-neutral-500">
+                  {t('Tu música')}
+                </span>
+                {embedConsent && musicEmbed.provider === 'youtube' && (
                   <button
                     type="button"
-                    onClick={() => setMusicPlayerOpen(false)}
-                    aria-label={t('Cerrar')}
+                    onClick={() => setMusicMinimized(true)}
+                    aria-label={t('Minimizar')}
                     className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
                   >
-                    <Icon name="close" className="h-3.5 w-3.5" />
+                    <Icon name="down" className="h-3.5 w-3.5" />
                   </button>
-                </div>
-                {embedConsent ? (
-                  <iframe
-                    id="nivra-music-player"
-                    key={musicEmbed.url}
-                    src={musicEmbed.url}
-                    title={musicEmbed.provider === 'spotify' ? 'Spotify' : 'YouTube'}
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    className="w-full border-0"
-                    height={musicEmbed.provider === 'spotify' ? 152 : 160}
-                    allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex flex-col gap-2 px-3 pb-3">
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {t(
-                        'Este reproductor se carga desde los servidores de Spotify o YouTube y puede usar sus propias cookies.',
-                      )}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setEmbedConsent(true)}
-                      className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-neutral-900"
-                    >
-                      {t('Cargar reproductor')}
-                    </button>
-                  </div>
                 )}
-              </>
+                <button
+                  type="button"
+                  onClick={() => setMusicPlayerOpen(false)}
+                  aria-label={t('Cerrar')}
+                  className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+                >
+                  <Icon name="close" className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+            {embedConsent ? (
+              <div className={showMiniPlayer ? 'h-0 overflow-hidden' : ''}>
+                <iframe
+                  id="nivra-music-player"
+                  key={musicEmbed.url}
+                  src={musicEmbed.url}
+                  title={musicEmbed.provider === 'spotify' ? 'Spotify' : 'YouTube'}
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  className="w-full border-0"
+                  height={musicEmbed.provider === 'spotify' ? 152 : 160}
+                  allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 px-3 pb-3">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {t(
+                    'Este reproductor se carga desde los servidores de Spotify o YouTube y puede usar sus propias cookies.',
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setEmbedConsent(true)}
+                  className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-neutral-900"
+                >
+                  {t('Cargar reproductor')}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -1086,8 +1101,8 @@ function App() {
 
       {dashboardEditorOpen && (
         <DashboardEditor
-          layout={cfg.dashboardLayout}
-          setLayout={cfg.setDashboardLayout}
+          slots={cfg.dashboardSlots}
+          setSlots={cfg.setDashboardSlots}
           onClose={() => setDashboardEditorOpen(false)}
         />
       )}
@@ -1101,7 +1116,7 @@ function Navigation({
   bankTab,
   setBankTab,
   bankInitial,
-  bankEnabled,
+  flags,
   themeStyle,
 }: {
   page: PageId
@@ -1109,7 +1124,7 @@ function Navigation({
   bankTab: BankTab
   setBankTab: (t: BankTab) => void
   bankInitial: number | null
-  bankEnabled: boolean
+  flags: { bankEnabled: boolean; labEnabled: boolean }
   themeStyle: 'clasico' | 'carpetas' | 'barra'
 }) {
   const navItem = (activo: boolean) =>
@@ -1138,23 +1153,25 @@ function Navigation({
     </div>
   )
 
+  const visibleGroups = GROUPS.filter((g) => g.pages.some((p) => pageAvailable(p.id, flags)))
+
   if (themeStyle === 'carpetas') {
     return (
       <nav className="flex flex-col gap-5 pb-4">
-        {GROUPS.map((g) => (
+        {visibleGroups.map((g) => (
           <div key={g.title}>
             <p className="mb-2 px-1 text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
               {t(g.title)}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {g.pages
-                .filter((p) => p.id !== 'banco' || bankEnabled)
+                .filter((p) => pageAvailable(p.id, flags))
                 .map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => irA(p.id)}
-                    className="group flex flex-col items-center gap-1.5"
+                    className={`group flex flex-col items-center gap-1.5 ${p.id === 'lab' ? 'col-span-3' : ''}`}
                   >
                     <span className="relative">
                       <span
@@ -1163,7 +1180,9 @@ function Navigation({
                         }`}
                       />
                       <span
-                        className={`flex h-12 w-14 items-center justify-center rounded-lg rounded-tl-none border transition-colors ${
+                        className={`flex h-12 items-center justify-center rounded-lg rounded-tl-none border transition-colors ${
+                          p.id === 'lab' ? 'w-[11.5rem]' : 'w-14'
+                        } ${
                           page === p.id
                             ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
                             : `${line} text-neutral-500 group-hover:bg-black/[0.03] dark:text-neutral-400 dark:group-hover:bg-white/[0.05]`
@@ -1189,14 +1208,14 @@ function Navigation({
 
   return (
           <nav className="flex flex-col gap-6 pb-4">
-            {GROUPS.map((g) => (
+            {visibleGroups.map((g) => (
               <div key={g.title}>
                 <p className="mb-2 px-3 text-[0.65rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
                   {t(g.title)}
                 </p>
                 <div className="flex flex-col gap-0.5">
                   {g.pages
-                    .filter((p) => p.id !== 'banco' || bankEnabled)
+                    .filter((p) => pageAvailable(p.id, flags))
                     .map((p) => (
                     <div key={p.id}>
                       <button type="button" onClick={() => irA(p.id)} className={navItem(page === p.id)}>
@@ -1219,17 +1238,17 @@ function Navigation({
 function BottomTaskbar({
   page,
   irA,
-  bankEnabled,
+  flags,
 }: {
   page: PageId
   irA: (p: PageId) => void
-  bankEnabled: boolean
+  flags: { bankEnabled: boolean; labEnabled: boolean }
 }) {
   return (
     <nav
       className={`nivra-menu nivra-scroll fixed inset-x-0 bottom-0 z-20 flex items-center justify-center gap-1 overflow-x-auto border-t bg-[var(--paper)] px-2 py-1.5 ${line}`}
     >
-      {PAGES.filter((p) => p.id !== 'banco' || bankEnabled).map((p) => (
+      {PAGES.filter((p) => pageAvailable(p.id, flags)).map((p) => (
         <button
           key={p.id}
           type="button"

@@ -516,6 +516,12 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M13.5 10.5a4 4 0 00-5.7 0L5 13.3a4 4 0 105.7 5.7l1.2-1.2" />
     </>
   ),
+  lab: (
+    <>
+      <path d="M9 3h6M10 3v6l-5.2 9a2 2 0 001.7 3h11a2 2 0 001.7-3L14 9V3" />
+      <path d="M7.5 15h9" />
+    </>
+  ),
   timer: (
     <>
       <circle cx="12" cy="13" r="8" />

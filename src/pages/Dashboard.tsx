@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import {
   TYPES,
   blockProfile,
@@ -20,7 +21,7 @@ import { Countdowns } from '../components/Countdowns'
 import { Flame } from '../components/Flame'
 import { Empty, Icon, Label, card, line } from '../components/ui'
 import { locale, t } from '../lib/i18n'
-import { GRID_SIZE, type DashboardCell, type WidgetType } from '../lib/dashboardLayout'
+import { normalizeSlots, type WidgetType } from '../lib/dashboardLayout'
 
 type Props = {
   items: CalItem[]
@@ -36,7 +37,7 @@ type Props = {
   setStreak: (update: (prev: Streak) => Streak) => void
   profile: string
   onGo: (page: PageId) => void
-  layout: DashboardCell[]
+  slots: WidgetType[]
 }
 
 export function Dashboard({
@@ -53,7 +54,7 @@ export function Dashboard({
   setStreak,
   profile,
   onGo,
-  layout,
+  slots,
 }: Props) {
   const today = new Date()
   const todayKey = dateKey(today)
@@ -67,6 +68,8 @@ export function Dashboard({
     .filter((w) => w.date && w.date >= todayKey)
     .sort((a, b) => a.date!.localeCompare(b.date!))
     .slice(0, 5)
+
+  const list = normalizeSlots(slots)
 
   const widgetContent = (widgetType: WidgetType, delay: number) => {
     switch (widgetType) {
@@ -98,9 +101,7 @@ export function Dashboard({
         )
       case 'cuentas-atras':
         return (
-          <div style={{ animationDelay: `${delay}s` }} className="animate-[fade-in_0.4s_ease-out_both] h-full">
-            <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
-          </div>
+          <Countdowns countdowns={countdowns} setCountdowns={setCountdowns} />
         )
       case 'hoy-detalle':
         return (
@@ -202,7 +203,7 @@ export function Dashboard({
       case 'racha':
         return <Flame streak={streak} setStreak={setStreak} delay={delay} />
       default:
-        return null
+        return <div />
     }
   }
 
@@ -240,24 +241,21 @@ export function Dashboard({
         </h2>
       </header>
 
-      <div
-        className="grid flex-1 gap-3 sm:gap-4 lg:min-h-0"
-        style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-          gridTemplateRows: `repeat(${GRID_SIZE}, minmax(96px, auto))`,
-        }}
-      >
-        {layout.map((cell, i) => (
-          <div
-            key={cell.id}
-            style={{
-              gridColumn: `${cell.col + 1} / span ${cell.colSpan}`,
-              gridRow: `${cell.row + 1} / span ${cell.rowSpan}`,
-            }}
-            className="min-h-0 min-w-0"
-          >
-            {widgetContent(cell.type, i * 0.04)}
-          </div>
+      <div className="animate-[fade-in_0.4s_ease-out_0.05s_both] grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        {list.slice(0, 4).map((type, i) => (
+          <Fragment key={i}>{widgetContent(type, 0.05 + i * 0.04)}</Fragment>
+        ))}
+      </div>
+
+      {list[4] !== 'vacio' && (
+        <div className="animate-[fade-in_0.4s_ease-out_0.08s_both] lg:max-h-[30%] lg:shrink-0 lg:overflow-y-auto lg:overscroll-contain">
+          {widgetContent(list[4], 0)}
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:grid-rows-3 xl:grid-cols-3 xl:grid-rows-2">
+        {list.slice(5).map((type, i) => (
+          <Fragment key={i}>{widgetContent(type, 0.1 + i * 0.05)}</Fragment>
         ))}
       </div>
     </div>
@@ -280,7 +278,7 @@ function StatTile({
       type="button"
       onClick={onClick}
       style={{ animationDelay: `${delay}s` }}
-      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex h-full w-full flex-col justify-center px-4 py-4 text-left transition-colors hover:border-black/15 sm:px-5 sm:py-6 dark:hover:border-white/20`}
+      className={`${card} px-4 py-4 text-left transition-colors hover:border-black/15 sm:px-5 sm:py-6 dark:hover:border-white/20`}
     >
       <p className="truncate font-mono text-xl font-medium tracking-tight tabular-nums sm:text-3xl">{value}</p>
       <p className="mt-1 text-[0.7rem] text-neutral-400 sm:text-xs dark:text-neutral-500">{label}</p>
@@ -308,7 +306,7 @@ function Panel({
   return (
     <section
       style={{ animationDelay: `${delay}s` }}
-      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex h-full min-h-0 flex-col p-5 sm:p-6`}
+      className={`${card} animate-[fade-in_0.4s_ease-out_both] flex min-h-0 flex-col p-5 sm:p-6`}
     >
       <Label>{title}</Label>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>

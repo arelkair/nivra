@@ -15,6 +15,7 @@ export type PageId =
   | 'suscripciones'
   | 'cuentas'
   | 'recordatorios'
+  | 'lab'
 
 export type Unit = 'years' | 'months' | 'days' | 'hours' | 'minutes' | 'seconds'
 

@@ -1,5 +1,5 @@
 import { useStored, type Subject } from './store'
-import { DEFAULT_DASHBOARD_LAYOUT, type DashboardCell } from './dashboardLayout'
+import { DEFAULT_DASHBOARD_SLOTS, type WidgetType } from './dashboardLayout'
 
 export function useSettings() {
   const [intro, setIntro] = useStored('nivra-intro', true)
@@ -17,10 +17,11 @@ export function useSettings() {
   const [menuOpacity, setMenuOpacity] = useStored('nivra-menu-opacity', 100)
   const [menuBlur, setMenuBlur] = useStored('nivra-menu-blur', 0)
   const [bankEnabled, setBankEnabled] = useStored('nivra-bank-enabled', true)
+  const [labEnabled, setLabEnabled] = useStored('nivra-lab-enabled', false)
   const [examCountdowns, setExamCountdowns] = useStored('nivra-exam-countdowns', false)
-  const [dashboardLayout, setDashboardLayout] = useStored<DashboardCell[]>(
-    'nivra-dashboard-layout',
-    DEFAULT_DASHBOARD_LAYOUT,
+  const [dashboardSlots, setDashboardSlots] = useStored<WidgetType[]>(
+    'nivra-dashboard-slots',
+    DEFAULT_DASHBOARD_SLOTS,
   )
   const [carouselEnabled, setCarouselEnabled] = useStored('nivra-carousel', false)
   const [carouselSeconds, setCarouselSeconds] = useStored('nivra-carousel-seconds', 8)
@@ -81,10 +82,12 @@ export function useSettings() {
     setMenuBlur,
     bankEnabled,
     setBankEnabled,
+    labEnabled,
+    setLabEnabled,
     examCountdowns,
     setExamCountdowns,
-    dashboardLayout,
-    setDashboardLayout,
+    dashboardSlots,
+    setDashboardSlots,
     carouselEnabled,
     setCarouselEnabled,
     carouselSeconds,
