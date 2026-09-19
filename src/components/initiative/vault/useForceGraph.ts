@@ -12,6 +12,7 @@ export function useForceGraph(nodes: GNode[], edges: GEdge[], options: Options, 
   const alpha = useRef(1)
   const frame = useRef(0)
   const dragging = useRef(false)
+  const settle = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [, setTick] = useState(0)
   const graph = useRef({ nodes, edges, options, layout })
   graph.current = { nodes, edges, options, layout }
@@ -128,6 +129,7 @@ export function useForceGraph(nodes: GNode[], edges: GEdge[], options: Options, 
   useEffect(
     () => () => {
       cancelAnimationFrame(frame.current)
+      clearTimeout(settle.current)
       frame.current = 0
     },
     [],
@@ -148,15 +150,30 @@ export function useForceGraph(nodes: GNode[], edges: GEdge[], options: Options, 
   )
 
   const release = useCallback(
-    (id: string) => {
-      const p = bodies.current.get(id)
-      if (p) {
-        p.home = { x: p.x, y: p.y }
-        p.fixed = graph.current.layout.pinned.has(id)
+    (ids: string | string[], keep = false) => {
+      for (const id of Array.isArray(ids) ? ids : [ids]) {
+        const p = bodies.current.get(id)
+        if (!p) continue
+        if (!keep) p.home = { x: p.x, y: p.y }
+        p.fixed = keep ? false : graph.current.layout.pinned.has(id)
       }
       dragging.current = false
-      alpha.current = Math.max(alpha.current, 0.3)
+      alpha.current = Math.max(alpha.current, keep ? 0.7 : 0.3)
       run()
+      if (!keep) return
+      const list = Array.isArray(ids) ? ids : [ids]
+      clearTimeout(settle.current)
+      settle.current = setTimeout(() => {
+        for (const id of list) {
+          const p = bodies.current.get(id)
+          if (!p?.home || p.fixed) continue
+          p.x = p.home.x
+          p.y = p.home.y
+          p.vx = 0
+          p.vy = 0
+        }
+        setTick((t) => t + 1)
+      }, 1100)
     },
     [run],
   )

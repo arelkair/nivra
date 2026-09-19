@@ -25,10 +25,12 @@ type Prefs = {
   repulsion: number
   link: number
   positions: Record<string, { x: number; y: number }>
+  shapes: Record<string, Shape>
+  locked: boolean
   view: { x: number; y: number; k: number } | null
 }
 
-const DEFAULT_PREFS: Prefs = { ghosts: true, folders: true, labels: true, repulsion: 1400, link: 130, positions: {}, view: null }
+const DEFAULT_PREFS: Prefs = { ghosts: true, folders: true, labels: true, repulsion: 1400, link: 130, positions: {}, shapes: {}, locked: false, view: null }
 const CENTER = '#a78bfa'
 
 type Shape = 'circle' | 'square' | 'diamond' | 'hexagon' | 'triangle' | 'star'
@@ -81,7 +83,17 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const [centerShape, setCenterShape] = useStored<Shape>('nivra-vault-center-shape', 'circle')
   const [hover, setHover] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
-  const drag = useRef<{ kind: 'node' | 'pan'; id?: string; x: number; y: number; moved: boolean } | null>(null)
+  const [multi, setMulti] = useState<Set<string>>(new Set())
+  const multiRef = useRef(multi)
+  multiRef.current = multi
+  const [box, setBox] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null)
+  const shapes = prefs.shapes ?? {}
+  const locked = !!prefs.locked
+  const drag = useRef<
+    | { kind: 'node'; id: string; group: string[]; origins: Map<string, { x: number; y: number }>; start: { x: number; y: number }; ox: number; oy: number; moved: boolean; modifier: boolean; wasIn: boolean }
+    | { kind: 'pan' | 'box'; x: number; y: number; ox: number; oy: number; moved: boolean }
+    | null
+  >(null)
   const hoverFrame = useRef(0)
   const scheduleHover = (id: string | null) => {
     cancelAnimationFrame(hoverFrame.current)
@@ -180,40 +192,115 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const onPointerDown = (e: React.PointerEvent, id?: string) => {
     e.stopPropagation()
     svg.current?.setPointerCapture(e.pointerId)
-    drag.current = { kind: id ? 'node' : 'pan', id, x: e.clientX, y: e.clientY, moved: false }
-    if (id) {
-      const p = toGraph(e.clientX, e.clientY)
-      pin(id, p.x, p.y)
+    if (!id) {
+      const boxMode = e.shiftKey
+      drag.current = { kind: boxMode ? 'box' : 'pan', x: e.clientX, y: e.clientY, ox: e.clientX, oy: e.clientY, moved: false }
+      if (boxMode) setBox({ x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY })
+      return
     }
+    const modifier = e.shiftKey || e.ctrlKey || e.metaKey
+    const current = multiRef.current
+    const wasIn = current.has(id)
+    let group: string[]
+    if (modifier) {
+      const next = new Set(current).add(id)
+      setMulti(next)
+      group = [...next]
+    } else if (wasIn && current.size > 1) group = [...current]
+    else {
+      if (current.size > 0) setMulti(new Set())
+      group = [id]
+    }
+    const origins = new Map<string, { x: number; y: number }>()
+    for (const gid of group) {
+      const body = bodies.get(gid)
+      if (body) origins.set(gid, { x: body.x, y: body.y })
+    }
+    drag.current = { kind: 'node', id, group, origins, start: toGraph(e.clientX, e.clientY), ox: e.clientX, oy: e.clientY, moved: false, modifier, wasIn }
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current
     if (!d) return
-    if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) d.moved = true
-    if (d.kind === 'node' && d.id) {
+    if (Math.hypot(e.clientX - d.ox, e.clientY - d.oy) > 4) d.moved = true
+    if (d.kind === 'node') {
+      if (!d.moved) return
       const p = toGraph(e.clientX, e.clientY)
-      pin(d.id, p.x, p.y)
+      for (const [gid, origin] of d.origins) pin(gid, origin.x + p.x - d.start.x, origin.y + p.y - d.start.y)
     } else if (d.kind === 'pan') {
       const dx = e.clientX - d.x
       const dy = e.clientY - d.y
       d.x = e.clientX
       d.y = e.clientY
       setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }))
-    }
+    } else setBox((b) => (b ? { ...b, x1: e.clientX, y1: e.clientY } : b))
   }
 
   const onPointerUp = () => {
     const d = drag.current
     drag.current = null
     if (!d) return
-    if (d.kind === 'node' && d.id) {
-      release(d.id)
-      const body = bodies.get(d.id)
-      if (d.moved && body) setPrefs((prev) => ({ ...prev, positions: { ...prev.positions, [d.id!]: { x: Math.round(body.x), y: Math.round(body.y) } } }))
-      if (!d.moved) setSelected(d.id)
-    } else if (!d.moved) setSelected(null)
+    if (d.kind === 'node') {
+      if (d.moved) {
+        release(d.group, locked)
+        if (!locked) {
+          const moved: Record<string, { x: number; y: number }> = {}
+          for (const gid of d.group) {
+            const body = bodies.get(gid)
+            if (body) moved[gid] = { x: Math.round(body.x), y: Math.round(body.y) }
+          }
+          setPrefs((prev) => ({ ...prev, positions: { ...prev.positions, ...moved } }))
+        }
+      } else if (d.modifier) {
+        if (d.wasIn)
+          setMulti((prev) => {
+            const next = new Set(prev)
+            next.delete(d.id)
+            return next
+          })
+      } else setSelected(d.id)
+    } else if (d.kind === 'box') {
+      const frame = svg.current?.getBoundingClientRect()
+      const area = box
+      setBox(null)
+      if (!frame || !area || !d.moved) return
+      const v = viewRef.current
+      const [left, right] = [Math.min(area.x0, area.x1), Math.max(area.x0, area.x1)]
+      const [top, bottom] = [Math.min(area.y0, area.y1), Math.max(area.y0, area.y1)]
+      const inside = new Set<string>()
+      for (const n of nodes) {
+        const body = bodies.get(n.id)
+        if (!body) continue
+        const x = frame.left + frame.width / 2 + v.x + body.x * v.k
+        const y = frame.top + frame.height / 2 + v.y + body.y * v.k
+        if (x >= left && x <= right && y >= top && y <= bottom) inside.add(n.id)
+      }
+      setMulti(inside)
+      setSelected(null)
+    } else if (!d.moved) {
+      setSelected(null)
+      setMulti(new Set())
+    }
   }
+
+  const chosen = multi.size > 0 ? [...multi] : selected ? [selected] : []
+  const chosenShapes = new Set(chosen.map((id) => shapes[id] ?? 'auto'))
+  const commonShape = chosenShapes.size === 1 ? [...chosenShapes][0] : 'mixed'
+
+  const applyShape = (value: string) => {
+    setPrefs((prev) => {
+      const next = { ...(prev.shapes ?? {}) }
+      for (const id of chosen) {
+        if (value === 'auto') delete next[id]
+        else next[id] = value as Shape
+      }
+      return { ...prev, shapes: next }
+    })
+  }
+
+  const toggleLock = () => patch({ locked: !locked })
+
+  const shapeOf = (id: string): Shape => shapes[id] ?? (id === centralNode ? centerShape : 'circle')
 
   const q = norm(query)
   const focus = hover ?? selected
@@ -331,6 +418,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
               const isCentral = n.id === centralNode
                           const fill = isCentral ? CENTER : n.folder ? FOLDER : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
               const isActive = n.id === activeId
+              const shape = shapeOf(n.id)
               const faded = dim(n.id)
               const near = focus !== null && (n.id === focus || adjacent.get(focus)?.has(n.id))
               const showLabel = labels && (isCentral || n.folder || near || isActive || nodes.length <= 24 || view.k >= 1.3)
@@ -346,10 +434,11 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                   onDoubleClick={() => (n.folder ? onOpenFolder(n.id.slice(7)) : n.ghost ? onCreate(n.label) : onOpen(n.id))}
                 >
                   {isActive && <circle r={r + 5} fill="none" stroke={ink} strokeWidth={1.5} opacity={0.6} />}
-                  {isCentral && centerShape === 'square' ? (
-                    <rect x={-r} y={-r} width={r * 2} height={r * 2} rx={r * 0.25} fill={fill} stroke={ink} strokeWidth={n.id === selected ? 2 : 0} />
-                  ) : isCentral && centerShape !== 'circle' ? (
-                    <polygon points={shapePoints(centerShape, r)} fill={fill} stroke={ink} strokeWidth={n.id === selected ? 2 : 0} strokeLinejoin="round" />
+                  {multi.has(n.id) && <circle r={r + 6} fill="none" stroke={CENTER} strokeWidth={1.6} strokeDasharray="4 3" />}
+                  {shape === 'square' ? (
+                    <rect x={-r} y={-r} width={r * 2} height={r * 2} rx={r * 0.25} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
+                  ) : shape !== 'circle' ? (
+                    <polygon points={shapePoints(shape, r)} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} strokeLinejoin="round" />
                   ) : (
                     <circle r={r} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
                   )}
@@ -375,6 +464,52 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
           </g>
         </svg>
 
+        {box && wrap.current && (
+          <div
+            className="pointer-events-none absolute border border-dashed"
+            style={{
+              left: Math.min(box.x0, box.x1) - wrap.current.getBoundingClientRect().left,
+              top: Math.min(box.y0, box.y1) - wrap.current.getBoundingClientRect().top,
+              width: Math.abs(box.x1 - box.x0),
+              height: Math.abs(box.y1 - box.y0),
+              borderColor: CENTER,
+              background: `${CENTER}22`,
+            }}
+          />
+        )}
+
+        {chosen.length > 0 && (
+          <div className={`absolute top-3 left-3 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 shadow-lg ${s.line} ${dark ? 'bg-neutral-900' : 'bg-white'}`}>
+            <span className="text-xs tabular-nums">
+              {chosen.length} {t(chosen.length === 1 ? 'seleccionado' : 'seleccionados')}
+            </span>
+            <select value={commonShape} onChange={(e) => applyShape(e.target.value)} aria-label={t('Forma de la selección')} className={`${s.field} !w-auto !py-1 text-xs`}>
+              {commonShape === 'mixed' && (
+                <option value="mixed" disabled>
+                  {t('Mezcladas')}
+                </option>
+              )}
+              <option value="auto">{t('Automática')}</option>
+              {SHAPES.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {t(x.label)}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => {
+                setMulti(new Set())
+                setSelected(null)
+              }}
+              aria-label={t('Quitar la selección')}
+              className={`${s.muted} ${s.hoverText}`}
+            >
+              <Icon name="close" className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         {nodes.length === 0 && (
           <p className={`absolute inset-0 grid place-items-center px-6 text-center text-sm ${s.faint}`}>
             {t('Aún no hay notas. Crea algunas y enlázalas con [[Título]].')}
@@ -382,6 +517,16 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
         )}
 
         <div className="absolute right-3 bottom-3 flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={toggleLock}
+            aria-pressed={locked}
+            aria-label={locked ? t('Desbloquear posiciones') : t('Bloquear posiciones')}
+            title={locked ? t('Bloqueado: al soltar, los círculos vuelven a su sitio') : t('Bloquear posiciones')}
+            className={`${s.iconButton} ${locked ? s.active : ''}`}
+          >
+            <Icon name={locked ? 'lock' : 'unlock'} className="h-4 w-4" />
+          </button>
           <button type="button" onClick={() => setView((v) => ({ ...v, k: Math.min(3, v.k * 1.2) }))} aria-label={t('Acercar')} className={s.iconButton}>
             +
           </button>
@@ -430,7 +575,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
         )}
       </div>
       <p className={`text-[0.7rem] ${s.faint}`}>
-        {t('Arrastra los nodos para moverlos, arrastra el fondo para desplazarte y usa la rueda para acercar. Doble clic para abrir.')}
+        {t('Arrastra los nodos para moverlos, arrastra el fondo para desplazarte y usa la rueda para acercar. Mayús + arrastrar selecciona varios, y Ctrl + clic añade uno. Doble clic para abrir.')}
       </p>
     </div>
   )
