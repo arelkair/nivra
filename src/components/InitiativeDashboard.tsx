@@ -18,6 +18,7 @@ import {
   type Grade,
   type Movement,
   type BankAccount,
+  MAIN_ACCOUNT,
   accountBalances,
   type NivraEvent,
   type Notepad,
@@ -203,6 +204,7 @@ export function InitiativeDashboard({
   const [migrated, setMigrated] = useStored<string[]>('nivra-vault-migrated', [])
   const [vaultTarget, setVaultTarget] = useState<string | null>(null)
   const [calendarFocus, setCalendarFocus] = useState<string | null>(null)
+  const [bankFocus, setBankFocus] = useState<string | null>(null)
   const [pendingFocus, setPendingFocus] = useState<string | null>(null)
 
   useEffect(() => {
@@ -247,6 +249,7 @@ export function InitiativeDashboard({
   const openApp = useCallback(
     (link: AppLink) => {
       if (link.section === 'calendario') setCalendarFocus(link.id ?? null)
+      else if (link.section === 'banco') setBankFocus(link.id ?? null)
       else setPendingFocus(link.id ?? null)
       setSection(link.section)
     },
@@ -269,8 +272,11 @@ export function InitiativeDashboard({
       ...wishes.map((x) => ({ section: 'deseos' as Section, id: x.id, label: x.title })),
       ...subs.map((x) => ({ section: 'suscripciones' as Section, id: x.id, label: x.title })),
       ...countdowns.map((x) => ({ section: 'cuentas' as Section, id: x.id, label: x.title })),
+      ...(bankEnabled && bankInitial !== null
+        ? [{ section: 'banco' as Section, id: MAIN_ACCOUNT, label: t('Principal') }, ...accounts.map((x) => ({ section: 'banco' as Section, id: x.id, label: x.name }))]
+        : []),
     ].filter((x) => x.label)
-  }, [items, tasks, works, reminders, wishes, subs, countdowns])
+  }, [items, tasks, works, reminders, wishes, subs, countdowns, accounts, bankEnabled, bankInitial])
 
   const sections = SECTIONS.filter((x) => x.id !== 'banco' || bankEnabled)
 
@@ -591,6 +597,8 @@ export function InitiativeDashboard({
             setMovements={setMovements}
             accounts={accounts}
             setAccounts={setAccounts}
+            focusAccount={bankFocus}
+            onFocusHandled={() => setBankFocus(null)}
             goals={goals}
             setGoals={setGoals}
             dark={dark}

@@ -77,10 +77,11 @@ export type Subscription = {
   account?: string
 }
 
-export type Goal =
+export type Goal = (
   | { id: string; kind: 'meta'; title: string; amount: number; date: string }
   | { id: string; kind: 'limite'; title: string; amount: number; period: 'semana' | 'mes' }
   | { id: string; kind: 'idea'; title: string; desc?: string }
+) & { account?: string }
 
 export const SUBSCRIPTION_CAT = 'Suscripción'
 

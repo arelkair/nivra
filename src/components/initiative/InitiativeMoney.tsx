@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EXPENSE_CATS, INCOME_CATS, MAIN_ACCOUNT, SUBSCRIPTION_CAT, accountBalances, accountOf, dateKey, eur, type BankAccount, type Goal, type Movement } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { locale, t } from '../../lib/i18n'
@@ -17,6 +17,8 @@ type Props = {
   setAccounts: (update: (prev: BankAccount[]) => BankAccount[]) => void
   goals: Goal[]
   setGoals: (update: (prev: Goal[]) => Goal[]) => void
+  focusAccount: string | null
+  onFocusHandled: () => void
   dark: boolean
 }
 
@@ -37,13 +39,20 @@ const PERIODS: { id: Period; label: string }[] = [
 
 const allCats = (kind: Movement['kind']) => (kind === 'ingreso' ? INCOME_CATS : [...EXPENSE_CATS, SUBSCRIPTION_CAT])
 
-export function InitiativeMoney({ initial, setInitial, movements, setMovements, accounts, setAccounts, goals, setGoals, dark }: Props) {
+export function InitiativeMoney({ initial, setInitial, movements, setMovements, accounts, setAccounts, goals, setGoals, focusAccount, onFocusHandled, dark }: Props) {
   const s = skin(dark)
   const [tab, setTab] = useState<Tab>('resumen')
   const [period, setPeriod] = useState<Period>('mes')
   const [offset, setOffset] = useState(0)
   const [setup, setSetup] = useState('')
-  const [acct, setAcct] = useState('all')
+  const [acct, setAcct] = useState(MAIN_ACCOUNT)
+
+  useEffect(() => {
+    if (!focusAccount) return
+    setAcct(focusAccount)
+    setTab('resumen')
+    onFocusHandled()
+  }, [focusAccount, onFocusHandled])
 
   if (initial === null) {
     const value = Number(setup.trim().replace(',', '.'))
@@ -78,12 +87,17 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
   }
 
   const balances = accountBalances(initial, accounts, movements)
-  const balance = Object.values(balances).reduce((a, x) => a + x, 0)
-  const selected = acct !== 'all' && (acct === MAIN_ACCOUNT || accounts.some((x) => x.id === acct)) ? acct : 'all'
-  const scoped = selected === 'all' ? movements : movements.filter((m) => accountOf(m, accounts) === selected)
-  const shownBalance = selected === 'all' ? balance : balances[selected]
+  const selected = acct === MAIN_ACCOUNT || accounts.some((x) => x.id === acct) ? acct : MAIN_ACCOUNT
+  const scoped = movements.filter((m) => accountOf(m, accounts) === selected)
+  const balance = balances[selected]
   const extra = accounts.find((x) => x.id === selected) ?? null
-  const scopedInitial = selected === 'all' ? initial + accounts.reduce((a, x) => a + x.initial, 0) : extra ? extra.initial : initial
+  const scopedInitial = extra ? extra.initial : initial
+  const ownGoals = goals.filter((g) => accountOf(g, accounts) === selected)
+  const setOwnGoals = (update: (prev: Goal[]) => Goal[]) =>
+    setGoals((prev) => [
+      ...prev.filter((g) => accountOf(g, accounts) !== selected),
+      ...update(prev.filter((g) => accountOf(g, accounts) === selected)).map((g) => ({ ...g, account: selected === MAIN_ACCOUNT ? undefined : selected })),
+    ])
   const nameOf = (id: string) => (id === MAIN_ACCOUNT ? t('Principal') : accounts.find((x) => x.id === id)?.name ?? t('Principal'))
   const range = periodRange(period, offset)
   const inPeriod = scoped.filter((m) => inRange(m, range.from, range.to))
@@ -97,12 +111,15 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
   const removeAccount = (id: string) => {
     const beforeAccounts = accounts
     const beforeMovements = movements
+    const beforeGoals = goals
     setMovements((prev) => prev.filter((m) => accountOf(m, accounts) !== id))
+    setGoals((prev) => prev.filter((g) => accountOf(g, accounts) !== id))
     setAccounts((prev) => prev.filter((x) => x.id !== id))
-    setAcct('all')
+    setAcct(MAIN_ACCOUNT)
     notifyWithUndo(t('Cuenta eliminada'), () => {
       setAccounts(() => beforeAccounts)
       setMovements(() => beforeMovements)
+      setGoals(() => beforeGoals)
     })
   }
   const income = sum(inPeriod, 'ingreso')
@@ -115,11 +132,11 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className={label}>{selected === 'all' ? (accounts.length > 0 ? t('Dinero total') : t('Dinero actual')) : nameOf(selected)}</p>
+          <p className={label}>{accounts.length > 0 ? nameOf(selected) : t('Dinero actual')}</p>
           <h1
-            className={`font-initiative text-4xl font-medium tracking-tight tabular-nums sm:text-5xl ${shownBalance < 0 ? 'text-red-500' : ''}`}
+            className={`font-initiative text-4xl font-medium tracking-tight tabular-nums sm:text-5xl ${balance < 0 ? 'text-red-500' : ''}`}
           >
-            {eur(shownBalance)}
+            {eur(balance)}
           </h1>
         </div>
         <div className={`flex rounded-lg border p-0.5 ${s.line}`}>
@@ -137,17 +154,7 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
         </div>
       </div>
 
-      {tab !== 'objetivos' && (
-        <AccountBar
-          s={s}
-          accounts={accounts}
-          balances={balances}
-          selected={selected}
-          onSelect={setAcct}
-          onAdd={addAccount}
-          mainName={t('Principal')}
-        />
-      )}
+      <AccountBar s={s} accounts={accounts} balances={balances} selected={selected} onSelect={setAcct} onAdd={addAccount} mainName={t('Principal')} />
 
       {tab !== 'objetivos' && (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -191,11 +198,7 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
           movements={scoped}
           inPeriod={inPeriod}
           initial={scopedInitial}
-          initialField={
-            selected === 'all'
-              ? null
-              : { value: extra ? extra.initial : initial, onChange: (n) => (extra ? setAccounts((prev) => prev.map((x) => (x.id === extra.id ? { ...x, initial: n } : x))) : setInitial(() => n)) }
-          }
+          initialField={{ value: extra ? extra.initial : initial, onChange: (n) => (extra ? setAccounts((prev) => prev.map((x) => (x.id === extra.id ? { ...x, initial: n } : x))) : setInitial(() => n)) }}
           account={extra}
           onRename={(name) => extra && setAccounts((prev) => prev.map((x) => (x.id === extra.id ? { ...x, name } : x)))}
           onRemoveAccount={() => extra && removeAccount(extra.id)}
@@ -209,10 +212,10 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
       )}
 
       {tab === 'movimientos' && (
-        <Movements s={s} inPeriod={inPeriod} movements={movements} setMovements={setMovements} accounts={accounts} selected={selected} nameOf={nameOf} />
+        <Movements s={s} inPeriod={inPeriod} movements={movements} setMovements={setMovements} accounts={accounts} selected={selected} />
       )}
 
-      {tab === 'objetivos' && <MoneyGoals goals={goals} setGoals={setGoals} balance={balance} movements={movements} dark={dark} />}
+      {tab === 'objetivos' && <MoneyGoals key={selected} goals={ownGoals} setGoals={setOwnGoals} balance={balance} movements={scoped} dark={dark} />}
     </div>
   )
 }
@@ -239,7 +242,7 @@ function Summary({
   movements: Movement[]
   inPeriod: Movement[]
   initial: number
-  initialField: { value: number; onChange: (n: number) => void } | null
+  initialField: { value: number; onChange: (n: number) => void }
   account: BankAccount | null
   onRename: (name: string) => void
   onRemoveAccount: () => void
@@ -392,8 +395,7 @@ function Summary({
             <input key={account.id} defaultValue={account.name} maxLength={30} onBlur={(e) => e.target.value.trim() && onRename(e.target.value.trim())} className={`${s.field} !w-36 !py-1.5 text-xs`} />
           </label>
         )}
-        {initialField && (
-          <label className={`flex items-center gap-2 text-xs ${s.muted}`}>
+        <label className={`flex items-center gap-2 text-xs ${s.muted}`}>
             {t('Dinero inicial')}
             <input
               key={`${account?.id ?? 'main'}-${initialField.value}`}
@@ -405,8 +407,7 @@ function Summary({
               }}
               className={`${s.field} !w-32 !py-1.5 font-mono text-xs`}
             />
-          </label>
-        )}
+        </label>
         {account && (
           <button type="button" onClick={onRemoveAccount} className={`flex items-center gap-1.5 text-xs ${s.muted} transition-colors hover:text-red-500`}>
             <Icon name="trash" className="h-3.5 w-3.5" />
@@ -475,7 +476,6 @@ function Movements({
   setMovements,
   accounts,
   selected,
-  nameOf,
 }: {
   s: Skin
   inPeriod: Movement[]
@@ -483,7 +483,6 @@ function Movements({
   setMovements: (update: (prev: Movement[]) => Movement[]) => void
   accounts: BankAccount[]
   selected: string
-  nameOf: (id: string) => string
 }) {
   const [kind, setKind] = useState<Movement['kind']>('gasto')
   const [amount, setAmount] = useState('')
@@ -495,7 +494,7 @@ function Movements({
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
   const [formAccount, setFormAccount] = useState<string | null>(null)
-  const targetAccount = formAccount ?? (selected === 'all' ? MAIN_ACCOUNT : selected)
+  const targetAccount = formAccount ?? selected
 
   const parsed = parseAmount(amount)
   const label = `font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`
@@ -666,11 +665,7 @@ function Movements({
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm">{m.note || m.category}</span>
-                            {(m.note || (accounts.length > 0 && selected === 'all')) && (
-                              <span className={`block truncate text-[0.7rem] ${s.faint}`}>
-                                {[m.note ? m.category : '', accounts.length > 0 && selected === 'all' ? nameOf(accountOf(m, accounts)) : ''].filter(Boolean).join(' · ')}
-                              </span>
-                            )}
+                            {m.note && <span className={`block truncate text-[0.7rem] ${s.faint}`}>{m.category}</span>}
                           </span>
                           <Icon name={open ? 'up' : 'down'} className={`h-3.5 w-3.5 shrink-0 ${s.muted}`} />
                         </button>
@@ -792,7 +787,6 @@ function AccountBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {accounts.length > 0 && chip('all', t('Todas'))}
       {accounts.length > 0 && chip(MAIN_ACCOUNT, mainName, balances[MAIN_ACCOUNT])}
       {accounts.map((a) => chip(a.id, a.name, balances[a.id]))}
       {adding ? (
