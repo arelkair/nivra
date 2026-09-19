@@ -27,7 +27,7 @@ function shift(hhmm: string, minutes: number) {
 
 function Stepper({ label, value, onChange, s }: { label: string; value: string; onChange: (v: string) => void; s: Skin }) {
   return (
-    <div className="flex flex-1 flex-col gap-1.5">
+    <div className="flex min-w-[9.5rem] flex-1 flex-col gap-1.5">
       <span className={`text-[0.65rem] tracking-widest uppercase ${s.faint}`}>{label}</span>
       <div className={`flex items-stretch overflow-hidden rounded-lg border ${s.line}`}>
         <button
@@ -44,7 +44,7 @@ function Stepper({ label, value, onChange, s }: { label: string; value: string; 
           onChange={(e) => onChange(e.target.value)}
           required
           aria-label={label}
-          className="min-w-0 flex-1 bg-transparent px-1 py-2 text-center text-base tabular-nums outline-none sm:text-sm"
+          className="w-0 min-w-0 flex-1 bg-transparent px-0 py-2 text-center text-base tabular-nums outline-none sm:text-sm [&::-webkit-calendar-picker-indicator]:hidden"
         />
         <button
           type="button"
@@ -170,7 +170,7 @@ export function ScheduleEditor({
         )}
 
         <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Stepper label={t('Inicio')} value={draft.start} onChange={(v) => set({ start: v })} s={s} />
             <Stepper label={t('Fin')} value={draft.end} onChange={(v) => set({ end: v })} s={s} />
           </div>

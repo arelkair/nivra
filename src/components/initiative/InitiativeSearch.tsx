@@ -3,6 +3,7 @@ import { t } from '../../lib/i18n'
 import type { Block, CalItem, Countdown, Goal, Grade, Reminder, Subject, Subscription, Task, Wish, Work } from '../../lib/store'
 import { Icon } from '../ui'
 import { SECTIONS, type Section } from './sections'
+import { keyOf } from '../../lib/shortcuts'
 import { skin } from './skin'
 import { snippetOf, type VaultNote } from './vault/vaultModel'
 
@@ -30,6 +31,7 @@ type Props = {
   dark: boolean
   data: Data
   commands: Command[]
+  closeKeys: string[]
   onGo: (section: Section) => void
   onOpenNote: (id: string) => void
 }
@@ -64,7 +66,7 @@ export function InitiativeSearch({ open, ...rest }: Props) {
   return open ? <Palette {...rest} /> : null
 }
 
-function Palette({ onClose, dark, data, commands, onGo, onOpenNote }: Omit<Props, 'open'>) {
+function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }: Omit<Props, 'open'>) {
   const s = skin(dark)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -129,7 +131,10 @@ function Palette({ onClose, dark, data, commands, onGo, onOpenNote }: Omit<Props
   }, [active])
 
   const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
+    if (query === '' && closeKeys.includes(keyOf(e.nativeEvent)) && !e.nativeEvent.ctrlKey && !e.nativeEvent.altKey && !e.nativeEvent.metaKey) {
+      e.preventDefault()
+      onClose()
+    } else if (e.key === 'ArrowDown') {
       e.preventDefault()
       setActive((i) => Math.min(hits.length - 1, i + 1))
     } else if (e.key === 'ArrowUp') {
@@ -152,7 +157,7 @@ function Palette({ onClose, dark, data, commands, onGo, onOpenNote }: Omit<Props
         aria-label={t('Buscar')}
         className={`relative flex max-h-[70svh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${s.line} ${dark ? 'bg-[#131316] text-neutral-100 [color-scheme:dark]' : 'bg-white text-neutral-900'}`}
       >
-        <div className={`flex items-center gap-3 border-b px-4 ${s.line}`}>
+        <div className="flex items-center gap-3 px-4">
           <Icon name="search" className={`h-4 w-4 shrink-0 ${s.muted}`} />
           <input
             ref={input}
@@ -171,7 +176,7 @@ function Palette({ onClose, dark, data, commands, onGo, onOpenNote }: Omit<Props
           <kbd className={`hidden rounded border px-1.5 py-0.5 font-mono text-[0.6rem] sm:block ${s.line} ${s.muted}`}>Esc</kbd>
         </div>
 
-        <ul ref={list} id="initiative-search-list" role="listbox" className="nivra-scroll overflow-y-auto overscroll-contain p-1.5">
+        <ul ref={list} id="initiative-search-list" role="listbox" className="nivra-scroll overflow-y-auto overscroll-contain px-1.5 pb-1.5">
           {hits.length === 0 ? (
             <li className={`px-3 py-6 text-center text-sm ${s.faint}`}>{t('Nada coincide con tu búsqueda.')}</li>
           ) : (

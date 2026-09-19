@@ -1,21 +1,10 @@
 import { useEffect, useState } from 'react'
 import { t, tp } from '../../lib/i18n'
 import type { Settings } from '../../lib/settings'
-import { SHORTCUTS, keyOf } from '../../lib/shortcuts'
+import { SHORTCUTS, keyOf, prettyKey as pretty } from '../../lib/shortcuts'
 import { notify } from '../../lib/undo'
 import { Icon } from '../ui'
 import { skin, type Skin } from './skin'
-
-const pretty = (key: string) =>
-  key
-    .split(' ')
-    .map((part) =>
-      part
-        .split('+')
-        .map((p) => (p === 'ctrl' ? 'Ctrl' : p === 'alt' ? 'Alt' : p === 'shift' ? '⇧' : p === 'arrowleft' ? '←' : p === 'arrowright' ? '→' : p.length === 1 ? p.toUpperCase() : p))
-        .join(' + '),
-    )
-    .join('  ›  ')
 
 export function Keycap({ s, value }: { s: Skin; value: string }) {
   return <kbd className={`inline-block rounded-md border px-1.5 py-0.5 font-mono text-[0.68rem] whitespace-nowrap ${s.line} ${s.dark ? 'bg-white/[0.05]' : 'bg-black/[0.03]'}`}>{pretty(value)}</kbd>

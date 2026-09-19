@@ -53,6 +53,17 @@ export const keyOf = (e: KeyboardEvent) => {
   return parts.join('+')
 }
 
+export const prettyKey = (key: string) =>
+  key
+    .split(' ')
+    .map((part) =>
+      part
+        .split('+')
+        .map((p) => (p === 'ctrl' ? 'Ctrl' : p === 'alt' ? 'Alt' : p === 'shift' ? '⇧' : p === 'arrowleft' ? '←' : p === 'arrowright' ? '→' : p.length === 1 ? p.toUpperCase() : p))
+        .join(' + '),
+    )
+    .join('  ›  ')
+
 export const isTyping = (destino: EventTarget | null) => {
   const element = destino as HTMLElement | null
   if (!element) return false

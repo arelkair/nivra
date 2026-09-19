@@ -18,6 +18,7 @@ import { Search, type Destination, type SearchResult } from './components/Search
 import { Lab } from './pages/Lab'
 import { Settings } from './components/Settings'
 import { snapshotNow } from './lib/autoBackup'
+import { realVolume } from './lib/volume'
 import { DashboardEditor } from './components/DashboardEditor'
 import { FloatingNote } from './components/FloatingNote'
 import { Countdowns } from './components/Countdowns'
@@ -63,6 +64,17 @@ import { t, tp } from './lib/i18n'
 
 const SETUP_KEY = 'nivra-setup-done'
 const INITIATIVE_PENDING_KEY = 'nivra-initiative-pending'
+const INITIATIVE_SEEN_KEY = 'nivra-initiative-intro-seen'
+const SKIP_INTRO_KEY = 'nivra-skip-intro'
+
+const initiativeSeen = () => localStorage.getItem(INITIATIVE_SEEN_KEY) === '1' || localStorage.getItem('nivra-initiative-use-data') !== null
+
+const switchEnvironment = (initiative: boolean) => {
+  localStorage.setItem('nivra-initiative', String(initiative))
+  if (initiative && !initiativeSeen()) sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
+  sessionStorage.setItem(SKIP_INTRO_KEY, '1')
+  location.reload()
+}
 
 type Page = { id: PageId; label: string; short: string; icon: string }
 
@@ -151,12 +163,15 @@ const headerButton =
 
 function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
-  const [introDone, setIntroDone] = useState(() => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1')
+  const [introDone, setIntroDone] = useState(
+    () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1' || sessionStorage.getItem(SKIP_INTRO_KEY) === '1',
+  )
   const [initiativeIntro, setInitiativeIntro] = useState(
-    () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1',
+    () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1' && !initiativeSeen(),
   )
   useEffect(() => {
     sessionStorage.removeItem(INITIATIVE_PENDING_KEY)
+    sessionStorage.removeItem(SKIP_INTRO_KEY)
   }, [])
   useEffect(() => {
     const id = setTimeout(() => void snapshotNow().catch(() => undefined), 4000)
@@ -242,17 +257,17 @@ function App() {
       stopAmbient()
       return
     }
-    startAmbient(cfg.ambientVolume / 100)
+    startAmbient(realVolume(cfg.ambientVolume) / 100)
     return () => stopAmbient()
   }, [cfg.ambientOn, cfg.ambientPreset])
 
   useEffect(() => {
-    if (cfg.ambientOn && cfg.ambientPreset === 'estatico') applyAmbientVolume(cfg.ambientVolume / 100)
+    if (cfg.ambientOn && cfg.ambientPreset === 'estatico') applyAmbientVolume(realVolume(cfg.ambientVolume) / 100)
   }, [cfg.ambientOn, cfg.ambientPreset, cfg.ambientVolume])
 
   const ambientIframe = useRef<HTMLIFrameElement>(null)
   useEffect(() => {
-    if (cfg.ambientOn && ambientVideoId) sendYoutubeCommand(ambientIframe.current, 'setVolume', [cfg.ambientVolume])
+    if (cfg.ambientOn && ambientVideoId) sendYoutubeCommand(ambientIframe.current, 'setVolume', [realVolume(cfg.ambientVolume)])
   }, [cfg.ambientOn, ambientVideoId, cfg.ambientVolume])
 
   const [musicPlayerOpen, setMusicPlayerOpen] = useState(true)
@@ -271,20 +286,20 @@ function App() {
     setMusicPlaying(false)
     setMusicTime(0)
     setMusicDuration(0)
-    if (musicEmbed?.provider !== 'youtube' || !embedConsent) return
+    if (musicEmbed?.provider !== 'youtube' || !embedConsent || cfg.initiativeEnabled) return
     let cancelled = false
     attachYoutubePlayer('nivra-music-player').then((player) => {
       if (cancelled) return
       ytPlayerRef.current = player
-      player.setVolume(cfg.ambientVolume)
+      player.setVolume(realVolume(cfg.ambientVolume))
     })
     return () => {
       cancelled = true
     }
-  }, [musicEmbed?.url, embedConsent])
+  }, [musicEmbed?.url, embedConsent, cfg.initiativeEnabled])
 
   useEffect(() => {
-    if (musicEmbed?.provider !== 'youtube') return
+    if (musicEmbed?.provider !== 'youtube' || cfg.initiativeEnabled) return
     const id = setInterval(() => {
       const player = ytPlayerRef.current
       if (!player) return
@@ -293,10 +308,10 @@ function App() {
       setMusicDuration(player.getDuration() || 0)
     }, 500)
     return () => clearInterval(id)
-  }, [musicEmbed?.provider])
+  }, [musicEmbed?.provider, cfg.initiativeEnabled])
 
   useEffect(() => {
-    ytPlayerRef.current?.setVolume(cfg.ambientVolume)
+    ytPlayerRef.current?.setVolume(realVolume(cfg.ambientVolume))
   }, [cfg.ambientVolume])
 
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
@@ -632,6 +647,7 @@ function App() {
         <InitiativeIntro
           onDone={(useExisting) => {
             localStorage.setItem('nivra-initiative-use-data', String(useExisting))
+            localStorage.setItem(INITIATIVE_SEEN_KEY, '1')
             setInitiativeIntro(false)
           }}
         />
@@ -727,10 +743,6 @@ function App() {
             consent: embedConsent,
             setConsent: setEmbedConsent,
             ambientIframe,
-            player: ytPlayerRef,
-            playing: musicPlaying,
-            time: musicTime,
-            duration: musicDuration,
           }}
           setTasks={setTasks}
           setEvents={setEvents}
@@ -743,10 +755,7 @@ function App() {
           subDays={subscriptionDays}
           anniversaries={anniversaries}
           setAnniversaries={setAnniversaries}
-          onDisable={() => {
-            localStorage.setItem('nivra-initiative', 'false')
-            location.reload()
-          }}
+          onDisable={() => switchEnvironment(false)}
         />
       )}
 
@@ -838,6 +847,15 @@ function App() {
                 className={headerButton}
               >
                 <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="h-[18px] w-[18px]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => switchEnvironment(true)}
+                aria-label={t('Cambiar a Initiative')}
+                title={t('Cambiar a Initiative')}
+                className={headerButton}
+              >
+                <Icon name="classic" className="h-[18px] w-[18px]" />
               </button>
               <button
                 type="button"
@@ -1211,11 +1229,7 @@ function App() {
             setSettingsOpen(false)
             setDashboardEditorOpen(true)
           }}
-          onActivateInitiative={() => {
-            localStorage.setItem('nivra-initiative', 'true')
-            sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
-            location.reload()
-          }}
+          onActivateInitiative={() => switchEnvironment(true)}
         />
       )}
 

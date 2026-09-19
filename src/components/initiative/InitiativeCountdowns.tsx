@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UNITS, countdown, progress, type Countdown } from '../../lib/store'
 import { dateOf, draftToCountdown, freshDraft, timeOf, toDraft, type Draft } from './countdownDraft'
 import { notifyWithUndo } from '../../lib/undo'
@@ -19,6 +19,8 @@ type Props = {
 export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, delay }: Props) {
   const s = skin(dark)
   const [draft, setDraft] = useState<Draft | null>(null)
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
 
   const valid = !!draft && draft.title.trim() !== '' && draft.date !== '' && Object.values(draft.units).some(Boolean)
 
@@ -46,6 +48,15 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
     return new Date(a.target).getTime() - new Date(b.target).getTime()
   })
 
+  const rotating = sorted.length > 1
+  const current = rotating ? index % sorted.length : 0
+
+  useEffect(() => {
+    if (!rotating || paused || draft) return
+    const id = setInterval(() => setIndex((i) => i + 1), 8000)
+    return () => clearInterval(id)
+  }, [rotating, paused, draft, index])
+
   return (
     <Panel
       title={t('Cuentas atrás')}
@@ -68,13 +79,18 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
 
       {countdowns.length === 0 && !draft && <p className={`py-3 text-xs ${s.faint}`}>{t('Sin cuentas atrás.')}</p>}
 
-      {sorted.map((c) => {
+      {(rotating ? [sorted[current]] : sorted).map((c) => {
         const target = new Date(c.target)
         const finished = target.getTime() <= now.getTime()
         const parts = countdown(now, target, c.units)
         const pct = progress(c.created, c.target, now)
         return (
-          <div key={c.id} className={`flex flex-col gap-2 border-b py-3 last:border-0 ${s.line}`}>
+          <div
+            key={c.id}
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            className={`flex animate-[fade-in_0.4s_ease-out_both] flex-col gap-2 border-b py-3 last:border-0 ${s.line}`}
+          >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{c.title}</p>
@@ -110,6 +126,22 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
           </div>
         )
       })}
+
+      {rotating && (
+        <div className="flex items-center justify-center gap-1.5 pt-1 pb-2" role="tablist" aria-label={t('Cuentas atrás')}>
+          {sorted.map((c, i) => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={i === current}
+              aria-label={c.title}
+              onClick={() => setIndex(i)}
+              className={`h-1.5 rounded-full transition-all ${i === current ? `w-4 ${dark ? 'bg-white' : 'bg-neutral-900'}` : `w-1.5 ${dark ? 'bg-white/25' : 'bg-black/20'}`}`}
+            />
+          ))}
+        </div>
+      )}
     </Panel>
   )
 }

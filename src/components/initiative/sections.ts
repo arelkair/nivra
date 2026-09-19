@@ -31,7 +31,7 @@ export const SECTIONS: SectionInfo[] = [
   { id: 'recordatorios', group: 'Utilidades', label: 'Recordatorios', short: 'Avisos', icon: 'bell' },
   { id: 'cuentas', group: 'Utilidades', label: 'Cuentas atrás', short: 'Cuentas', icon: 'timer' },
   { id: 'lab', group: 'Utilidades', label: 'Laboratorio', short: 'Lab', icon: 'lab' },
-  { id: 'boveda', group: 'Utilidades', label: 'Bóveda', short: 'Bóveda', icon: 'graph' },
+  { id: 'boveda', group: 'Conocimiento', label: 'Bóveda', short: 'Bóveda', icon: 'graph' },
 ]
 
 export const PAGE_TO_SECTION: Partial<Record<PageId, Section>> = {

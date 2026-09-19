@@ -37,7 +37,7 @@ export function useSettings() {
   const [ambientPreset, setAmbientPreset] = useStored<
     'lluvia' | 'lluvia-truenos' | 'olas' | 'fuego' | 'estatico' | 'enlace' | 'naturaleza' | 'espacio'
   >('nivra-ambient-preset', 'lluvia')
-  const [ambientVolume, setAmbientVolume] = useStored('nivra-ambient-volume', 20)
+  const [ambientVolume, setAmbientVolume] = useStored('nivra-ambient-volume', 50)
   const [customSoundUrl, setCustomSoundUrl] = useStored('nivra-custom-sound-url', '')
   const [themeStyle, setThemeStyle] = useStored<'clasico' | 'carpetas' | 'barra'>(
     'nivra-theme-style',

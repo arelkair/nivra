@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './ui'
 import { InitiativeSettingsPage } from './initiative/InitiativeSettingsPage'
 import type { Settings } from '../lib/settings'
@@ -40,7 +40,7 @@ import { InitiativeSearch, type Command } from './initiative/InitiativeSearch'
 import { InitiativeNote } from './initiative/InitiativeNote'
 import { InitiativeMusic, type MusicProps } from './initiative/InitiativeMusic'
 import { ShortcutsHelp } from './initiative/ShortcutsPanel'
-import { SHORTCUTS, isTyping, keyOf } from '../lib/shortcuts'
+import { SHORTCUTS, isTyping, keyOf, prettyKey } from '../lib/shortcuts'
 import { InitiativeLab } from './initiative/InitiativeLab'
 import { InitiativeVault } from './initiative/InitiativeVault'
 import { htmlToMarkdown } from './initiative/vault/convert'
@@ -249,17 +249,29 @@ export function InitiativeDashboard({
     { id: 'atajos', label: t('Ver los atajos'), run: () => setHelpOpen(true) },
   ]
 
+  const searchKeys = useMemo(
+    () =>
+      cfg.shortcutsOn
+        ? ['paleta', 'buscar']
+            .filter((id) => cfg.enabledShortcuts[id] !== false)
+            .map((id) => cfg.customKeys[id] ?? SHORTCUTS.find((a) => a.id === id)?.key ?? '')
+            .filter(Boolean)
+        : [],
+    [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys],
+  )
+  const searchHint = searchKeys[0] ? prettyKey(searchKeys[0]).replace(/ \+ /g, ' ') : ''
+
   useEffect(() => {
     if (!cfg.shortcutsOn) return
     let previous = ''
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k' && cfg.enabledShortcuts.paleta !== false) {
+      const pressed = keyOf(e)
+      if (/^(ctrl|alt)\+/.test(pressed) && searchKeys.includes(pressed)) {
         e.preventDefault()
         setSearchOpen((v) => !v)
         return
       }
       if (searchOpen || helpOpen || isTyping(e.target)) return
-      const pressed = keyOf(e)
       const combo = previous === 'g' ? `g ${pressed}` : pressed
       previous = pressed === 'g' ? 'g' : ''
       const shortcut = SHORTCUTS.find((a) => (cfg.customKeys[a.id] ?? a.key) === combo && cfg.enabledShortcuts[a.id] !== false)
@@ -280,7 +292,7 @@ export function InitiativeDashboard({
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, bankEnabled, searchOpen, helpOpen, setSection, step, setTheme, setNoteOpen])
+  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, bankEnabled, searchOpen, helpOpen, searchKeys, setSection, step, setTheme, setNoteOpen])
   const groups = sections.reduce<{ title: string; items: typeof sections }[]>((acc, x) => {
     const last = acc[acc.length - 1]
     if (last && last.title === x.group) last.items.push(x)
@@ -343,7 +355,7 @@ export function InitiativeDashboard({
           type="button"
           onClick={() => setSearchOpen(true)}
           aria-label={t('Buscar')}
-          title={`${t('Buscar')} (Ctrl+K)`}
+          title={searchHint ? `${t('Buscar')} (${searchHint})` : t('Buscar')}
           className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
@@ -352,7 +364,7 @@ export function InitiativeDashboard({
         >
           <Icon name="search" className="h-[18px] w-[18px]" />
           <span className="hidden md:inline">{t('Buscar')}</span>
-          <kbd className="hidden rounded border border-current/20 px-1.5 font-mono text-[0.6rem] opacity-70 lg:inline">Ctrl K</kbd>
+          {searchHint && <kbd className="hidden rounded border border-current/20 px-1.5 font-mono text-[0.6rem] opacity-70 lg:inline">{searchHint}</kbd>}
         </button>
         <button
           type="button"
@@ -365,6 +377,19 @@ export function InitiativeDashboard({
           }`}
         >
           <Icon name={dark ? 'sun' : 'moon'} className="h-[18px] w-[18px]" />
+        </button>
+        <button
+          type="button"
+          onClick={onDisable}
+          aria-label={t('Volver a Nivra Classic')}
+          title={t('Volver a Nivra Classic')}
+          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
+            dark
+              ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
+              : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
+          }`}
+        >
+          <Icon name="initiative" className="h-[18px] w-[18px]" />
         </button>
         <button
           type="button"
@@ -650,6 +675,7 @@ export function InitiativeDashboard({
         dark={dark}
         data={{ tasks, items, works, grades, blocks, subs, wishes, countdowns, reminders, goals, subjects, notes: vaultNotes, bankEnabled }}
         commands={commands}
+        closeKeys={searchKeys}
         onGo={setSection}
         onOpenNote={openNote}
       />

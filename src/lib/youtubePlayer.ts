@@ -8,6 +8,8 @@ type YTPlayer = {
   getCurrentTime: () => number
   getDuration: () => number
   getPlayerState: () => number
+  getPlaylist?: () => string[] | null
+  getPlaylistIndex?: () => number
 }
 
 declare global {
@@ -15,7 +17,7 @@ declare global {
     YT?: {
       Player: new (
         elementId: string,
-        options: { events?: Record<string, (event: { target: YTPlayer }) => void> },
+        options: { events?: Record<string, (event: { target: YTPlayer; data?: number }) => void> },
       ) => YTPlayer
     }
     onYouTubeIframeAPIReady?: () => void
@@ -45,12 +47,17 @@ function loadApi(): Promise<void> {
   return apiPromise
 }
 
-export function attachYoutubePlayer(elementId: string): Promise<YTPlayer> {
+export function attachYoutubePlayer(elementId: string, onState?: (state: number) => void): Promise<YTPlayer> {
   return loadApi().then(
     () =>
       new Promise((resolve) => {
         const player = new window.YT!.Player(elementId, {
-          events: { onReady: () => resolve(player) },
+          events: {
+            onReady: () => resolve(player),
+            onStateChange: (event) => {
+              if (event.data !== undefined) onState?.(event.data)
+            },
+          },
         })
       }),
   )

@@ -60,7 +60,7 @@ const WELCOME: { title: string; body: string }[] = [
 export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, focusId, onFocusHandled }: Props) {
   const s = skin(dark)
   const [tab, setTab] = useState<Tab>('notas')
-  const [activeId, setActiveId] = useState<string | null>(notes[0]?.id ?? null)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('vista')
   const [query, setQuery] = useState('')
   const [tagFilter, setTagFilter] = useState('')
@@ -279,11 +279,17 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
     { label: t('Duplicar'), onSelect: () => duplicateNote(note) },
     ...(folders.length > 0 || note.folder
       ? [
-          { label: '', separator: true, onSelect: noop },
-          ...(note.folder ? [{ label: t('Mover a la raíz'), onSelect: () => moveNote(note.id, undefined) }] : []),
-          ...folders
-            .filter((f) => f.id !== note.folder)
-            .map((f) => ({ label: `${t('Mover a')} ${folderPath(folders, f.id)}`, onSelect: () => moveNote(note.id, f.id) })),
+          {
+            label: t('Mover a'),
+            onSelect: noop,
+            submenu: [
+              ...(note.folder ? [{ label: t('Raíz'), onSelect: () => moveNote(note.id, undefined) }] : []),
+              ...folders
+                .filter((f) => f.id !== note.folder)
+                .map((f) => ({ label: folderPath(folders, f.id), onSelect: () => moveNote(note.id, f.id) }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+            ],
+          },
         ]
       : []),
     { label: '', separator: true, onSelect: noop },

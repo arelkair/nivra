@@ -481,6 +481,8 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   bell: <path d="M18 16v-5a6 6 0 10-12 0v5l-2 3h16zM10 22h4" />,
+  initiative: <path d="M13 3L5 13.5h6L10 21l8-10.5h-6z" />,
+  classic: <path d="M5 4.5h10.5A3.5 3.5 0 0119 8v12.5H8.5A3.5 3.5 0 015 17zM5 17a3.5 3.5 0 013.5-3.5H19" />,
   download: <path d="M12 3v13M7 12l5 5 5-5M4 21h16" />,
   upload: <path d="M12 21V8M7 12l5-5 5 5M4 3h16" />,
   subs: (

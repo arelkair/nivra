@@ -117,7 +117,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
           setNewDate('')
           setNewDue('')
         }}
-        className={`flex flex-col gap-2 rounded-2xl border p-3 sm:flex-row sm:items-center ${s.line} ${s.panel}`}
+        className={`flex flex-col gap-2 rounded-2xl border p-3 ${s.line} ${s.panel}`}
       >
         <input
           value={title}
@@ -125,7 +125,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
           maxLength={80}
           placeholder={t('Nueva tarea')}
           aria-label={t('Nueva tarea')}
-          className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-neutral-500"
+          className="w-full min-w-0 bg-transparent px-2 py-1.5 text-base outline-none placeholder:text-neutral-500 sm:text-sm"
         />
         <div className="flex flex-wrap items-center gap-2">
           <input
