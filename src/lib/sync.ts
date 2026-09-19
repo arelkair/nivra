@@ -17,6 +17,7 @@ const VISUAL_KEYS = new Set([
   'nivra-initiative-note-active',
   'nivra-initiative-note-open',
   'nivra-vault-center-shape',
+  'nivra-vault-graph',
   'nivra-bg-mode',
   'nivra-bg-shape',
   'nivra-bg-gradient',

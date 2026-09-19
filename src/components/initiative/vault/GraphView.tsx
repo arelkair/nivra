@@ -17,6 +17,18 @@ type Props = {
 }
 
 const FOLDER = '#facc15'
+
+type Prefs = {
+  ghosts: boolean
+  folders: boolean
+  labels: boolean
+  repulsion: number
+  link: number
+  positions: Record<string, { x: number; y: number }>
+  view: { x: number; y: number; k: number } | null
+}
+
+const DEFAULT_PREFS: Prefs = { ghosts: true, folders: true, labels: true, repulsion: 1400, link: 130, positions: {}, view: null }
 const CENTER = '#a78bfa'
 
 type Shape = 'circle' | 'square' | 'diamond' | 'hexagon' | 'triangle' | 'star'
@@ -51,15 +63,22 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const svg = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ w: 800, h: 520 })
   const [view, setView] = useState({ x: 0, y: 0, k: 1 })
-  const [ghosts, setGhosts] = useState(true)
-  const [showFolders, setShowFolders] = useState(true)
-  const [labels, setLabels] = useState(true)
+  const [prefs, setPrefs] = useStored<Prefs>('nivra-vault-graph', DEFAULT_PREFS)
+  const { ghosts, folders: showFolders, labels, repulsion, link } = prefs
+  const patch = (changes: Partial<Prefs>) => setPrefs((prev) => ({ ...prev, ...changes }))
+  const setGhosts = (value: boolean) => patch({ ghosts: value })
+  const setShowFolders = (value: boolean) => patch({ folders: value })
+  const setLabels = (value: boolean) => patch({ labels: value })
+  const setRepulsion = (value: number) => patch({ repulsion: value })
+  const setLink = (value: number) => patch({ link: value })
+  const positions = useRef(prefs.positions)
+  positions.current = prefs.positions
+  const restored = useRef(prefs.view)
+  const [version, setVersion] = useState(0)
   const [local, setLocal] = useState(false)
   const [depth, setDepth] = useState(1)
   const [query, setQuery] = useState('')
   const [centerShape, setCenterShape] = useStored<Shape>('nivra-vault-center-shape', 'circle')
-  const [repulsion, setRepulsion] = useState(1400)
-  const [link, setLink] = useState(130)
   const [hover, setHover] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const drag = useRef<{ kind: 'node' | 'pan'; id?: string; x: number; y: number; moved: boolean } | null>(null)
@@ -85,13 +104,15 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const centralNode = central ? `folder:${central}` : null
   const layout = useMemo<Layout>(() => {
     const home = radialLayout(nodes, edges, central && nodes.some((n) => n.id === `folder:${central}`) ? central : null)
+    const saved = version >= 0 ? positions.current : {}
+    for (const [id, point] of Object.entries(saved)) if (home.has(id)) home.set(id, point)
     const radius = new Map<string, number>()
     for (const n of nodes) {
       radius.set(n.id, n.id === centralNode ? 22 : n.folder ? 9 + Math.sqrt(n.degree) * 1.6 : 4.5 + Math.sqrt(n.degree) * 2)
     }
     const pinned = new Set<string>(centralNode && home.has(centralNode) && nodes.some((n) => n.id === centralNode) ? [centralNode] : [])
     return { home, pinned, radius }
-  }, [nodes, edges, central, centralNode])
+  }, [nodes, edges, central, centralNode, version])
   const { bodies, pin, release, reset } = useForceGraph(nodes, edges, options, layout)
 
   const fit = useCallback(() => {
@@ -108,8 +129,20 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   }, [layout, size.w, size.h])
 
   useEffect(() => {
-    setView(fit())
+    if (restored.current) {
+      setView(restored.current)
+      restored.current = null
+    } else setView(fit())
   }, [fit])
+
+  useEffect(() => {
+    const id = setTimeout(() => setPrefs((prev) => ({ ...prev, view })), 400)
+    return () => clearTimeout(id)
+  }, [view, setPrefs])
+
+  useEffect(() => {
+    if (version > 0) reset()
+  }, [version, reset])
 
   useEffect(() => {
     const el = wrap.current
@@ -176,6 +209,8 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
     if (!d) return
     if (d.kind === 'node' && d.id) {
       release(d.id)
+      const body = bodies.get(d.id)
+      if (d.moved && body) setPrefs((prev) => ({ ...prev, positions: { ...prev.positions, [d.id!]: { x: Math.round(body.x), y: Math.round(body.y) } } }))
       if (!d.moved) setSelected(d.id)
     } else if (!d.moved) setSelected(null)
   }
@@ -356,8 +391,10 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
           <button
             type="button"
             onClick={() => {
-              setView(fit())
-              reset()
+              positions.current = {}
+              restored.current = null
+              patch({ positions: {}, view: null })
+              setVersion((v) => v + 1)
             }}
             aria-label={t('Ordenar y centrar')}
             title={t('Ordenar y centrar')}
