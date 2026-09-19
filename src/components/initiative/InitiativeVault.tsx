@@ -7,6 +7,7 @@ import { Icon } from '../ui'
 import { skin, type Skin } from './skin'
 import { ContextMenu, type MenuItem, type MenuState } from './vault/ContextMenu'
 import { GraphView } from './vault/GraphView'
+import { downloadNote, type ExportFormat } from './vault/exportNote'
 import { importObsidian, readDropped } from './vault/importer'
 import { MarkdownView } from './vault/MarkdownView'
 import {
@@ -279,6 +280,7 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
   const noteMenu = (note: VaultNote): MenuItem[] => [
     { label: t('Abrir'), onSelect: () => focusNote(note.id) },
     { label: t('Duplicar'), onSelect: () => duplicateNote(note) },
+    { label: t('Descargar como'), onSelect: noop, submenu: downloadItems(note) },
     ...(folders.length > 0 || note.folder
       ? [
           {
@@ -631,6 +633,20 @@ function tableMarkdown(rows: number, cols: number) {
   return [row(head), row(Array.from({ length: cols }, () => '---')), ...Array.from({ length: Math.max(1, rows - 1) }, () => row(blank))].join('\n')
 }
 
+const DOWNLOAD_FORMATS: { id: ExportFormat; label: string }[] = [
+  { id: 'md', label: 'Markdown (.md)' },
+  { id: 'txt', label: 'Texto plano (.txt)' },
+  { id: 'pdf', label: 'Documento (.pdf)' },
+]
+
+const downloadItems = (note: VaultNote): MenuItem[] =>
+  DOWNLOAD_FORMATS.map((f) => ({
+    label: t(f.label),
+    onSelect: () => {
+      void downloadNote(note, f.id).catch(() => notify(t('No se pudo crear el archivo.')))
+    },
+  }))
+
 function NotePane({
   note,
   notes,
@@ -812,14 +828,7 @@ function NotePane({
     onBody(lines.join('\n'))
   }
 
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([note.body], { type: 'text/markdown;charset=utf-8' }))
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${note.title || 'nota'}.md`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
+  const [downloadMenu, setDownloadMenu] = useState<MenuState>(null)
 
   const tb = `grid h-8 min-w-8 place-items-center rounded-md px-1.5 text-sm transition-colors ${s.muted} ${s.hover} ${s.hoverText}`
   const tool = (name: string, action: () => void, content: React.ReactNode) => (
@@ -923,9 +932,20 @@ function NotePane({
               </button>
             ))}
           </div>
-          <button type="button" onClick={download} aria-label={t('Descargar')} title={t('Descargar .md')} className={`grid h-8 w-8 place-items-center rounded-md ${s.muted} ${s.hover} ${s.hoverText}`}>
+          <button
+            type="button"
+            aria-haspopup="menu"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              setDownloadMenu({ x: rect.right - 200, y: rect.bottom + 4, items: downloadItems(note) })
+            }}
+            aria-label={t('Descargar')}
+            title={t('Descargar')}
+            className={`grid h-8 w-8 place-items-center rounded-md ${s.muted} ${s.hover} ${s.hoverText}`}
+          >
             <Icon name="down" className="h-4 w-4" />
           </button>
+          {downloadMenu && <ContextMenu menu={downloadMenu} onClose={() => setDownloadMenu(null)} dark={s.dark} />}
           <button type="button" onClick={onRemove} aria-label={t('Eliminar')} title={t('Eliminar')} className={`grid h-8 w-8 place-items-center rounded-md ${s.muted} transition-colors hover:text-red-500`}>
             <Icon name="trash" className="h-4 w-4" />
           </button>

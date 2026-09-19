@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useStored } from '../../../lib/store'
 import { t } from '../../../lib/i18n'
 import { Icon } from '../../ui'
 import { skin } from '../skin'
@@ -16,6 +17,33 @@ type Props = {
 }
 
 const FOLDER = '#facc15'
+const CENTER = '#a78bfa'
+
+type Shape = 'circle' | 'square' | 'diamond' | 'hexagon' | 'triangle' | 'star'
+
+const SHAPES: { id: Shape; label: string }[] = [
+  { id: 'circle', label: 'Círculo' },
+  { id: 'square', label: 'Cuadrado' },
+  { id: 'diamond', label: 'Rombo' },
+  { id: 'hexagon', label: 'Hexágono' },
+  { id: 'triangle', label: 'Triángulo' },
+  { id: 'star', label: 'Estrella' },
+]
+
+const polygon = (points: number, radius: number, rotation: number, inner?: number) =>
+  Array.from({ length: inner ? points * 2 : points }, (_, i) => {
+    const angle = rotation + (i * Math.PI * 2) / (inner ? points * 2 : points)
+    const rad = inner && i % 2 === 1 ? inner : radius
+    return `${(Math.cos(angle) * rad).toFixed(2)},${(Math.sin(angle) * rad).toFixed(2)}`
+  }).join(' ')
+
+const shapePoints = (shape: Shape, r: number) => {
+  if (shape === 'diamond') return polygon(4, r * 1.25, -Math.PI / 2)
+  if (shape === 'hexagon') return polygon(6, r * 1.1, 0)
+  if (shape === 'triangle') return polygon(3, r * 1.3, -Math.PI / 2)
+  if (shape === 'star') return polygon(5, r * 1.35, -Math.PI / 2, r * 0.6)
+  return ''
+}
 
 export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCreate, dark }: Props) {
   const s = skin(dark)
@@ -29,6 +57,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const [local, setLocal] = useState(false)
   const [depth, setDepth] = useState(1)
   const [query, setQuery] = useState('')
+  const [centerShape, setCenterShape] = useStored<Shape>('nivra-vault-center-shape', 'circle')
   const [repulsion, setRepulsion] = useState(1400)
   const [link, setLink] = useState(130)
   const [hover, setHover] = useState<string | null>(null)
@@ -202,6 +231,18 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
         <Toggle on={ghosts} onClick={() => setGhosts(!ghosts)} label={t('Notas por crear')} s={s} />
         <Toggle on={showFolders} onClick={() => setShowFolders(!showFolders)} label={t('Carpetas')} s={s} />
         <Toggle on={labels} onClick={() => setLabels(!labels)} label={t('Nombres')} s={s} />
+        {central && (
+          <label className={`flex items-center gap-2 text-xs ${s.muted}`}>
+            {t('Forma del centro')}
+            <select value={centerShape} onChange={(e) => setCenterShape(e.target.value as Shape)} aria-label={t('Forma del centro')} className={`${s.field} !w-auto !py-1.5 text-xs`}>
+              {SHAPES.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {t(x.label)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span className="flex-1" />
         <label className={`flex items-center gap-2 text-[0.7rem] ${s.muted}`}>
           {t('Repulsión')}
@@ -253,7 +294,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
               if (!p) return null
               const r = layout.radius.get(n.id) ?? 6
               const isCentral = n.id === centralNode
-                          const fill = n.folder ? FOLDER : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
+                          const fill = isCentral ? CENTER : n.folder ? FOLDER : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
               const isActive = n.id === activeId
               const faded = dim(n.id)
               const near = focus !== null && (n.id === focus || adjacent.get(focus)?.has(n.id))
@@ -270,14 +311,20 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                   onDoubleClick={() => (n.folder ? onOpenFolder(n.id.slice(7)) : n.ghost ? onCreate(n.label) : onOpen(n.id))}
                 >
                   {isActive && <circle r={r + 5} fill="none" stroke={ink} strokeWidth={1.5} opacity={0.6} />}
-                  <circle r={r} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
+                  {isCentral && centerShape === 'square' ? (
+                    <rect x={-r} y={-r} width={r * 2} height={r * 2} rx={r * 0.25} fill={fill} stroke={ink} strokeWidth={n.id === selected ? 2 : 0} />
+                  ) : isCentral && centerShape !== 'circle' ? (
+                    <polygon points={shapePoints(centerShape, r)} fill={fill} stroke={ink} strokeWidth={n.id === selected ? 2 : 0} strokeLinejoin="round" />
+                  ) : (
+                    <circle r={r} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
+                  )}
                   {showLabel && (
                     <text
                       y={r + 13}
                       textAnchor="middle"
                       fontSize={(isCentral ? 13 : 11) / Math.max(view.k, 0.7)}
                       fontWeight={isCentral || n.folder ? 600 : 400}
-                      fill={n.ghost ? muted : ink}
+                      fill={n.ghost ? muted : isCentral ? CENTER : ink}
                       stroke={halo}
                       strokeWidth={3 / Math.max(view.k, 0.7)}
                       paintOrder="stroke"
@@ -329,7 +376,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
               </button>
             </div>
             <p className={`text-[0.7rem] ${s.faint}`}>
-              {info.folder ? t('Carpeta') : info.ghost ? t('Nota por crear') : snippetOf(infoNote?.body ?? '', 110) || t('Vacío.')}
+              {info.id === centralNode ? t('Carpeta central') : info.folder ? t('Carpeta') : info.ghost ? t('Nota por crear') : snippetOf(infoNote?.body ?? '', 110) || t('Vacío.')}
             </p>
             <p className={`text-[0.7rem] ${s.muted}`}>
               {info.degree} {t(info.degree === 1 ? 'conexión' : 'conexiones')}
