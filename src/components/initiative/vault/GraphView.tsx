@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../../../lib/i18n'
 import { Icon } from '../../ui'
 import { skin } from '../skin'
-import { buildGraph, neighborhood, norm, snippetOf, type VaultFolder, type VaultNote } from './vaultModel'
-import { useForceGraph } from './useForceGraph'
+import { buildGraph, centralFolder, neighborhood, norm, radialLayout, snippetOf, type VaultFolder, type VaultNote } from './vaultModel'
+import { useForceGraph, type Layout } from './useForceGraph'
 
 type Props = {
   notes: VaultNote[]
@@ -29,8 +29,8 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const [local, setLocal] = useState(false)
   const [depth, setDepth] = useState(1)
   const [query, setQuery] = useState('')
-  const [repulsion, setRepulsion] = useState(2600)
-  const [link, setLink] = useState(100)
+  const [repulsion, setRepulsion] = useState(1400)
+  const [link, setLink] = useState(130)
   const [hover, setHover] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const drag = useRef<{ kind: 'node' | 'pan'; id?: string; x: number; y: number; moved: boolean } | null>(null)
@@ -52,7 +52,35 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const nodes = useMemo(() => (visibleIds ? graph.nodes.filter((n) => visibleIds.has(n.id)) : graph.nodes), [graph, visibleIds])
   const edges = useMemo(() => (visibleIds ? graph.edges.filter((e) => visibleIds.has(e.from) && visibleIds.has(e.to)) : graph.edges), [graph, visibleIds])
   const options = useMemo(() => ({ repulsion, link }), [repulsion, link])
-  const { bodies, pin, release, reheat } = useForceGraph(nodes, edges, options)
+  const central = useMemo(() => (showFolders ? centralFolder(notes, folders) : null), [notes, folders, showFolders])
+  const centralNode = central ? `folder:${central}` : null
+  const layout = useMemo<Layout>(() => {
+    const home = radialLayout(nodes, edges, central && nodes.some((n) => n.id === `folder:${central}`) ? central : null)
+    const radius = new Map<string, number>()
+    for (const n of nodes) {
+      radius.set(n.id, n.id === centralNode ? 22 : n.folder ? 9 + Math.sqrt(n.degree) * 1.6 : 4.5 + Math.sqrt(n.degree) * 2)
+    }
+    const pinned = new Set<string>(centralNode && home.has(centralNode) && nodes.some((n) => n.id === centralNode) ? [centralNode] : [])
+    return { home, pinned, radius }
+  }, [nodes, edges, central, centralNode])
+  const { bodies, pin, release, reset } = useForceGraph(nodes, edges, options, layout)
+
+  const fit = useCallback(() => {
+    const points = [...layout.home.values()]
+    if (points.length === 0) return { x: 0, y: 0, k: 1 }
+    const xs = points.map((p) => p.x)
+    const ys = points.map((p) => p.y)
+    const minX = Math.min(...xs) - 40
+    const maxX = Math.max(...xs) + 40
+    const minY = Math.min(...ys) - 40
+    const maxY = Math.max(...ys) + 40
+    const k = Math.min(1.6, Math.max(0.2, Math.min(size.w / (maxX - minX), size.h / (maxY - minY))))
+    return { x: -((minX + maxX) / 2) * k, y: -((minY + maxY) / 2) * k, k }
+  }, [layout, size.w, size.h])
+
+  useEffect(() => {
+    setView(fit())
+  }, [fit])
 
   useEffect(() => {
     const el = wrap.current
@@ -149,6 +177,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const infoNote = info && !info.ghost ? notes.find((n) => n.id === info.id) : null
   const ink = dark ? '#e5e5e5' : '#262626'
   const muted = dark ? '#737373' : '#a3a3a3'
+  const halo = dark ? '#0f0f11' : '#ffffff'
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -214,19 +243,21 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                   x2={b.x}
                   y2={b.y}
                   stroke={lit ? ink : e.folder ? FOLDER : muted}
-                  strokeWidth={(lit ? 1.6 : 1) / view.k}
-                                    opacity={faded ? 0.12 : lit ? 0.9 : e.folder ? 0.55 : 0.5}
+                  strokeWidth={(lit ? 1.8 : e.folder ? 1.2 : 1) / view.k}
+                                    opacity={faded ? 0.08 : lit ? 0.95 : e.folder ? 0.45 : 0.28}
                 />
               )
             })}
             {nodes.map((n) => {
               const p = bodies.get(n.id)
               if (!p) return null
-              const r = 5 + Math.sqrt(n.degree) * 2.6
+              const r = layout.radius.get(n.id) ?? 6
+              const isCentral = n.id === centralNode
                           const fill = n.folder ? FOLDER : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
               const isActive = n.id === activeId
               const faded = dim(n.id)
-              const showLabel = labels && (view.k > 0.6 || n.id === focus || isActive)
+              const near = focus !== null && (n.id === focus || adjacent.get(focus)?.has(n.id))
+              const showLabel = labels && (isCentral || n.folder || near || isActive || nodes.length <= 24 || view.k >= 1.3)
               return (
                 <g
                   key={n.id}
@@ -241,7 +272,18 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                   {isActive && <circle r={r + 5} fill="none" stroke={ink} strokeWidth={1.5} opacity={0.6} />}
                   <circle r={r} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
                   {showLabel && (
-                    <text y={r + 13} textAnchor="middle" fontSize={11 / Math.max(view.k, 0.7)} fill={n.ghost ? muted : ink} className="pointer-events-none">
+                    <text
+                      y={r + 13}
+                      textAnchor="middle"
+                      fontSize={(isCentral ? 13 : 11) / Math.max(view.k, 0.7)}
+                      fontWeight={isCentral || n.folder ? 600 : 400}
+                      fill={n.ghost ? muted : ink}
+                      stroke={halo}
+                      strokeWidth={3 / Math.max(view.k, 0.7)}
+                      paintOrder="stroke"
+                      strokeLinejoin="round"
+                      className="pointer-events-none"
+                    >
                       {n.label.length > 24 ? `${n.label.slice(0, 23)}…` : n.label}
                     </text>
                   )}
@@ -267,11 +309,11 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
           <button
             type="button"
             onClick={() => {
-              setView({ x: 0, y: 0, k: 1 })
-              reheat()
+              setView(fit())
+              reset()
             }}
-            aria-label={t('Recentrar')}
-            title={t('Recentrar')}
+            aria-label={t('Ordenar y centrar')}
+            title={t('Ordenar y centrar')}
             className={s.iconButton}
           >
             <Icon name="graph" className="h-4 w-4" />

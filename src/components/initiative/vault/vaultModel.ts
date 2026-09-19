@@ -175,3 +175,97 @@ export function folderPath(folders: VaultFolder[], id?: string) {
   }
   return parts.join(' / ')
 }
+
+export function centralFolder(notes: VaultNote[], folders: VaultFolder[]): string | null {
+  const tops = folders.filter((f) => !f.parent)
+  if (tops.length !== 1) return null
+  if (notes.some((n) => !n.folder)) return null
+  return tops[0].id
+}
+
+export type Point = { x: number; y: number }
+
+export function radialLayout(nodes: GNode[], edges: GEdge[], centralId: string | null): Map<string, Point> {
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  const children = new Map<string, string[]>()
+  const parented = new Set<string>()
+  for (const e of edges) {
+    if (!e.folder) continue
+    children.set(e.from, [...(children.get(e.from) ?? []), e.to])
+    parented.add(e.to)
+  }
+  const rootKey = centralId && byId.has(`folder:${centralId}`) ? `folder:${centralId}` : ''
+  const top = rootKey ? children.get(rootKey) ?? [] : nodes.filter((n) => !n.ghost && !parented.has(n.id)).map((n) => n.id)
+  const kids = (id: string) => {
+    const list = id === rootKey ? top : children.get(id) ?? []
+    return [...list].sort((a, b) => {
+      const na = byId.get(a)!
+      const nb = byId.get(b)!
+      return Number(nb.folder) - Number(na.folder) || na.label.localeCompare(nb.label)
+    })
+  }
+
+  const leaves = new Map<string, number>()
+  const count = (id: string, guard = 0): number => {
+    const list = guard > 40 ? [] : kids(id)
+    const total = list.length === 0 ? 1 : list.reduce((sum, child) => sum + count(child, guard + 1), 0)
+    leaves.set(id, total)
+    return total
+  }
+  count(rootKey)
+
+  const perDepth: number[] = []
+  const tally = (id: string, depth: number, guard = 0) => {
+    if (guard > 40) return
+    for (const child of kids(id)) {
+      perDepth[depth] = (perDepth[depth] ?? 0) + 1
+      tally(child, depth + 1, guard + 1)
+    }
+  }
+  tally(rootKey, 1)
+
+  const STEP = 118
+  const rings: number[] = [0]
+  for (let d = 1; d < perDepth.length; d++) {
+    const needed = ((perDepth[d] ?? 0) * 58) / (2 * Math.PI)
+    rings[d] = Math.max(rings[d - 1] + STEP * 0.85, d * STEP * 0.85, needed)
+  }
+
+  const out = new Map<string, Point>()
+  if (rootKey) out.set(rootKey, { x: 0, y: 0 })
+  const place = (id: string, depth: number, from: number, to: number, guard = 0) => {
+    if (guard > 40) return
+    const list = kids(id)
+    const total = list.reduce((sum, child) => sum + (leaves.get(child) ?? 1), 0) || 1
+    let cursor = from
+    for (const child of list) {
+      const span = ((to - from) * (leaves.get(child) ?? 1)) / total
+      const angle = cursor + span / 2
+      out.set(child, { x: Math.cos(angle) * rings[depth], y: Math.sin(angle) * rings[depth] })
+      place(child, depth + 1, cursor, cursor + span, guard + 1)
+      cursor += span
+    }
+  }
+  place(rootKey, 1, -Math.PI / 2, (3 * Math.PI) / 2)
+
+  const outer = (rings[rings.length - 1] ?? 0) + 52
+  const links = new Map<string, Point[]>()
+  for (const e of edges) {
+    if (e.folder) continue
+    for (const [a, b] of [[e.from, e.to], [e.to, e.from]] as const) {
+      const at = out.get(b)
+      if (byId.get(a)?.ghost && at) links.set(a, [...(links.get(a) ?? []), at])
+    }
+  }
+  const ghosts = nodes.filter((n) => n.ghost)
+  ghosts.forEach((g, i) => {
+    const near = links.get(g.id)
+    const cx = near?.length ? near.reduce((acc, p) => acc + p.x, 0) / near.length : 0
+    const cy = near?.length ? near.reduce((acc, p) => acc + p.y, 0) / near.length : 0
+    const angle = near?.length ? Math.atan2(cy, cx) : (i / Math.max(1, ghosts.length)) * Math.PI * 2
+    const radius = near?.length ? Math.min(outer, Math.hypot(cx, cy) + 70) : outer
+    out.set(g.id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius })
+  })
+  for (const n of nodes) if (!out.has(n.id)) out.set(n.id, { x: 0, y: 0 })
+  return out
+}

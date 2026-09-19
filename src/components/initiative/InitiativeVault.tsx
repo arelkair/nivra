@@ -7,7 +7,7 @@ import { Icon } from '../ui'
 import { skin, type Skin } from './skin'
 import { ContextMenu, type MenuItem, type MenuState } from './vault/ContextMenu'
 import { GraphView } from './vault/GraphView'
-import { importObsidian } from './vault/importer'
+import { importObsidian, readDropped } from './vault/importer'
 import { MarkdownView } from './vault/MarkdownView'
 import {
   backlinksOf,
@@ -70,7 +70,8 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
   const [menu, setMenu] = useState<MenuState>(null)
   const [dropTarget, setDropTarget] = useState<string | null>(null)
   const dragging = useRef<{ kind: 'note' | 'folder'; id: string } | null>(null)
-  const importInput = useRef<HTMLInputElement>(null)
+  const folderInput = useRef<HTMLInputElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
   const active = notes.find((n) => n.id === activeId) ?? null
   const index = useMemo(() => titleIndex(notes), [notes])
 
@@ -246,12 +247,13 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
     setMode('vista')
   }
 
-  const importFiles = async (list: FileList | null) => {
-    if (!list || list.length === 0) return
-    const result = await importObsidian(Array.from(list), folders, new Set(notes.map((n) => norm(n.title))))
-    if (importInput.current) importInput.current.value = ''
+  const importFiles = async (list: File[]) => {
+    if (list.length === 0) return
+    const result = await importObsidian(list, folders, new Set(notes.map((n) => norm(n.title))))
+    if (folderInput.current) folderInput.current.value = ''
+    if (fileInput.current) fileInput.current.value = ''
     if (result.notes.length === 0) {
-      notify(t('No se han encontrado notas .md para importar.'))
+      notify(t('No se han encontrado notas (.md, .markdown o .txt) para importar.'))
       return
     }
     const noteIds = new Set(result.notes.map((n) => n.id))
@@ -444,7 +446,17 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
   const label = `font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`
 
   const listPane = (
-    <div className={`flex min-h-0 min-w-0 flex-col gap-3 ${mobileEditor ? 'max-md:hidden' : ''}`}>
+    <div
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('Files')) e.preventDefault()
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.types.includes('Files')) return
+        e.preventDefault()
+        void readDropped(e.dataTransfer).then(importFiles)
+      }}
+      className={`flex min-h-0 min-w-0 flex-col gap-3 ${mobileEditor ? 'max-md:hidden' : ''}`}
+    >
       <div className="flex items-center gap-2">
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Buscar')} aria-label={t('Buscar')} className={`${s.field} min-w-0 flex-1 !py-1.5`} />
         <button type="button" onClick={() => createFolder()} aria-label={t('Nueva carpeta')} title={t('Nueva carpeta')} className={s.iconButton}>
@@ -458,17 +470,41 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
         <button type="button" onClick={daily} className={s.ghost}>
           {t('Nota de hoy')}
         </button>
-        <button type="button" onClick={() => importInput.current?.click()} className={s.ghost}>
-          {t('Importar de Obsidian')}
+        <button
+          type="button"
+          aria-haspopup="menu"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            setMenu({
+              x: rect.left,
+              y: rect.bottom + 4,
+              items: [
+                { label: t('Elegir una carpeta…'), onSelect: () => folderInput.current?.click() },
+                { label: t('Elegir archivos…'), onSelect: () => fileInput.current?.click() },
+              ],
+            })
+          }}
+          className={s.ghost}
+        >
+          {t('Importar carpetas o archivos')}
         </button>
         <input
-          ref={importInput}
+          ref={folderInput}
           type="file"
           multiple
           className="hidden"
-          aria-label={t('Importar de Obsidian')}
+          aria-label={t('Elegir una carpeta…')}
           {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
-          onChange={(e) => void importFiles(e.target.files)}
+          onChange={(e) => void importFiles(Array.from(e.target.files ?? []))}
+        />
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          accept=".md,.markdown,.txt,text/markdown,text/plain"
+          className="hidden"
+          aria-label={t('Elegir archivos…')}
+          onChange={(e) => void importFiles(Array.from(e.target.files ?? []))}
         />
       </div>
       {allTags.length > 0 && (

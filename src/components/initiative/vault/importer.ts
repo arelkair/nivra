@@ -4,6 +4,8 @@ export type ImportResult = { notes: VaultNote[]; folders: VaultFolder[]; skipped
 
 type Entry = { file: File; parts: string[] }
 
+const NOTE_FILE = /\.(md|markdown|txt)$/i
+
 const pathOf = (file: File) => {
   const relative = (file as File & { webkitRelativePath?: string }).webkitRelativePath
   return relative && relative.length > 0 ? relative : file.name
@@ -21,7 +23,7 @@ export async function importObsidian(files: File[], existing: VaultFolder[], tak
       skipped++
       continue
     }
-    if (!/\.md$/i.test(file.name)) {
+    if (!NOTE_FILE.test(file.name)) {
       skipped++
       continue
     }
@@ -53,7 +55,7 @@ export async function importObsidian(files: File[], existing: VaultFolder[], tak
 
   for (const entry of entries) {
     const folder = folderFor(entry.parts.slice(0, -1))
-    let title = entry.parts[entry.parts.length - 1].replace(/\.md$/i, '').trim() || 'Sin título'
+    let title = entry.parts[entry.parts.length - 1].replace(NOTE_FILE, '').trim() || 'Sin título'
     if (titles.has(norm(title))) {
       const owner = entry.parts.length > 1 ? entry.parts[entry.parts.length - 2] : ''
       let candidate = owner ? `${title} (${owner})` : title
@@ -68,4 +70,38 @@ export async function importObsidian(files: File[], existing: VaultFolder[], tak
   }
 
   return { notes, folders, skipped }
+}
+
+type DroppedEntry = {
+  isFile: boolean
+  isDirectory: boolean
+  fullPath: string
+  file?: (callback: (file: File) => void, fail?: () => void) => void
+  createReader?: () => { readEntries: (callback: (entries: DroppedEntry[]) => void, fail?: () => void) => void }
+}
+
+const walk = async (entry: DroppedEntry, out: File[]) => {
+  if (entry.isFile && entry.file) {
+    const file = await new Promise<File | null>((resolve) => entry.file!(resolve, () => resolve(null)))
+    if (!file) return
+    Object.defineProperty(file, 'webkitRelativePath', { value: entry.fullPath.replace(/^\//, '') })
+    out.push(file)
+  } else if (entry.isDirectory && entry.createReader) {
+    const reader = entry.createReader()
+    for (;;) {
+      const batch = await new Promise<DroppedEntry[]>((resolve) => reader.readEntries(resolve, () => resolve([])))
+      if (batch.length === 0) break
+      for (const child of batch) await walk(child, out)
+    }
+  }
+}
+
+export async function readDropped(transfer: DataTransfer): Promise<File[]> {
+  const out: File[] = []
+  const entries = [...transfer.items].map((item) => (item as DataTransferItem & { webkitGetAsEntry?: () => DroppedEntry | null }).webkitGetAsEntry?.() ?? null)
+  if (entries.some(Boolean)) {
+    for (const entry of entries) if (entry) await walk(entry, out)
+    return out
+  }
+  return [...transfer.files]
 }
