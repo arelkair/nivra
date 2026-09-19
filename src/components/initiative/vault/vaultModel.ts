@@ -1,5 +1,7 @@
 export type VaultNote = { id: string; title: string; body: string; created: number; updated: number; folder?: string }
 
+export const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+
 export type VaultFolder = { id: string; name: string; parent?: string }
 
 export type GNode = { id: string; label: string; ghost: boolean; folder: boolean; tags: string[]; degree: number }
@@ -201,7 +203,7 @@ export function radialLayout(nodes: GNode[], edges: GEdge[], centralId: string |
     return [...list].sort((a, b) => {
       const na = byId.get(a)!
       const nb = byId.get(b)!
-      return Number(nb.folder) - Number(na.folder) || na.label.localeCompare(nb.label)
+      return Number(nb.folder) - Number(na.folder) || natural(na.label, nb.label)
     })
   }
 

@@ -26,11 +26,12 @@ type Prefs = {
   link: number
   positions: Record<string, { x: number; y: number }>
   shapes: Record<string, Shape>
+  colors: Record<string, string>
   locked: boolean
   view: { x: number; y: number; k: number } | null
 }
 
-const DEFAULT_PREFS: Prefs = { ghosts: true, folders: true, labels: true, repulsion: 1400, link: 130, positions: {}, shapes: {}, locked: false, view: null }
+const DEFAULT_PREFS: Prefs = { ghosts: true, folders: true, labels: true, repulsion: 1400, link: 130, positions: {}, shapes: {}, colors: {}, locked: false, view: null }
 const CENTER = '#a78bfa'
 
 type Shape = 'circle' | 'square' | 'diamond' | 'hexagon' | 'triangle' | 'star'
@@ -88,6 +89,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   multiRef.current = multi
   const [box, setBox] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null)
   const shapes = prefs.shapes ?? {}
+  const colors = prefs.colors ?? {}
   const locked = !!prefs.locked
   const drag = useRef<
     | { kind: 'node'; id: string; group: string[]; origins: Map<string, { x: number; y: number }>; start: { x: number; y: number }; ox: number; oy: number; moved: boolean; modifier: boolean; wasIn: boolean }
@@ -283,7 +285,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
     }
   }
 
-  const chosen = multi.size > 0 ? [...multi] : selected ? [selected] : []
+  const chosen = (multi.size > 0 ? [...multi] : selected ? [selected] : []).filter((id) => nodes.some((n) => n.id === id && n.folder))
   const chosenShapes = new Set(chosen.map((id) => shapes[id] ?? 'auto'))
   const commonShape = chosenShapes.size === 1 ? [...chosenShapes][0] : 'mixed'
 
@@ -298,9 +300,22 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
     })
   }
 
+  const colorOf = (id: string) => colors[id] ?? (id === centralNode ? CENTER : FOLDER)
+
+  const applyColor = (value: string | null) => {
+    setPrefs((prev) => {
+      const next = { ...(prev.colors ?? {}) }
+      for (const id of chosen) {
+        if (value === null) delete next[id]
+        else next[id] = value
+      }
+      return { ...prev, colors: next }
+    })
+  }
+
   const toggleLock = () => patch({ locked: !locked })
 
-  const shapeOf = (id: string): Shape => shapes[id] ?? (id === centralNode ? centerShape : 'circle')
+  const shapeOf = (id: string): Shape => (id.startsWith('folder:') ? shapes[id] ?? (id === centralNode ? centerShape : 'circle') : 'circle')
 
   const q = norm(query)
   const focus = hover ?? selected
@@ -405,7 +420,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                   y1={a.y}
                   x2={b.x}
                   y2={b.y}
-                  stroke={lit ? ink : e.folder ? FOLDER : muted}
+                  stroke={lit ? ink : e.folder ? colorOf(e.from) : muted}
                   strokeWidth={(lit ? 1.8 : e.folder ? 1.2 : 1) / view.k}
                                     opacity={faded ? 0.08 : lit ? 0.95 : e.folder ? 0.45 : 0.28}
                 />
@@ -416,7 +431,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
               if (!p) return null
               const r = layout.radius.get(n.id) ?? 6
               const isCentral = n.id === centralNode
-                          const fill = isCentral ? CENTER : n.folder ? FOLDER : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
+                          const fill = n.folder ? colorOf(n.id) : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
               const isActive = n.id === activeId
               const shape = shapeOf(n.id)
               const faded = dim(n.id)
@@ -481,7 +496,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
         {chosen.length > 0 && (
           <div className={`absolute top-3 left-3 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 shadow-lg ${s.line} ${dark ? 'bg-neutral-900' : 'bg-white'}`}>
             <span className="text-xs tabular-nums">
-              {chosen.length} {t(chosen.length === 1 ? 'seleccionado' : 'seleccionados')}
+              {chosen.length} {t(chosen.length === 1 ? 'carpeta' : 'carpetas')}
             </span>
             <select value={commonShape} onChange={(e) => applyShape(e.target.value)} aria-label={t('Forma de la selección')} className={`${s.field} !w-auto !py-1 text-xs`}>
               {commonShape === 'mixed' && (
@@ -496,6 +511,18 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                 </option>
               ))}
             </select>
+            <input
+              type="color"
+              value={colorOf(chosen[0])}
+              onChange={(e) => applyColor(e.target.value)}
+              aria-label={t('Color de la carpeta')}
+              className="h-6 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+            />
+            {chosen.some((id) => colors[id]) && (
+              <button type="button" onClick={() => applyColor(null)} className={`text-xs ${s.muted} ${s.hoverText}`}>
+                {t('Color original')}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

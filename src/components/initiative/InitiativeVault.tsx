@@ -26,6 +26,7 @@ import {
   wordCount,
   type VaultFolder,
   type VaultNote,
+  natural,
 } from './vault/vaultModel'
 
 type Props = {
@@ -291,7 +292,7 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
               ...folders
                 .filter((f) => f.id !== note.folder)
                 .map((f) => ({ label: folderPath(folders, f.id), onSelect: () => moveNote(note.id, f.id) }))
-                .sort((a, b) => a.label.localeCompare(b.label)),
+                .sort((a, b) => natural(a.label, b.label)),
             ],
           },
         ]
@@ -371,8 +372,8 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
 
   const folderRow = (folder: VaultFolder, depth: number): React.ReactNode => {
     const expanded = open.has(folder.id)
-    const children = folders.filter((f) => f.parent === folder.id).sort((a, b) => a.name.localeCompare(b.name))
-    const inside = notes.filter((n) => n.folder === folder.id).sort((a, b) => a.title.localeCompare(b.title))
+    const children = folders.filter((f) => f.parent === folder.id).sort((a, b) => natural(a.name, b.name))
+    const inside = notes.filter((n) => n.folder === folder.id).sort((a, b) => natural(a.title, b.title))
     return (
       <li key={folder.id}>
         <div
@@ -441,8 +442,8 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
     )
   }
 
-  const rootFolders = folders.filter((f) => !f.parent || !folders.some((x) => x.id === f.parent)).sort((a, b) => a.name.localeCompare(b.name))
-  const rootNotes = notes.filter((n) => !n.folder || !folders.some((f) => f.id === n.folder)).sort((a, b) => a.title.localeCompare(b.title))
+  const rootFolders = folders.filter((f) => !f.parent || !folders.some((x) => x.id === f.parent)).sort((a, b) => natural(a.name, b.name))
+  const rootNotes = notes.filter((n) => !n.folder || !folders.some((f) => f.id === n.folder)).sort((a, b) => natural(a.title, b.title))
   const empty = notes.length === 0 && folders.length === 0
 
   const label = `font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`
