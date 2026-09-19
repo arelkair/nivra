@@ -24,7 +24,7 @@ Nivra ships two interfaces over the same data:
 | **Tasks** | Subtasks, descriptions, subjects, a working date and a separate due date. |
 | **Exams & projects** | Due dates, subjects (with their colour), linked notes and the grade obtained. |
 | **Grades** | Per subject and per term, with averages and optional weighting. |
-| **Money** | Balance, income and expenses by category, savings goals and spending limits. |
+| **Money** | Several bank accounts with their own balance, income and expenses by category, savings goals and spending limits. |
 | **Wishlist** | Items with price, priority and purchase link. |
 | **Subscriptions** | Recurring charges on their renewal day, paused when the balance would go negative, with who pays each one. |
 | **Reminders** | Grouped by urgency, with snooze, repeat and a link to an exam or project. |

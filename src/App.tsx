@@ -49,6 +49,9 @@ import {
   type Goal,
   type Grade,
   type Movement,
+  type BankAccount,
+  accountBalances,
+  accountOf,
   type NivraEvent,
   type Notepad,
   type PageId,
@@ -393,6 +396,7 @@ function App() {
   const [anniversaries, setAnniversaries] = useStored<Anniversary[]>('nivra-anniversaries', [])
   const [bankInitial, setBankInitial] = useStored<number | null>('nivra-bank-initial', null)
   const [movements, setMovements] = useStored<Movement[]>('nivra-movements', [])
+  const [accounts, setAccounts] = useStored<BankAccount[]>('nivra-bank-accounts', [])
   const [countdowns, setCountdowns] = useStored<Countdown[]>('nivra-timers', [])
   const [wishes, setWishes] = useStored<Wish[]>('nivra-wishes', [])
   const [grades, setGrades] = useStored<Grade[]>('nivra-grades', [])
@@ -408,10 +412,8 @@ function App() {
 
   const items = useMemo(() => calendarItems(events, tasks, works), [events, tasks, works])
   const subjects = useMemo(() => allSubjects(blocks, cfg.subjects), [blocks, cfg.subjects])
-  const balance =
-    bankInitial === null
-      ? null
-      : bankInitial + movements.reduce((s, m) => s + (m.kind === 'ingreso' ? m.amount : -m.amount), 0)
+  const balances = useMemo(() => (bankInitial === null ? null : accountBalances(bankInitial, accounts, movements)), [bankInitial, accounts, movements])
+  const balance = balances === null ? null : Object.values(balances).reduce((a, x) => a + x, 0)
 
   const isBirthday =
     cfg.birthday !== '' && monthDay(cfg.birthday) === monthDay(dateKey(new Date()))
@@ -447,17 +449,18 @@ function App() {
       new Date(),
     ).sort((a, b) => a.date.localeCompare(b.date))
     if (dueCharges.length === 0) return
-    let running = balance === null ? null : Math.round(balance * 100)
+    const running: Record<string, number> | null = balances === null ? null : Object.fromEntries(Object.entries(balances).map(([k, v]) => [k, Math.round(v * 100)]))
     const charged: typeof dueCharges = []
     let skipped = 0
     for (const due of dueCharges) {
       if (due.sub.paidBy === 'other') continue
       const cents = Math.round(due.sub.price * 100)
-      if (running !== null && running - cents < 0) {
+      const key = accountOf(due.sub, accounts)
+      if (running !== null && running[key] - cents < 0) {
         skipped++
         continue
       }
-      if (running !== null) running -= cents
+      if (running !== null) running[key] -= cents
       charged.push(due)
     }
     setMovements((prev) => [
@@ -469,6 +472,7 @@ function App() {
         amount: sub.price,
         category: SUBSCRIPTION_CAT,
         date,
+        account: sub.account && accounts.some((x) => x.id === sub.account) ? sub.account : undefined,
       })),
       ...prev,
     ])
@@ -481,7 +485,7 @@ function App() {
     )
     if (charged.length > 0) notify(tp('Se han cobrado {0} suscripción/es.', charged.length))
     if (skipped > 0) notify(tp('Saldo insuficiente: {0} cobro/s de suscripción no se han aplicado.', skipped))
-  }, [subs, balance, setMovements, setSubs, notify])
+  }, [subs, balances, accounts, setMovements, setSubs, notify])
 
   const alreadyNotified = useRef(false)
   useEffect(() => {
@@ -721,6 +725,8 @@ function App() {
           setBankInitial={setBankInitial}
           movements={movements}
           setMovements={setMovements}
+          accounts={accounts}
+          setAccounts={setAccounts}
           subs={subs}
           setSubs={setSubs}
           wishes={wishes}

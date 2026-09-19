@@ -59,12 +59,12 @@ export function daysLeftInPeriod(period: 'semana' | 'mes', today = new Date()) {
   return new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1
 }
 
-export function toCsv(movements: Movement[]) {
+export function toCsv(movements: Movement[], accountName?: (m: Movement) => string) {
   const escape = (v: string) => `"${v.split('"').join('""')}"`
   const rows = [...movements]
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((m) => [m.date, m.kind, escape(m.category), String(m.amount).replace('.', ','), escape(m.note ?? '')].join(';'))
-  return ['fecha;tipo;categoria;importe;concepto', ...rows].join('\n')
+    .map((m) => [m.date, m.kind, escape(m.category), String(m.amount).replace('.', ','), escape(m.note ?? ''), ...(accountName ? [escape(accountName(m))] : [])].join(';'))
+  return [`fecha;tipo;categoria;importe;concepto${accountName ? ';cuenta' : ''}`, ...rows].join('\n')
 }
 
 export function download(name: string, text: string) {

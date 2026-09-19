@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { dateKey, eur, type Subscription } from '../../lib/store'
+import { MAIN_ACCOUNT, accountOf, dateKey, eur, type BankAccount, type Subscription } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { locale, t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
@@ -10,6 +10,7 @@ import { skin, type Skin } from './skin'
 type Props = {
   subs: Subscription[]
   setSubs: (update: (prev: Subscription[]) => Subscription[]) => void
+  accounts: BankAccount[]
   dark: boolean
 }
 
@@ -21,7 +22,7 @@ const cleanDay = (text: string) => {
   return String(Math.min(31, Number(digits)))
 }
 
-export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
+export function InitiativeSubscriptions({ subs, setSubs, accounts, dark }: Props) {
   const s = skin(dark)
   const now = new Date()
   const [sort, setSort] = useState<Sort>('renovacion')
@@ -31,6 +32,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
   const [day, setDay] = useState(String(now.getDate()))
   const [link, setLink] = useState('')
   const [others, setOthers] = useState(false)
+  const [account, setAccount] = useState(MAIN_ACCOUNT)
 
   const active = subs.filter((x) => !x.paused)
   const mine = active.filter((x) => x.paidBy !== 'other')
@@ -61,6 +63,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
         day: dayNumber,
         url: /^https?:\/\//i.test(url) ? url : undefined,
         paidBy: others ? ('other' as const) : undefined,
+        account: account !== MAIN_ACCOUNT && accounts.some((x) => x.id === account) ? account : undefined,
       },
     ])
     setOthers(false)
@@ -194,6 +197,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
             className={`${s.field} min-w-32 flex-1 !py-1.5 text-xs`}
           />
           <PayerToggle others={others} onChange={setOthers} s={s} />
+          {accounts.length > 0 && !others && <AccountSelect accounts={accounts} value={account} onChange={setAccount} s={s} />}
           <button
             type="submit"
             disabled={!canAdd}
@@ -254,7 +258,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
                     <Icon name={open ? 'up' : 'down'} className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                {open && <SubDetail sub={sub} s={s} onPatch={(c) => patch(sub.id, c)} onRemove={() => remove(sub.id)} onTogglePause={() => togglePause(sub)} />}
+                {open && <SubDetail sub={sub} accounts={accounts} s={s} onPatch={(c) => patch(sub.id, c)} onRemove={() => remove(sub.id)} onTogglePause={() => togglePause(sub)} />}
               </li>
             )
           })}
@@ -296,12 +300,14 @@ function PayerBadge({ others, s }: { others: boolean; s: Skin }) {
 
 function SubDetail({
   sub,
+  accounts,
   s,
   onPatch,
   onRemove,
   onTogglePause,
 }: {
   sub: Subscription
+  accounts: BankAccount[]
   s: Skin
   onPatch: (changes: Partial<Subscription>) => void
   onRemove: () => void
@@ -361,6 +367,12 @@ function SubDetail({
         <span className={label}>{t('Quién paga')}</span>
         <PayerToggle others={sub.paidBy === 'other'} onChange={(v) => onPatch({ paidBy: v ? 'other' : undefined })} s={s} />
       </div>
+      {accounts.length > 0 && sub.paidBy !== 'other' && (
+        <div className="flex flex-col gap-1.5">
+          <span className={label}>{t('Se cobra de')}</span>
+          <AccountSelect accounts={accounts} value={accountOf(sub, accounts)} onChange={(id) => onPatch({ account: id === MAIN_ACCOUNT ? undefined : id })} s={s} />
+        </div>
+      )}
       {sub.lastCharged && <p className={`text-xs ${s.faint}`}>{t('Último cobro')}: {sub.lastCharged}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={onTogglePause} className={s.ghost}>
@@ -373,5 +385,18 @@ function SubDetail({
         </button>
       </div>
     </div>
+  )
+}
+
+function AccountSelect({ accounts, value, onChange, s }: { accounts: BankAccount[]; value: string; onChange: (id: string) => void; s: Skin }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={t('Cuenta')} className={`${s.field} !w-auto !py-1.5 text-xs`}>
+      <option value={MAIN_ACCOUNT}>{t('Principal')}</option>
+      {accounts.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.name}
+        </option>
+      ))}
+    </select>
   )
 }

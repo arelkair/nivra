@@ -17,6 +17,8 @@ import {
   type Reminder,
   type Grade,
   type Movement,
+  type BankAccount,
+  accountBalances,
   type NivraEvent,
   type Notepad,
   type Streak,
@@ -66,6 +68,8 @@ type Props = {
   setBankInitial: (update: (prev: number | null) => number | null) => void
   movements: Movement[]
   setMovements: (update: (prev: Movement[]) => Movement[]) => void
+  accounts: BankAccount[]
+  setAccounts: (update: (prev: BankAccount[]) => BankAccount[]) => void
   subs: Subscription[]
   setSubs: (update: (prev: Subscription[]) => Subscription[]) => void
   wishes: Wish[]
@@ -115,6 +119,8 @@ export function InitiativeDashboard({
   setBankInitial,
   movements,
   setMovements,
+  accounts,
+  setAccounts,
   subs,
   setSubs,
   wishes,
@@ -191,9 +197,7 @@ export function InitiativeDashboard({
     }
   }, [dark])
   const bankBalance =
-    bankEnabled && bankInitial !== null
-      ? bankInitial + movements.reduce((a, m) => a + (m.kind === 'ingreso' ? m.amount : -m.amount), 0)
-      : null
+    bankEnabled && bankInitial !== null ? Object.values(accountBalances(bankInitial, accounts, movements)).reduce((a, x) => a + x, 0) : null
   const [vaultNotes, setVaultNotes] = useStored<VaultNote[]>('nivra-vault', [])
   const [vaultFolders, setVaultFolders] = useStored<VaultFolder[]>('nivra-vault-folders', [])
   const [migrated, setMigrated] = useStored<string[]>('nivra-vault-migrated', [])
@@ -536,7 +540,7 @@ export function InitiativeDashboard({
             blocks={blocks}
             profile={activeProfile}
             subs={subs}
-            bank={bankEnabled && bankInitial !== null ? { balance: bankInitial + movements.reduce((a, m) => a + (m.kind === 'ingreso' ? m.amount : -m.amount), 0), movements } : null}
+            bank={bankBalance !== null ? { balance: bankBalance, movements } : null}
             onOpen={setSection}
           />
         </main>
@@ -585,6 +589,8 @@ export function InitiativeDashboard({
             setInitial={setBankInitial}
             movements={movements}
             setMovements={setMovements}
+            accounts={accounts}
+            setAccounts={setAccounts}
             goals={goals}
             setGoals={setGoals}
             dark={dark}
@@ -613,7 +619,7 @@ export function InitiativeDashboard({
 
       {current === 'suscripciones' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
-          <InitiativeSubscriptions subs={subs} setSubs={setSubs} dark={dark} />
+          <InitiativeSubscriptions subs={subs} setSubs={setSubs} accounts={accounts} dark={dark} />
         </main>
       )}
 

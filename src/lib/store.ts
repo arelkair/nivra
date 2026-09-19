@@ -74,6 +74,7 @@ export type Subscription = {
   lastCharged?: string
   paused?: boolean
   paidBy?: 'other'
+  account?: string
 }
 
 export type Goal =
@@ -289,6 +290,24 @@ export type Movement = {
   category: string
   date: string
   note?: string
+  account?: string
+}
+
+export type BankAccount = { id: string; name: string; initial: number }
+
+export const MAIN_ACCOUNT = 'principal'
+
+export const accountOf = (m: { account?: string }, accounts: BankAccount[]) =>
+  m.account && accounts.some((x) => x.id === m.account) ? m.account : MAIN_ACCOUNT
+
+export function accountBalances(initial: number, accounts: BankAccount[], movements: Movement[]) {
+  const out: Record<string, number> = { [MAIN_ACCOUNT]: initial }
+  for (const a of accounts) out[a.id] = a.initial
+  for (const m of movements) {
+    const id = accountOf(m, accounts)
+    out[id] += m.kind === 'ingreso' ? m.amount : -m.amount
+  }
+  return out
 }
 
 export type Anniversary = { id: string; md: string; name: string }

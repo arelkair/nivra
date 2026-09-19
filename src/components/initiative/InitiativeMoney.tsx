@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { EXPENSE_CATS, INCOME_CATS, SUBSCRIPTION_CAT, dateKey, eur, type Goal, type Movement } from '../../lib/store'
+import { EXPENSE_CATS, INCOME_CATS, MAIN_ACCOUNT, SUBSCRIPTION_CAT, accountBalances, accountOf, dateKey, eur, type BankAccount, type Goal, type Movement } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { locale, t } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
@@ -13,6 +13,8 @@ type Props = {
   setInitial: (update: (prev: number | null) => number | null) => void
   movements: Movement[]
   setMovements: (update: (prev: Movement[]) => Movement[]) => void
+  accounts: BankAccount[]
+  setAccounts: (update: (prev: BankAccount[]) => BankAccount[]) => void
   goals: Goal[]
   setGoals: (update: (prev: Goal[]) => Goal[]) => void
   dark: boolean
@@ -35,12 +37,13 @@ const PERIODS: { id: Period; label: string }[] = [
 
 const allCats = (kind: Movement['kind']) => (kind === 'ingreso' ? INCOME_CATS : [...EXPENSE_CATS, SUBSCRIPTION_CAT])
 
-export function InitiativeMoney({ initial, setInitial, movements, setMovements, goals, setGoals, dark }: Props) {
+export function InitiativeMoney({ initial, setInitial, movements, setMovements, accounts, setAccounts, goals, setGoals, dark }: Props) {
   const s = skin(dark)
   const [tab, setTab] = useState<Tab>('resumen')
   const [period, setPeriod] = useState<Period>('mes')
   const [offset, setOffset] = useState(0)
   const [setup, setSetup] = useState('')
+  const [acct, setAcct] = useState('all')
 
   if (initial === null) {
     const value = Number(setup.trim().replace(',', '.'))
@@ -74,9 +77,34 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
     )
   }
 
-  const balance = initial + movements.reduce((a, m) => a + signed(m), 0)
+  const balances = accountBalances(initial, accounts, movements)
+  const balance = Object.values(balances).reduce((a, x) => a + x, 0)
+  const selected = acct !== 'all' && (acct === MAIN_ACCOUNT || accounts.some((x) => x.id === acct)) ? acct : 'all'
+  const scoped = selected === 'all' ? movements : movements.filter((m) => accountOf(m, accounts) === selected)
+  const shownBalance = selected === 'all' ? balance : balances[selected]
+  const extra = accounts.find((x) => x.id === selected) ?? null
+  const scopedInitial = selected === 'all' ? initial + accounts.reduce((a, x) => a + x.initial, 0) : extra ? extra.initial : initial
+  const nameOf = (id: string) => (id === MAIN_ACCOUNT ? t('Principal') : accounts.find((x) => x.id === id)?.name ?? t('Principal'))
   const range = periodRange(period, offset)
-  const inPeriod = movements.filter((m) => inRange(m, range.from, range.to))
+  const inPeriod = scoped.filter((m) => inRange(m, range.from, range.to))
+
+  const addAccount = (name: string, start: number) => {
+    const id = crypto.randomUUID()
+    setAccounts((prev) => [...prev, { id, name, initial: start }])
+    setAcct(id)
+  }
+
+  const removeAccount = (id: string) => {
+    const beforeAccounts = accounts
+    const beforeMovements = movements
+    setMovements((prev) => prev.filter((m) => accountOf(m, accounts) !== id))
+    setAccounts((prev) => prev.filter((x) => x.id !== id))
+    setAcct('all')
+    notifyWithUndo(t('Cuenta eliminada'), () => {
+      setAccounts(() => beforeAccounts)
+      setMovements(() => beforeMovements)
+    })
+  }
   const income = sum(inPeriod, 'ingreso')
   const expense = sum(inPeriod, 'gasto')
   const net = income - expense
@@ -87,11 +115,11 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className={label}>{t('Dinero actual')}</p>
+          <p className={label}>{selected === 'all' ? (accounts.length > 0 ? t('Dinero total') : t('Dinero actual')) : nameOf(selected)}</p>
           <h1
-            className={`font-initiative text-4xl font-medium tracking-tight tabular-nums sm:text-5xl ${balance < 0 ? 'text-red-500' : ''}`}
+            className={`font-initiative text-4xl font-medium tracking-tight tabular-nums sm:text-5xl ${shownBalance < 0 ? 'text-red-500' : ''}`}
           >
-            {eur(balance)}
+            {eur(shownBalance)}
           </h1>
         </div>
         <div className={`flex rounded-lg border p-0.5 ${s.line}`}>
@@ -108,6 +136,18 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
           ))}
         </div>
       </div>
+
+      {tab !== 'objetivos' && (
+        <AccountBar
+          s={s}
+          accounts={accounts}
+          balances={balances}
+          selected={selected}
+          onSelect={setAcct}
+          onAdd={addAccount}
+          mainName={t('Principal')}
+        />
+      )}
 
       {tab !== 'objetivos' && (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -148,10 +188,18 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
         <Summary
           s={s}
           dark={dark}
-          movements={movements}
+          movements={scoped}
           inPeriod={inPeriod}
-          initial={initial}
-          setInitial={setInitial}
+          initial={scopedInitial}
+          initialField={
+            selected === 'all'
+              ? null
+              : { value: extra ? extra.initial : initial, onChange: (n) => (extra ? setAccounts((prev) => prev.map((x) => (x.id === extra.id ? { ...x, initial: n } : x))) : setInitial(() => n)) }
+          }
+          account={extra}
+          onRename={(name) => extra && setAccounts((prev) => prev.map((x) => (x.id === extra.id ? { ...x, name } : x)))}
+          onRemoveAccount={() => extra && removeAccount(extra.id)}
+          accountName={accounts.length > 0 ? (m) => nameOf(accountOf(m, accounts)) : undefined}
           period={period}
           offset={offset}
           income={income}
@@ -161,7 +209,7 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
       )}
 
       {tab === 'movimientos' && (
-        <Movements s={s} inPeriod={inPeriod} movements={movements} setMovements={setMovements} />
+        <Movements s={s} inPeriod={inPeriod} movements={movements} setMovements={setMovements} accounts={accounts} selected={selected} nameOf={nameOf} />
       )}
 
       {tab === 'objetivos' && <MoneyGoals goals={goals} setGoals={setGoals} balance={balance} movements={movements} dark={dark} />}
@@ -175,7 +223,11 @@ function Summary({
   movements,
   inPeriod,
   initial,
-  setInitial,
+  initialField,
+  account,
+  onRename,
+  onRemoveAccount,
+  accountName,
   period,
   offset,
   income,
@@ -187,7 +239,11 @@ function Summary({
   movements: Movement[]
   inPeriod: Movement[]
   initial: number
-  setInitial: (update: (prev: number | null) => number | null) => void
+  initialField: { value: number; onChange: (n: number) => void } | null
+  account: BankAccount | null
+  onRename: (name: string) => void
+  onRemoveAccount: () => void
+  accountName?: (m: Movement) => string
   period: Period
   offset: number
   income: number
@@ -330,23 +386,37 @@ function Summary({
       </section>
 
       <section className={`flex flex-wrap items-center gap-3 p-4 ${card}`}>
-        <label className={`flex items-center gap-2 text-xs ${s.muted}`}>
-          {t('Dinero inicial')}
-          <input
-            key={initial}
-            defaultValue={initial}
-            inputMode="decimal"
-            onBlur={(e) => {
-              const n = Number(e.target.value.trim().replace(',', '.'))
-              if (Number.isFinite(n)) setInitial(() => Math.round(n * 100) / 100)
-            }}
-            className={`${s.field} !w-32 !py-1.5 font-mono text-xs`}
-          />
-        </label>
+        {account && (
+          <label className={`flex items-center gap-2 text-xs ${s.muted}`}>
+            {t('Nombre')}
+            <input key={account.id} defaultValue={account.name} maxLength={30} onBlur={(e) => e.target.value.trim() && onRename(e.target.value.trim())} className={`${s.field} !w-36 !py-1.5 text-xs`} />
+          </label>
+        )}
+        {initialField && (
+          <label className={`flex items-center gap-2 text-xs ${s.muted}`}>
+            {t('Dinero inicial')}
+            <input
+              key={`${account?.id ?? 'main'}-${initialField.value}`}
+              defaultValue={initialField.value}
+              inputMode="decimal"
+              onBlur={(e) => {
+                const n = Number(e.target.value.trim().replace(',', '.'))
+                if (Number.isFinite(n)) initialField.onChange(Math.round(n * 100) / 100)
+              }}
+              className={`${s.field} !w-32 !py-1.5 font-mono text-xs`}
+            />
+          </label>
+        )}
+        {account && (
+          <button type="button" onClick={onRemoveAccount} className={`flex items-center gap-1.5 text-xs ${s.muted} transition-colors hover:text-red-500`}>
+            <Icon name="trash" className="h-3.5 w-3.5" />
+            {t('Eliminar cuenta')}
+          </button>
+        )}
         <span className="flex-1" />
         <button
           type="button"
-          onClick={() => download('nivra-movimientos.csv', toCsv(movements))}
+          onClick={() => download('nivra-movimientos.csv', toCsv(movements, accountName))}
           disabled={movements.length === 0}
           className={`${s.ghost} disabled:opacity-40`}
         >
@@ -403,11 +473,17 @@ function Movements({
   inPeriod,
   movements,
   setMovements,
+  accounts,
+  selected,
+  nameOf,
 }: {
   s: Skin
   inPeriod: Movement[]
   movements: Movement[]
   setMovements: (update: (prev: Movement[]) => Movement[]) => void
+  accounts: BankAccount[]
+  selected: string
+  nameOf: (id: string) => string
 }) {
   const [kind, setKind] = useState<Movement['kind']>('gasto')
   const [amount, setAmount] = useState('')
@@ -418,6 +494,8 @@ function Movements({
   const [catFilter, setCatFilter] = useState('')
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [formAccount, setFormAccount] = useState<string | null>(null)
+  const targetAccount = formAccount ?? (selected === 'all' ? MAIN_ACCOUNT : selected)
 
   const parsed = parseAmount(amount)
   const label = `font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`
@@ -431,7 +509,7 @@ function Movements({
     if (parsed === null) return
     playPop()
     setMovements((prev) => [
-      { id: crypto.randomUUID(), kind, amount: parsed, category, date: date || dateKey(new Date()), note: note.trim() || undefined },
+      { id: crypto.randomUUID(), kind, amount: parsed, category, date: date || dateKey(new Date()), note: note.trim() || undefined, account: targetAccount === MAIN_ACCOUNT ? undefined : targetAccount },
       ...prev,
     ])
     setAmount('')
@@ -508,6 +586,16 @@ function Movements({
             ))}
           </select>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label={t('Fecha')} className={`${s.field} !w-auto !py-1.5 text-xs`} />
+          {accounts.length > 0 && (
+            <select value={targetAccount} onChange={(e) => setFormAccount(e.target.value)} aria-label={t('Cuenta')} className={`${s.field} !w-auto !py-1.5 text-xs`}>
+              <option value={MAIN_ACCOUNT}>{t('Principal')}</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          )}
           <span className="flex-1" />
           <button
             type="submit"
@@ -578,7 +666,11 @@ function Movements({
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm">{m.note || m.category}</span>
-                            {m.note && <span className={`block truncate text-[0.7rem] ${s.faint}`}>{m.category}</span>}
+                            {(m.note || (accounts.length > 0 && selected === 'all')) && (
+                              <span className={`block truncate text-[0.7rem] ${s.faint}`}>
+                                {[m.note ? m.category : '', accounts.length > 0 && selected === 'all' ? nameOf(accountOf(m, accounts)) : ''].filter(Boolean).join(' · ')}
+                              </span>
+                            )}
                           </span>
                           <Icon name={open ? 'up' : 'down'} className={`h-3.5 w-3.5 shrink-0 ${s.muted}`} />
                         </button>
@@ -619,6 +711,19 @@ function Movements({
                                   <option value="ingreso">{t('Ingreso')}</option>
                                 </select>
                               </label>
+                              {accounts.length > 0 && (
+                                <label className="flex flex-col gap-1.5">
+                                  <span className={label}>{t('Cuenta')}</span>
+                                  <select value={accountOf(m, accounts)} onChange={(e) => patch(m.id, { account: e.target.value === MAIN_ACCOUNT ? undefined : e.target.value })} className={s.field}>
+                                    <option value={MAIN_ACCOUNT}>{t('Principal')}</option>
+                                    {accounts.map((a) => (
+                                      <option key={a.id} value={a.id}>
+                                        {a.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              )}
                               <label className="flex flex-col gap-1.5">
                                 <span className={label}>{t('Categoría')}</span>
                                 <select value={m.category} onChange={(e) => patch(m.id, { category: e.target.value })} className={s.field}>
@@ -644,6 +749,77 @@ function Movements({
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+function AccountBar({
+  s,
+  accounts,
+  balances,
+  selected,
+  onSelect,
+  onAdd,
+  mainName,
+}: {
+  s: Skin
+  accounts: BankAccount[]
+  balances: Record<string, number>
+  selected: string
+  onSelect: (id: string) => void
+  onAdd: (name: string, initial: number) => void
+  mainName: string
+}) {
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [start, setStart] = useState('')
+  const amount = start.trim() === '' ? 0 : Number(start.trim().replace(',', '.'))
+  const valid = name.trim() !== '' && Number.isFinite(amount)
+
+  const chip = (id: string, text: string, value?: number) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => onSelect(id)}
+      aria-pressed={selected === id}
+      className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${s.line} ${selected === id ? s.active : `${s.muted} ${s.hoverText}`}`}
+    >
+      <span className="max-w-32 truncate">{text}</span>
+      {value !== undefined && <span className={`font-mono tabular-nums ${value < 0 ? 'text-red-500' : ''}`}>{eur(value)}</span>}
+    </button>
+  )
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {accounts.length > 0 && chip('all', t('Todas'))}
+      {accounts.length > 0 && chip(MAIN_ACCOUNT, mainName, balances[MAIN_ACCOUNT])}
+      {accounts.map((a) => chip(a.id, a.name, balances[a.id]))}
+      {adding ? (
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault()
+            if (!valid) return
+            onAdd(name.trim(), Math.round(amount * 100) / 100)
+            setName('')
+            setStart('')
+            setAdding(false)
+          }}
+          className="flex flex-wrap items-center gap-2"
+        >
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={30} autoFocus placeholder={t('Nombre de la cuenta')} aria-label={t('Nombre de la cuenta')} className={`${s.field} !w-40 !py-1.5 text-xs`} />
+          <input value={start} onChange={(e) => setStart(e.target.value)} inputMode="decimal" placeholder={t('Dinero inicial')} aria-label={t('Dinero inicial')} className={`${s.field} !w-28 !py-1.5 font-mono text-xs`} />
+          <button type="submit" disabled={!valid} className={`rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-30 ${s.primary}`}>
+            {t('Añadir')}
+          </button>
+          <button type="button" onClick={() => setAdding(false)} className={s.ghost}>
+            {t('Cancelar')}
+          </button>
+        </form>
+      ) : (
+        <button type="button" onClick={() => setAdding(true)} className={s.ghost}>
+          + {t('Añadir cuenta')}
+        </button>
       )}
     </div>
   )
