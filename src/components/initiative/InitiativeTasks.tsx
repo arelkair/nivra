@@ -214,7 +214,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
             const subDone = task.subtasks.filter((x) => x.done).length
             const open = openId === task.id
             return (
-              <li key={task.id} className={open ? s.panel : ''}>
+              <li key={task.id} data-nivra-id={task.id} className={open ? s.panel : ''}>
                 <div className="flex items-center gap-3 px-4 py-3">
                   <button
                     type="button"

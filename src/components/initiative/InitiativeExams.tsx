@@ -224,7 +224,7 @@ export function InitiativeExams({ works, setWorks, subjects, notes, onCreateNote
             const open = openId === w.id
             const n = w.date ? daysLeft(w.date) : null
             return (
-              <li key={w.id} className={open ? s.panel : ''}>
+              <li key={w.id} data-nivra-id={w.id} className={open ? s.panel : ''}>
                 <div className="flex items-center gap-3 px-4 py-3">
                   <span
                     title={t(TYPES[w.kind].label)}

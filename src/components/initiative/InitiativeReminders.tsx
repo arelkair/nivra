@@ -222,7 +222,7 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
                 const work = works.find((w) => w.id === r.work)
                 const repeatLabel = r.repeat ? t(REPEATS.find((x) => x.id === r.repeat)?.label ?? '') : ''
                 return (
-                  <li key={r.id} className={open ? s.panel : ''}>
+                  <li key={r.id} data-nivra-id={r.id} className={open ? s.panel : ''}>
                     <div className={`flex items-center gap-3 px-4 py-3 ${r.done ? 'opacity-50' : ''}`}>
                       <button
                         type="button"

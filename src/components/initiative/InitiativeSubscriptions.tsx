@@ -222,7 +222,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
             const open = openId === sub.id
             const share = monthly > 0 && !sub.paused ? sub.price / monthly : 0
             return (
-              <li key={sub.id} className={open ? s.panel : ''}>
+              <li key={sub.id} data-nivra-id={sub.id} className={open ? s.panel : ''}>
                 <div className={`flex items-center gap-3 px-4 py-3 ${sub.paused ? 'opacity-50' : ''}`}>
                   <button type="button" onClick={() => setOpenId(open ? null : sub.id)} aria-expanded={open} title={t('Editar')} className="min-w-0 flex-1 text-left">
                     <span className="block truncate text-sm">

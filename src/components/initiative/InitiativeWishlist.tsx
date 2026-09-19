@@ -249,7 +249,7 @@ export function InitiativeWishlist({ wishes, setWishes, balance, onExpense, onUn
             const p = prioOf(w)
             const pct = balance !== null && w.price ? Math.min(1, Math.max(0, balance / w.price)) : null
             return (
-              <li key={w.id} className={open ? s.panel : ''}>
+              <li key={w.id} data-nivra-id={w.id} className={open ? s.panel : ''}>
                 <div className="flex items-center gap-3 px-4 py-3">
                   <span className={`h-2 w-2 shrink-0 rounded-full ${w.bought ? 'bg-neutral-500' : dotOf(p)}`} title={t(PRIORITIES.find((x) => x.id === p)!.label)} />
                   <button type="button" onClick={() => setOpenId(open ? null : w.id)} aria-expanded={open} title={t('Editar')} className="min-w-0 flex-1 text-left">

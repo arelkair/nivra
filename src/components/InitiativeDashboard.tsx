@@ -43,6 +43,7 @@ import { ShortcutsHelp } from './initiative/ShortcutsPanel'
 import { SHORTCUTS, isTyping, keyOf, prettyKey } from '../lib/shortcuts'
 import { InitiativeLab } from './initiative/InitiativeLab'
 import { InitiativeVault } from './initiative/InitiativeVault'
+import type { AppLink, LinkTarget } from './initiative/vault/appLinks'
 import { htmlToMarkdown } from './initiative/vault/convert'
 import { norm, type VaultFolder, type VaultNote } from './initiative/vault/vaultModel'
 
@@ -197,6 +198,8 @@ export function InitiativeDashboard({
   const [vaultFolders, setVaultFolders] = useStored<VaultFolder[]>('nivra-vault-folders', [])
   const [migrated, setMigrated] = useStored<string[]>('nivra-vault-migrated', [])
   const [vaultTarget, setVaultTarget] = useState<string | null>(null)
+  const [calendarFocus, setCalendarFocus] = useState<string | null>(null)
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null)
 
   useEffect(() => {
     const pending = notepads.filter((n) => !migrated.includes(n.id))
@@ -236,6 +239,34 @@ export function InitiativeDashboard({
     setVaultTarget(id)
     setSection('boveda')
   }
+
+  const openApp = useCallback(
+    (link: AppLink) => {
+      if (link.section === 'calendario') setCalendarFocus(link.id ?? null)
+      else setPendingFocus(link.id ?? null)
+      setSection(link.section)
+    },
+    [setSection],
+  )
+
+  const appTargets = useMemo<LinkTarget[]>(() => {
+    const seen = new Set<string>()
+    const events: LinkTarget[] = []
+    for (const e of items) {
+      if (e.origin !== 'evento' || seen.has(`${e.id}${e.date}`)) continue
+      seen.add(`${e.id}${e.date}`)
+      events.push({ section: 'calendario', id: e.date, label: `${e.title} (${e.date})` })
+    }
+    return [
+      ...tasks.map((x) => ({ section: 'tareas' as Section, id: x.id, label: x.title })),
+      ...works.map((x) => ({ section: 'examenes' as Section, id: x.id, label: x.title })),
+      ...events,
+      ...reminders.map((x) => ({ section: 'recordatorios' as Section, id: x.id, label: x.title })),
+      ...wishes.map((x) => ({ section: 'deseos' as Section, id: x.id, label: x.title })),
+      ...subs.map((x) => ({ section: 'suscripciones' as Section, id: x.id, label: x.title })),
+      ...countdowns.map((x) => ({ section: 'cuentas' as Section, id: x.id, label: x.title })),
+    ].filter((x) => x.label)
+  }, [items, tasks, works, reminders, wishes, subs, countdowns])
 
   const sections = SECTIONS.filter((x) => x.id !== 'banco' || bankEnabled)
 
@@ -300,6 +331,23 @@ export function InitiativeDashboard({
     return acc
   }, [])
   const current: Section = section === 'banco' && !bankEnabled ? 'inicio' : section
+
+  useEffect(() => {
+    if (!pendingFocus) return
+    let tries = 0
+    const timer = setInterval(() => {
+      const el = document.querySelector<HTMLElement>(`[data-nivra-id="${CSS.escape(pendingFocus)}"]`)
+      if (!el && ++tries <= 15) return
+      clearInterval(timer)
+      setPendingFocus(null)
+      if (!el) return
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      el.classList.remove('nivra-flash')
+      void el.offsetWidth
+      el.classList.add('nivra-flash')
+    }, 80)
+    return () => clearInterval(timer)
+  }, [pendingFocus, current])
 
   useEffect(() => {
     document.querySelector('nav.fixed [aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' })
@@ -437,6 +485,8 @@ export function InitiativeDashboard({
       {current === 'calendario' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
           <InitiativeCalendar
+            focusDate={calendarFocus}
+            onFocusHandled={() => setCalendarFocus(null)}
             items={items}
             subjects={subjects}
             setEvents={setEvents}
@@ -608,6 +658,8 @@ export function InitiativeDashboard({
             setNotes={setVaultNotes}
             folders={vaultFolders}
             setFolders={setVaultFolders}
+            linkTargets={appTargets}
+            onOpenApp={openApp}
             focusId={vaultTarget}
             onFocusHandled={() => setVaultTarget(null)}
           />

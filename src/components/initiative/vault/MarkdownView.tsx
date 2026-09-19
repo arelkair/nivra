@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { skin } from '../skin'
+import { parseAppLink, type AppLink } from './appLinks'
 import { tagHue } from './vaultModel'
 
 type Props = {
@@ -7,12 +8,13 @@ type Props = {
   dark: boolean
   exists: (title: string) => boolean
   onOpenLink: (title: string) => void
+  onOpenApp: (link: AppLink) => void
   onTag: (tag: string) => void
   onToggleTask: (line: number) => void
 }
 
 const INLINE =
-  /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\*[^*\n]+\*)|(==[^=\n]+==)|(~~[^~\n]+~~)|(!?\[\[[^[\]]+\]\])|(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\))|((?:^|\s)#[\p{L}\p{N}_/-]+)/gu
+  /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\*[^*\n]+\*)|(==[^=\n]+==)|(~~[^~\n]+~~)|(!?\[\[[^[\]]+\]\])|(\[[^\]\n]+\]\((?:https?:\/\/|nivra:)[^)\s]+\))|((?:^|\s)#[\p{L}\p{N}_/-]+)/gu
 
 const isSeparator = (line: string) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(line) && line.includes('|')
 
@@ -51,7 +53,7 @@ const HEADING_CLASS = [
   'mt-2 mb-1 text-xs font-semibold tracking-wide uppercase opacity-80',
 ]
 
-export function MarkdownView({ body, dark, exists, onOpenLink, onTag, onToggleTask }: Props) {
+export function MarkdownView({ body, dark, exists, onOpenLink, onOpenApp, onTag, onToggleTask }: Props) {
   const s = skin(dark)
 
   const inline = (text: string, keyBase: string): ReactNode[] => {
@@ -104,10 +106,22 @@ export function MarkdownView({ body, dark, exists, onOpenLink, onTag, onToggleTa
         )
       } else if (match[7]) {
         const close = token.indexOf('](')
+        const app = parseAppLink(token.slice(close + 2, -1))
         out.push(
-          <a key={key} href={token.slice(close + 2, -1)} target="_blank" rel="noopener noreferrer" className={dark ? 'text-sky-300 underline' : 'text-sky-700 underline'}>
-            {token.slice(1, close)}
-          </a>,
+          app ? (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onOpenApp(app)}
+              className={`rounded px-0.5 underline underline-offset-4 ${dark ? 'text-emerald-300' : 'text-emerald-700'}`}
+            >
+              {token.slice(1, close)} ↗
+            </button>
+          ) : (
+            <a key={key} href={token.slice(close + 2, -1)} target="_blank" rel="noopener noreferrer" className={dark ? 'text-sky-300 underline' : 'text-sky-700 underline'}>
+              {token.slice(1, close)}
+            </a>
+          ),
         )
       } else if (match[8]) {
         const lead = token.startsWith('#') ? '' : token.slice(0, 1)

@@ -231,7 +231,7 @@ export function InitiativeCountdownsPage({ countdowns, setCountdowns, works, now
           {grid.map((c) => {
             const done = isFinished(c, now)
             return (
-              <article key={c.id} className={`flex min-w-0 flex-col gap-3 rounded-2xl border p-4 ${s.line} ${s.panel} ${done ? 'opacity-70' : ''}`}>
+              <article key={c.id} data-nivra-id={c.id} className={`flex min-w-0 flex-col gap-3 rounded-2xl border p-4 ${s.line} ${s.panel} ${done ? 'opacity-70' : ''}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{c.title}</p>

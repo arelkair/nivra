@@ -275,6 +275,23 @@ body {
   font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 }
 
+@keyframes nivra-flash {
+  0%,
+  60% {
+    outline: 2px solid #34d399;
+    outline-offset: 4px;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 4px;
+  }
+}
+
+.nivra-flash {
+  border-radius: 0.75rem;
+  animation: nivra-flash 2.2s ease-out;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

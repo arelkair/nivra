@@ -41,6 +41,9 @@ names used in the timetable.
   tables), dice, roulette, image converter (11 formats including AVIF, ICO,
   TIFF and HEIC input), PDF tools (merge, split, rotate, images to PDF) and
   Base64. Files are processed in the browser and never uploaded.
+- **Links to Initiative** inside vault notes: the editor's Initiative button inserts
+  a link to a section or to an exact task, exam, reminder, wish, subscription,
+  countdown or calendar day (`[text](nivra:tareas/ID)`).
 - **Global search** across every section and the contents of vault notes.
 - **Keyboard shortcuts**, all configurable, with a cheat sheet on `?`.
 - **Music and ambience** player for Spotify, YouTube and SoundCloud links and

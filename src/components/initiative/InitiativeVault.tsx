@@ -10,6 +10,8 @@ import { GraphView } from './vault/GraphView'
 import { downloadNote, type ExportFormat } from './vault/exportNote'
 import { importObsidian, readDropped } from './vault/importer'
 import { MarkdownView } from './vault/MarkdownView'
+import { appHref, type AppLink, type LinkTarget } from './vault/appLinks'
+import { SECTIONS, type Section } from './sections'
 import {
   backlinksOf,
   descendantFolders,
@@ -37,6 +39,8 @@ type Props = {
   setFolders: (update: (prev: VaultFolder[]) => VaultFolder[]) => void
   focusId: string | null
   onFocusHandled: () => void
+  linkTargets: LinkTarget[]
+  onOpenApp: (link: AppLink) => void
 }
 
 type Tab = 'notas' | 'grafo'
@@ -59,7 +63,7 @@ const WELCOME: { title: string; body: string }[] = [
   },
 ]
 
-export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, focusId, onFocusHandled }: Props) {
+export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, focusId, onFocusHandled, linkTargets: appTargets, onOpenApp }: Props) {
   const s = skin(dark)
   const [tab, setTab] = useState<Tab>('notas')
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -606,6 +610,8 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
               onRename={(title) => rename(active, title)}
               onRemove={() => removeNote(active)}
               onOpenTitle={openByTitle}
+              onOpenApp={onOpenApp}
+              appTargets={appTargets}
               onOpenId={(id) => {
                 focusNote(id)
                 setMode('vista')
@@ -662,6 +668,8 @@ function NotePane({
   onRename,
   onRemove,
   onOpenTitle,
+  onOpenApp,
+  appTargets,
   onOpenId,
   onTag,
   onLinkMention,
@@ -680,6 +688,8 @@ function NotePane({
   onRename: (title: string) => void
   onRemove: () => void
   onOpenTitle: (title: string) => void
+  onOpenApp: (link: AppLink) => void
+  appTargets: LinkTarget[]
   onOpenId: (id: string) => void
   onTag: (tag: string) => void
   onLinkMention: (other: VaultNote) => void
@@ -689,6 +699,9 @@ function NotePane({
   const area = useRef<HTMLTextAreaElement>(null)
   const [suggest, setSuggest] = useState<{ start: number; items: string[]; index: number } | null>(null)
   const [tablePanel, setTablePanel] = useState(false)
+  const [appPanel, setAppPanel] = useState(false)
+  const [appSection, setAppSection] = useState<Section>('inicio')
+  const [appItem, setAppItem] = useState('')
   const [rows, setRows] = useState(3)
   const [cols, setCols] = useState(3)
   const exists = (name: string) => notes.some((n) => norm(n.title) === norm(name))
@@ -969,12 +982,55 @@ function NotePane({
             {sep}
             {tool(t('Enlace a nota'), () => wrap('[[', ']]', 'Nota'), '[[ ]]')}
             {tool(t('Enlace web'), () => wrap('[', '](https://)', 'texto'), <Icon name="link" className="h-4 w-4" />)}
+            <button type="button" title={t('Enlace a Initiative')} aria-label={t('Enlace a Initiative')} aria-pressed={appPanel} onClick={() => setAppPanel(!appPanel)} className={`${tb} ${appPanel ? s.active : ''}`}>
+              <Icon name="initiative" className="h-4 w-4" />
+            </button>
             {tool(t('Etiqueta'), () => wrap('#', '', 'etiqueta'), '#')}
             {tool(t('Separador'), () => insertBlock('---'), '—')}
             {tool(t('Bloque de código'), () => insertBlock('```\ncódigo\n```'), '{ }')}
             <button type="button" title={t('Tabla')} aria-label={t('Tabla')} aria-pressed={tablePanel} onClick={() => setTablePanel(!tablePanel)} className={`${tb} ${tablePanel ? s.active : ''}`}>
               <Icon name="table" className="h-4 w-4" />
             </button>
+            {appPanel && (
+              <span className="flex flex-wrap items-center gap-2 pl-2">
+                <select
+                  value={appSection}
+                  onChange={(e) => {
+                    setAppSection(e.target.value as Section)
+                    setAppItem('')
+                  }}
+                  aria-label={t('Sección')}
+                  className={`${s.field} !w-auto !py-0.5 text-xs`}
+                >
+                  {SECTIONS.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {t(x.label)}
+                    </option>
+                  ))}
+                </select>
+                <select value={appItem} onChange={(e) => setAppItem(e.target.value)} aria-label={t('Elemento')} className={`${s.field} !w-44 !py-0.5 text-xs`}>
+                  <option value="">{t('Toda la sección')}</option>
+                  {appTargets
+                    .filter((x) => x.section === appSection)
+                    .map((x) => (
+                      <option key={`${x.id}${x.label}`} value={x.id}>
+                        {x.label}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const picked = appTargets.find((x) => x.section === appSection && x.id === appItem)
+                    wrap('[', `](${appHref(appSection, appItem || undefined)})`, picked?.label ?? t(SECTIONS.find((x) => x.id === appSection)?.label ?? ''))
+                    setAppPanel(false)
+                  }}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium ${s.primary}`}
+                >
+                  {t('Insertar')}
+                </button>
+              </span>
+            )}
             {tablePanel && (
               <span className="flex flex-wrap items-center gap-2 pl-2">
                 <label className={`flex items-center gap-1 text-xs ${s.muted}`}>
@@ -1042,7 +1098,7 @@ function NotePane({
               {note.body.trim() === '' ? (
                 <p className={`text-sm ${s.faint}`}>{t('Esta nota está vacía. Pulsa Editar para escribir.')}</p>
               ) : (
-                <MarkdownView body={note.body} dark={dark} exists={exists} onOpenLink={onOpenTitle} onTag={onTag} onToggleTask={toggleTask} />
+                <MarkdownView body={note.body} dark={dark} exists={exists} onOpenLink={onOpenTitle} onTag={onTag} onOpenApp={onOpenApp} onToggleTask={toggleTask} />
               )}
             </div>
           )}

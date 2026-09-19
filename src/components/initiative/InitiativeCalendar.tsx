@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   DAYS,
   MONTHS,
@@ -39,6 +39,8 @@ type Props = {
   anniversaries: Anniversary[]
   setAnniversaries: (update: (prev: Anniversary[]) => Anniversary[]) => void
   dark: boolean
+  focusDate: string | null
+  onFocusHandled: () => void
 }
 
 type View = 'mes' | 'semana' | 'agenda'
@@ -63,6 +65,8 @@ export function InitiativeCalendar({
   anniversaries,
   setAnniversaries,
   dark,
+  focusDate,
+  onFocusHandled,
 }: Props) {
   const s = skin(dark)
   const today = new Date()
@@ -101,6 +105,18 @@ export function InitiativeCalendar({
     setMonday(mondayOf(today))
     setSelected(todayKey)
   }
+
+  useEffect(() => {
+    if (!focusDate) return
+    const d = parseKey(focusDate)
+    if (!Number.isNaN(d.getTime())) {
+      setView('mes')
+      setCursor({ y: d.getFullYear(), m: d.getMonth() })
+      setMonday(mondayOf(d))
+      setSelected(focusDate)
+    }
+    onFocusHandled()
+  }, [focusDate, onFocusHandled])
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
 
