@@ -62,7 +62,7 @@ export function FloatingNote({ notepads, setNotepads, onClose }: Props) {
         className={`flex shrink-0 cursor-grab flex-col gap-2 border-b px-3 py-2 active:cursor-grabbing ${line}`}
       >
         <div className="flex items-center gap-2">
-          <Icon name="drag" className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-600" />
+          <Icon name="drag" className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-500" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium" title={active?.title}>
             {active?.title ?? t('Sin blocs todavía')}
           </span>

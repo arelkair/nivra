@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { dateKey, reorder, shortDate, textOn, type Subject, type Task } from '../../lib/store'
+import { dateKey, reorder, taskWhen, shortDate, textOn, type Subject, type Task } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
@@ -34,15 +34,17 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
   const [openId, setOpenId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [newDate, setNewDate] = useState('')
+  const [newDue, setNewDue] = useState('')
   const [newSubject, setNewSubject] = useState('')
 
   const matches = (task: Task, f: Filter) => {
     if (f === 'hechas') return task.done
     if (task.done) return false
     if (f === 'pendientes') return true
-    if (f === 'hoy') return !!task.date && task.date <= todayKey
-    if (f === 'proximas') return !!task.date && task.date > todayKey
-    return !task.date
+    const when = taskWhen(task)
+    if (f === 'hoy') return !!when && when <= todayKey
+    if (f === 'proximas') return !!when && when > todayKey
+    return !when
   }
 
   const inSubject = (task: Task) => !subjectFilter || task.subject === subjectFilter
@@ -53,7 +55,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
   const visible = tasks.filter((task) => matches(task, filter) && inSubject(task))
   const ordered =
     filter === 'hoy' || filter === 'proximas'
-      ? [...visible].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+      ? [...visible].sort((a, b) => (taskWhen(a) ?? '').localeCompare(taskWhen(b) ?? ''))
       : visible
 
   const patch = (id: string, changes: Partial<Task>) =>
@@ -82,6 +84,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
   }
 
   const overdue = (task: Task) => !task.done && !!task.date && task.date < todayKey
+  const dueLate = (task: Task) => !task.done && !!task.due && task.due < todayKey
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -105,12 +108,14 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
               done: false,
               subtasks: [],
               date: newDate || undefined,
+              due: newDue || undefined,
               subject: newSubject || undefined,
             },
             ...prev,
           ])
           setTitle('')
           setNewDate('')
+          setNewDue('')
         }}
         className={`flex flex-col gap-2 rounded-2xl border p-3 sm:flex-row sm:items-center ${s.line} ${s.panel}`}
       >
@@ -128,8 +133,19 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
             value={newDate}
             onChange={(e) => setNewDate(e.target.value)}
             aria-label={t('Fecha')}
+            title={t('Fecha')}
             className={`${s.field} !w-auto !py-1.5 text-xs`}
           />
+          <label className={`flex items-center gap-1.5 text-xs ${s.muted}`}>
+            {t('Entrega')}
+            <input
+              type="date"
+              value={newDue}
+              onChange={(e) => setNewDue(e.target.value)}
+              aria-label={t('Fecha de entrega')}
+              className={`${s.field} !w-auto !py-1.5 text-xs`}
+            />
+          </label>
           {subjects.length > 0 && (
             <select
               value={newSubject}
@@ -230,7 +246,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
                     <span className={`block truncate text-sm ${task.done ? `${s.faint} line-through` : ''}`}>
                       {task.title}
                     </span>
-                    {(subject || task.date || task.subtasks.length > 0 || task.notepad || task.url) && (
+                    {(subject || task.date || task.due || task.subtasks.length > 0 || task.notepad || task.url) && (
                       <span className={`mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[0.7rem] ${s.faint}`}>
                         {subject && (
                           <span
@@ -248,6 +264,15 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
                           >
                             {task.date === todayKey ? t('Hoy') : shortDate(task.date)}
                             {overdue(task) && ` · ${t('vencida')}`}
+                          </span>
+                        )}
+                        {task.due && (
+                          <span
+                            className={`rounded border px-1.5 font-mono ${
+                              dueLate(task) ? 'border-red-500/50 text-red-500' : task.due === todayKey ? 'border-amber-500/60 text-amber-500' : s.line
+                            }`}
+                          >
+                            {t('Entrega')} · {task.due === todayKey ? t('Hoy') : shortDate(task.due)}
                           </span>
                         )}
                         {task.subtasks.length > 0 && (
@@ -370,6 +395,26 @@ function TaskDetail({
               <button
                 type="button"
                 onClick={() => onPatch({ date: undefined })}
+                className={`shrink-0 text-xs ${s.faint} transition-colors hover:text-red-500`}
+              >
+                {t('Quitar')}
+              </button>
+            )}
+          </span>
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>{t('Fecha de entrega')}</span>
+          <span className="flex items-center gap-2">
+            <input
+              type="date"
+              value={task.due ?? ''}
+              onChange={(e) => onPatch({ due: e.target.value || undefined })}
+              className={s.field}
+            />
+            {task.due && (
+              <button
+                type="button"
+                onClick={() => onPatch({ due: undefined })}
                 className={`shrink-0 text-xs ${s.faint} transition-colors hover:text-red-500`}
               >
                 {t('Quitar')}

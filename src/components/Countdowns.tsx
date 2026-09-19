@@ -197,7 +197,7 @@ function Card({
           type="button"
           onClick={onEdit}
           aria-label={`Editar ${item.title}`}
-          className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
         >
           <Icon name="settings" className="h-3.5 w-3.5" />
         </button>

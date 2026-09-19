@@ -4,6 +4,7 @@ import { notifyWithUndo } from '../../lib/undo'
 import { t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
 import { Icon } from '../ui'
+import { ScheduleTransfer } from './ScheduleTransfer'
 import { ScheduleEditor, type Draft } from './ScheduleEditor'
 import { DAY_END, MIN_BLOCK, formatSpan, fromMin, layoutDay, overlaps, snap, toMin } from './scheduleLayout'
 import { skin } from './skin'
@@ -351,8 +352,8 @@ export function InitiativeSchedule({
   const hourOffset = (((60 - (rangeStart % 60)) % 60) / 60) * PX
   const halfOffset = (((30 - (rangeStart % 30)) % 30) / 60) * PX
 
-  const lineBg = dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)'
-  const halfBg = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.035)'
+  const lineBg = dark ? 'rgba(255,255,255,0.08)' : 'rgba(30,30,20,0.10)'
+  const halfBg = dark ? 'rgba(255,255,255,0.035)' : 'rgba(30,30,20,0.045)'
   const gridStyle = { gridTemplateColumns: `3rem repeat(${days.length}, minmax(0, 1fr))` }
   const label = `font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`
 
@@ -508,8 +509,8 @@ export function InitiativeSchedule({
       )}
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className={`overflow-hidden rounded-2xl border select-none ${s.line}`}>
-          <div className={`grid border-b ${s.line}`} style={gridStyle}>
+        <div className={`overflow-hidden rounded-2xl border select-none ${s.line} ${dark ? 'bg-white/[0.02]' : 'bg-white shadow-[0_1px_3px_rgba(20,20,10,0.06)]'}`}>
+          <div className={`grid border-b ${s.line} ${dark ? 'bg-white/[0.03]' : 'bg-[#faf9f6]'}`} style={gridStyle}>
             <span />
             {days.map((d) => {
               const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + d)
@@ -566,7 +567,7 @@ export function InitiativeSchedule({
                   onPointerDown={(e) => startCreate(e, d)}
                   onClick={(e) => tapCreate(e, d)}
                   data-day={d}
-                  className={`relative cursor-crosshair border-l ${s.line} ${isToday ? (dark ? 'bg-white/[0.02]' : 'bg-black/[0.02]') : ''}`}
+                  className={`relative cursor-crosshair border-l ${s.line} ${isToday ? (dark ? 'bg-white/[0.03]' : 'bg-amber-50/60') : ''}`}
                   style={{
                     height,
                     backgroundImage: `linear-gradient(to bottom, ${lineBg} 1px, transparent 1px), linear-gradient(to bottom, ${halfBg} 1px, transparent 1px)`,
@@ -606,6 +607,8 @@ export function InitiativeSchedule({
                     const isCurrent = isToday && start <= nowMin && nowMin < end
                     const moving = ix && (ix.kind === 'move' || ix.kind === 'resize') && ix.id === b.id && ix.moved
                     const ink = b.color ? textOn(b.color) : ''
+                    const showTime = h >= 52
+                    const titleLines = Math.max(1, Math.floor((h - 14 - (showTime ? 16 : 0)) / 15))
                     return (
                       <div
                         key={b.id}
@@ -622,9 +625,11 @@ export function InitiativeSchedule({
                           width: `calc(${100 / lane.lanes}% - 4px)`,
                           background: b.color,
                         }}
-                        className={`group absolute z-10 cursor-grab overflow-hidden rounded-lg px-2 py-1 text-left transition-shadow active:cursor-grabbing ${
-                          b.color ? '' : `border ${dark ? 'bg-neutral-900' : 'bg-white'} ${s.line}`
-                        } ${isCurrent ? 'ring-2 ring-emerald-500/70' : ''} ${moving ? 'z-30 opacity-90 shadow-lg' : ''} ${
+                        className={`group absolute z-10 flex cursor-grab flex-col gap-0.5 overflow-hidden rounded-xl border px-2 py-1.5 text-left shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${
+                          b.color
+                            ? 'border-black/10 shadow-black/10 dark:border-white/10'
+                            : `${dark ? 'bg-neutral-900' : 'bg-white'} ${s.line}`
+                        } ${isCurrent ? 'ring-2 ring-emerald-500/70' : ''} ${moving ? 'z-30 opacity-90 shadow-xl' : ''} ${
                           draft?.id === b.id ? (dark ? 'outline-2 outline-white' : 'outline-2 outline-neutral-900') : ''
                         } ${lane.lanes > 1 ? 'outline-1 outline-red-500/40' : ''}`}
                       >
@@ -633,15 +638,22 @@ export function InitiativeSchedule({
                           className="absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
                         />
                         <span
-                          style={{ color: b.textColor ?? undefined, background: b.textBg ?? undefined }}
-                          className={`block truncate rounded px-1 text-xs font-medium ${!b.textColor && b.color ? ink : ''}`}
+                          style={{
+                            color: b.textColor ?? undefined,
+                            background: b.textBg ?? undefined,
+                            display: '-webkit-box',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: titleLines,
+                            overflow: 'hidden',
+                          }}
+                          className={`rounded px-1 text-xs leading-[1.2] font-semibold break-words ${!b.textColor && b.color ? ink : ''}`}
                         >
                           {b.title}
                         </span>
-                        {h >= 40 && (
+                        {showTime && (
                           <span className={`block truncate px-1 font-mono text-[0.65rem] tabular-nums ${b.color ? `${ink} opacity-80` : s.muted}`}>
                             {fromMin(start)}–{fromMin(end)}
-                            {h >= 56 && ` · ${formatSpan(end - start)}`}
+                            {h >= 72 && ` · ${formatSpan(end - start)}`}
                           </span>
                         )}
                         <span
@@ -765,6 +777,13 @@ export function InitiativeSchedule({
                     {t('Copiar')}
                   </button>
                 </div>
+                <ScheduleTransfer
+                  blocks={blocks}
+                  setBlocks={setBlocks}
+                  profile={active}
+                  profileName={profiles.find((p) => p.id === active)?.name ?? ''}
+                  s={s}
+                />
                 <p className={`text-[0.7rem] ${s.faint}`}>
                   {t('Arrastra en un hueco para crear un bloque, arrastra un bloque para moverlo y tira de su borde para cambiar la duración.')}
                 </p>

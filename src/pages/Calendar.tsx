@@ -87,12 +87,12 @@ export function Calendar({
           {view === 'mes' ? (
             <>
               {t(MONTHS[cursor.m])}{' '}
-              <span className="text-neutral-500 dark:text-neutral-600">{cursor.y}</span>
+              <span className="text-neutral-500 dark:text-neutral-500">{cursor.y}</span>
             </>
           ) : (
             <>
               {weekDays[0].getDate()} {t(MONTHS[weekDays[0].getMonth()]).slice(0, 3)}
-              <span className="text-neutral-500 dark:text-neutral-600"> — </span>
+              <span className="text-neutral-500 dark:text-neutral-500"> — </span>
               {weekDays[6].getDate()} {t(MONTHS[weekDays[6].getMonth()]).slice(0, 3)}
             </>
           )}
@@ -188,7 +188,7 @@ export function Calendar({
                     </span>
                   )}
                   {own.length === 0 && !isAnniversary && !isSpecial ? (
-                    <span className="text-[0.7rem] text-neutral-500 dark:text-neutral-600">
+                    <span className="text-[0.7rem] text-neutral-500 dark:text-neutral-500">
                       {t('Nada')}
                     </span>
                   ) : (
@@ -211,7 +211,7 @@ export function Calendar({
       {view === 'mes' && (
       <>
 
-      <div className="mb-2 grid grid-cols-7 text-center text-[0.7rem] font-semibold tracking-wider text-neutral-500 dark:text-neutral-600">
+      <div className="mb-2 grid grid-cols-7 text-center text-[0.7rem] font-semibold tracking-wider text-neutral-500 dark:text-neutral-500">
         {weekdayLetters().map((d, i) => (
           <span key={i} className={i >= 5 ? 'text-red-300 dark:text-red-500/60' : ''}>
             {d}
@@ -423,7 +423,7 @@ function DayDialog({
             className={`${square} ${
               free
                 ? 'border-red-500 bg-red-500 text-white'
-                : 'border-black/[0.07] text-neutral-500 hover:border-red-400 dark:border-neutral-700 dark:text-neutral-600'
+                : 'border-black/[0.07] text-neutral-500 hover:border-red-400 dark:border-neutral-700 dark:text-neutral-500'
             } ${locked ? 'cursor-default opacity-70' : ''}`}
           >
             <Icon name="pin" className="h-4 w-4" />
@@ -437,7 +437,7 @@ function DayDialog({
             className={`${square} ${
               special
                 ? 'border-transparent bg-[linear-gradient(135deg,#ec4899_0%,#8b5cf6_35%,#3b82f6_60%,#06b6d4_80%,#22c55e_100%)] text-white'
-                : 'border-black/[0.07] text-neutral-500 hover:border-fuchsia-400 dark:border-white/[0.08] dark:text-neutral-600'
+                : 'border-black/[0.07] text-neutral-500 hover:border-fuchsia-400 dark:border-white/[0.08] dark:text-neutral-500'
             }`}
           >
             <Icon name="special" className="h-4 w-4" />
@@ -451,7 +451,7 @@ function DayDialog({
             className={`${square} ${
               anniversary
                 ? 'border-yellow-500 bg-yellow-500 text-neutral-900'
-                : 'border-black/[0.07] text-neutral-500 hover:border-yellow-400 dark:border-neutral-700 dark:text-neutral-600'
+                : 'border-black/[0.07] text-neutral-500 hover:border-yellow-400 dark:border-neutral-700 dark:text-neutral-500'
             }`}
           >
             <Icon name="star" className="h-4 w-4" />
@@ -512,7 +512,7 @@ function DayDialog({
                   type="button"
                   onClick={() => onDelete(e.id, e.title)}
                   aria-label={`Eliminar ${e.title}`}
-                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                 >
                   <Icon name="trash" className="h-4 w-4" />
                 </button>

@@ -167,7 +167,7 @@ function Row({
       >
         <span
           className={`block truncate text-sm ${
-            task.done ? 'text-neutral-400 line-through dark:text-neutral-600' : ''
+            task.done ? 'text-neutral-400 line-through dark:text-neutral-500' : ''
           }`}
         >
           {task.title}
@@ -202,7 +202,7 @@ function Row({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={tp('Abrir enlace de {0}', task.title)}
-          className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
         >
           <Icon name="link" className="h-3.5 w-3.5" />
         </a>
@@ -213,7 +213,7 @@ function Row({
           type="button"
           onClick={() => onMove(-1)}
           aria-label={`Subir ${task.title}`}
-          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
         >
           <Icon name="up" className="h-3 w-3" />
         </button>
@@ -221,7 +221,7 @@ function Row({
           type="button"
           onClick={() => onMove(1)}
           aria-label={`Bajar ${task.title}`}
-          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
         >
           <Icon name="down" className="h-3 w-3" />
         </button>
@@ -231,7 +231,7 @@ function Row({
         type="button"
         onClick={() => onRemove(task.id)}
         aria-label={`Eliminar ${task.title}`}
-        className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+        className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
       >
         <Icon name="trash" className="h-4 w-4" />
       </button>
@@ -375,7 +375,7 @@ function TaskDialog({
                 </button>
                 <span
                   className={`min-w-0 flex-1 truncate text-sm ${
-                    s.done ? 'text-neutral-400 line-through dark:text-neutral-600' : ''
+                    s.done ? 'text-neutral-400 line-through dark:text-neutral-500' : ''
                   }`}
                 >
                   {s.title}
@@ -386,7 +386,7 @@ function TaskDialog({
                     setSubs(reorder(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), -1))
                   }
                   aria-label={`Subir ${s.title}`}
-                  className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                  className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
                 >
                   <Icon name="up" className="h-3 w-3" />
                 </button>
@@ -396,7 +396,7 @@ function TaskDialog({
                     setSubs(reorder(task.subtasks, task.subtasks.findIndex((x) => x.id === s.id), 1))
                   }
                   aria-label={`Bajar ${s.title}`}
-                  className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                  className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
                 >
                   <Icon name="down" className="h-3 w-3" />
                 </button>
@@ -404,7 +404,7 @@ function TaskDialog({
                   type="button"
                   onClick={() => setSubs(task.subtasks.filter((x) => x.id !== s.id))}
                   aria-label={`Eliminar ${s.title}`}
-                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                 >
                   <Icon name="trash" className="h-3.5 w-3.5" />
                 </button>

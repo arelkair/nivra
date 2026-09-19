@@ -42,6 +42,15 @@ function alignOf(cell: string): 'left' | 'center' | 'right' {
   return 'left'
 }
 
+const HEADING_CLASS = [
+  'mt-5 mb-2 text-2xl font-semibold',
+  'mt-4 mb-1.5 text-xl font-semibold',
+  'mt-3 mb-1 text-lg font-semibold',
+  'mt-3 mb-1 text-base font-semibold',
+  'mt-2 mb-1 text-sm font-semibold',
+  'mt-2 mb-1 text-xs font-semibold tracking-wide uppercase opacity-80',
+]
+
 export function MarkdownView({ body, dark, exists, onOpenLink, onTag, onToggleTask }: Props) {
   const s = skin(dark)
 
@@ -208,10 +217,10 @@ export function MarkdownView({ body, dark, exists, onOpenLink, onTag, onToggleTa
       continue
     }
 
-    const heading = /^(#{1,3})\s+(.*)$/.exec(line)
+    const heading = /^(#{1,6})\s+(.*?)(?:\s+#+)?\s*$/.exec(line)
     if (heading) {
       const level = heading[1].length
-      const cls = level === 1 ? 'mt-5 mb-2 text-2xl font-semibold' : level === 2 ? 'mt-4 mb-1.5 text-xl font-semibold' : 'mt-3 mb-1 text-base font-semibold'
+      const cls = HEADING_CLASS[level - 1]
       blocks.push(
         <p key={key++} role="heading" aria-level={level} className={cls}>
           {inline(heading[2], `h${key}`)}
@@ -315,7 +324,7 @@ export function MarkdownView({ body, dark, exists, onOpenLink, onTag, onToggleTa
 
     const para: string[] = [line]
     i++
-    while (i < lines.length && lines[i].trim() !== '' && !/^(#{1,3}\s|>\s?|\s*[-*]\s|\s*\d+\.\s|```|-{3,}\s*$|\|)/.test(lines[i])) para.push(lines[i++])
+    while (i < lines.length && lines[i].trim() !== '' && !/^(#{1,6}\s|>\s?|\s*[-*]\s|\s*\d+\.\s|```|-{3,}\s*$|\|)/.test(lines[i])) para.push(lines[i++])
     blocks.push(
       <p key={key++} className="my-2">
         {para.map((text, index) => (

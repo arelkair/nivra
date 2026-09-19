@@ -235,7 +235,7 @@ function Row({
           type="button"
           onClick={() => onMove(-1)}
           aria-label={`Subir ${work.title}`}
-          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
         >
           <Icon name="up" className="h-3 w-3" />
         </button>
@@ -243,7 +243,7 @@ function Row({
           type="button"
           onClick={() => onMove(1)}
           aria-label={`Bajar ${work.title}`}
-          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+          className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
         >
           <Icon name="down" className="h-3 w-3" />
         </button>
@@ -253,7 +253,7 @@ function Row({
         type="button"
         onClick={() => onRemove(work.id)}
         aria-label={`Eliminar ${work.title}`}
-        className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+        className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
       >
         <Icon name="trash" className="h-4 w-4" />
       </button>

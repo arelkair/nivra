@@ -176,7 +176,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                             type="button"
                             onClick={() => duplicate(b)}
                             aria-label={`Duplicar ${b.title}`}
-                            className={`transition-colors ${b.color ? 'opacity-70 hover:opacity-100' : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white'}`}
+                            className={`transition-colors ${b.color ? 'opacity-70 hover:opacity-100' : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white'}`}
                           >
                             <Icon name="copy" className="h-3.5 w-3.5" />
                           </button>
@@ -184,7 +184,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                             type="button"
                             onClick={() => removeBlock(b)}
                             aria-label={`Eliminar ${b.title}`}
-                            className={`transition-colors ${b.color ? 'opacity-70 hover:opacity-100' : 'text-neutral-500 hover:text-red-500 dark:text-neutral-600'}`}
+                            className={`transition-colors ${b.color ? 'opacity-70 hover:opacity-100' : 'text-neutral-500 hover:text-red-500 dark:text-neutral-500'}`}
                           >
                             <Icon name="trash" className="h-3.5 w-3.5" />
                           </button>
@@ -193,7 +193,13 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
                       <button
                         type="button"
                         onClick={() => setEditingItem(b)}
-                        className={`mt-0.5 w-full truncate text-left text-sm ${b.color ? textOn(b.color) : ''}`}
+                        style={{
+                          color: b.textColor ?? undefined,
+                          background: b.textBg ?? undefined,
+                        }}
+                        className={`mt-0.5 block w-full truncate rounded-lg px-1.5 py-0.5 text-left text-sm ${
+                          !b.textColor && b.color ? textOn(b.color) : ''
+                        }`}
                         title={t('Editar')}
                       >
                         {b.title}
@@ -231,10 +237,10 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
               const lateNight = data.get('lateNight') === 'on'
-              const color = data.get('useColor') === 'on' ? String(data.get('color') ?? '') : undefined
+              const colors = readColors(data)
               setBlocks((prev) => [
                 ...prev,
-                { id: crypto.randomUUID(), day: dayIndex, start, end, title, profile: active, lateNight, color },
+                { id: crypto.randomUUID(), day: dayIndex, start, end, title, profile: active, lateNight, ...colors },
               ])
               setAdding(null)
             }}
@@ -273,7 +279,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
               {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
             </p>
-            <BlockColorField />
+            <BlockColorFields />
             <button type="submit" className={`${button} mt-2`}>
               {t('Añadir')}
             </button>
@@ -294,11 +300,11 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
               const [start, end] = a <= b ? [a, b] : [b, a]
               const dayIndex = Number(data.get('day'))
               const lateNight = data.get('lateNight') === 'on'
-              const color = data.get('useColor') === 'on' ? String(data.get('color') ?? '') : undefined
+              const colors = readColors(data)
               setBlocks((prev) =>
                 prev.map((x) =>
                   x.id === editingItem.id
-                    ? { ...x, title, start, end, day: dayIndex, lateNight, color }
+                    ? { ...x, title, start, end, day: dayIndex, lateNight, ...colors }
                     : x,
                 ),
               )
@@ -350,7 +356,7 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
             <p className="text-[0.65rem] text-neutral-400 dark:text-neutral-500">
               {t('Útil si tienes una actividad que empieza pasada la medianoche.')}
             </p>
-            <BlockColorField initial={editingItem.color} />
+            <BlockColorFields initial={editingItem} />
             <button type="submit" className={`${button} mt-2`}>
               {t('Guardar')}
             </button>
@@ -426,29 +432,64 @@ export function Schedule({ blocks, setBlocks, profiles, setProfiles, active, set
   )
 }
 
-function BlockColorField({ initial }: { initial?: string }) {
-  const [useColor, setUseColor] = useState(!!initial)
+function ColorField({
+  name,
+  label,
+  initial,
+  fallback,
+}: {
+  name: string
+  label: string
+  initial?: string
+  fallback: string
+}) {
+  const [use, setUse] = useState(!!initial)
   return (
     <div className="mt-1 flex items-center gap-2">
-      <label className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+      <label className="flex flex-1 items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
         <input
-          name="useColor"
+          name={`use-${name}`}
           type="checkbox"
-          checked={useColor}
-          onChange={(e) => setUseColor(e.target.checked)}
+          checked={use}
+          onChange={(e) => setUse(e.target.checked)}
           className="h-4 w-4 rounded"
         />
-        {t('Color del bloque')}
+        {label}
       </label>
-      {useColor && (
+      {use && (
         <input
-          name="color"
+          name={name}
           type="color"
-          defaultValue={initial ?? '#3b82f6'}
-          aria-label={t('Color del bloque')}
+          defaultValue={initial ?? fallback}
+          aria-label={label}
           className="h-7 w-7 cursor-pointer rounded-lg border-0 bg-transparent p-0"
         />
       )}
+    </div>
+  )
+}
+
+function BlockColorFields({ initial }: { initial?: Block }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <ColorField
+        name="color"
+        label={t('Color del bloque')}
+        initial={initial?.color}
+        fallback="#3b82f6"
+      />
+      <ColorField
+        name="textColor"
+        label={t('Color del texto')}
+        initial={initial?.textColor}
+        fallback="#ffffff"
+      />
+      <ColorField
+        name="textBg"
+        label={t('Color del recuadro del texto')}
+        initial={initial?.textBg}
+        fallback="#1e3a8a"
+      />
     </div>
   )
 }
@@ -541,7 +582,7 @@ function TableSchedule({
                               onClick={() => onDelete(block)}
                               aria-label={`Eliminar ${block.title}`}
                               className={`shrink-0 opacity-0 transition-opacity group-hover:opacity-100 ${
-                                block.color ? '' : 'text-neutral-500 hover:text-red-500 dark:text-neutral-600'
+                                block.color ? '' : 'text-neutral-500 hover:text-red-500 dark:text-neutral-500'
                               }`}
                             >
                               <Icon name="trash" className="h-3 w-3" />
@@ -552,7 +593,7 @@ function TableSchedule({
                             type="button"
                             onClick={() => onQuickAdd(dayIndex, row.start, row.end)}
                             aria-label={tp('Añadir bloque el {0} de {1} a {2}', t(DAYS[dayIndex]), row.start, row.end)}
-                            className="grid h-8 w-full place-items-center rounded-lg text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-700 dark:hover:bg-white/[0.05] dark:hover:text-white"
+                            className="grid h-8 w-full place-items-center rounded-lg text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 dark:text-neutral-600 dark:hover:bg-white/[0.05] dark:hover:text-white"
                           >
                             <Icon name="plus" className="h-3 w-3" />
                           </button>

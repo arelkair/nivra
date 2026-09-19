@@ -68,9 +68,10 @@
 }
 
 .dark {
-  --paper: #0b0b0c;
-  --surface: #141416;
-  --sunken: #0f0f11;
+  --paper: #09090b;
+  --surface: #131316;
+  --sunken: #0d0d10;
+  color-scheme: dark;
 }
 
 .dark[data-accent='rojo'] {
@@ -221,7 +222,7 @@ body {
 }
 
 .dark body {
-  color: #e4e4e7;
+  color: #ececef;
 }
 
 .nivra-scroll {
@@ -253,9 +254,21 @@ body {
   font-family: 'Fraunces', ui-serif, Georgia, serif;
 }
 
-[data-transparent-menus='true'] .nivra-menu {
-  background-color: color-mix(in oklab, var(--surface) 72%, transparent);
-  backdrop-filter: blur(16px);
+:root {
+  --menu-opacity: 100%;
+  --menu-blur: 0px;
+}
+
+.nivra-menu {
+  background-color: color-mix(in oklab, var(--surface) var(--menu-opacity), transparent);
+  backdrop-filter: blur(var(--menu-blur));
+}
+
+.initiative-mode body,
+.initiative-mode .font-mono,
+.initiative-mode .font-display,
+.initiative-mode .font-initiative {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-initiative {

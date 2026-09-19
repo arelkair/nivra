@@ -73,6 +73,7 @@ export type Subscription = {
   day: number
   lastCharged?: string
   paused?: boolean
+  paidBy?: 'other'
 }
 
 export type Goal =
@@ -253,6 +254,7 @@ export type Task = {
   date?: string
   done: boolean
   subtasks: SubTask[]
+  due?: string
   subject?: string
   notepad?: string
   url?: string
@@ -298,6 +300,8 @@ export type Block = {
   profile?: string
   lateNight?: boolean
   color?: string
+  textColor?: string
+  textBg?: string
 }
 
 export const blockProfile = (b: Block) => b.profile ?? DEFAULT_PROFILE
@@ -471,6 +475,41 @@ export function upcomingItems(items: CalItem[], from: Date, dias: number) {
     for (const item of itemsOfDay(items, date)) out.push({ date: date, item })
   }
   return out
+}
+
+export const taskWhen = (task: Task) => [task.date, task.due].filter((d): d is string => !!d).sort()[0]
+
+export const SUBJECT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8', '#a855f7', '#ec4899']
+
+const foldName = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+
+export const subjectId = (name: string) => `s-${foldName(name)}`
+
+export function hasSubject(subjects: Subject[], name: string) {
+  const key = foldName(name)
+  return subjects.some((x) => foldName(x.name) === key)
+}
+
+export function detectSubjects(blocks: Block[], manual: Subject[]): Subject[] {
+  const seen = new Set(manual.map((x) => foldName(x.name)))
+  const found: Subject[] = []
+  for (const b of blocks) {
+    const name = b.title.trim()
+    const key = foldName(name)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    found.push({ id: subjectId(name), name, color: b.color ?? SUBJECT_COLORS[(manual.length + found.length) % SUBJECT_COLORS.length] })
+  }
+  return found
+}
+
+export function allSubjects(blocks: Block[], manual: Subject[]): Subject[] {
+  return [...manual, ...detectSubjects(blocks, manual)]
 }
 
 export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]): CalItem[] {

@@ -265,7 +265,7 @@ function GradeList({
                 type="button"
                 onClick={() => onDelete(g.id, g.value)}
                 aria-label={`Eliminar nota ${g.value}`}
-                className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
               >
                 <Icon name="trash" className="h-4 w-4" />
               </button>

@@ -30,9 +30,11 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
   const [price, setPrice] = useState('')
   const [day, setDay] = useState(String(now.getDate()))
   const [link, setLink] = useState('')
+  const [others, setOthers] = useState(false)
 
   const active = subs.filter((x) => !x.paused)
-  const monthly = active.reduce((a, x) => a + x.price, 0)
+  const mine = active.filter((x) => x.paidBy !== 'other')
+  const monthly = mine.reduce((a, x) => a + x.price, 0)
   const withNext = subs.map((x) => ({ sub: x, next: nextRenewal(x.day, now) }))
   const upcoming = withNext.filter((x) => !x.sub.paused).sort((a, b) => a.next.days - b.next.days)[0]
   const parsedPrice = parseAmount(price)
@@ -58,8 +60,10 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
         price: parsedPrice,
         day: dayNumber,
         url: /^https?:\/\//i.test(url) ? url : undefined,
+        paidBy: others ? ('other' as const) : undefined,
       },
     ])
+    setOthers(false)
     setTitle('')
     setPrice('')
     setLink('')
@@ -189,6 +193,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
             aria-label={t('Enlace')}
             className={`${s.field} min-w-32 flex-1 !py-1.5 text-xs`}
           />
+          <PayerToggle others={others} onChange={setOthers} s={s} />
           <button
             type="submit"
             disabled={!canAdd}
@@ -223,6 +228,7 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
                     <span className="block truncate text-sm">
                       {sub.title}
                       {sub.paused && <span className={`ml-2 text-[0.65rem] ${s.faint}`}>{t('En pausa')}</span>}
+                      <PayerBadge others={sub.paidBy === 'other'} s={s} />
                     </span>
                     <span className={`block text-[0.7rem] ${s.faint}`}>
                       {sub.paused
@@ -235,7 +241,10 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
                       </span>
                     )}
                   </button>
-                  <span className="shrink-0 text-sm tabular-nums text-red-500">−{eur(sub.price)}</span>
+                  <span className={`shrink-0 text-sm tabular-nums ${sub.paidBy === 'other' ? s.muted : 'text-red-500'}`}>
+                    {sub.paidBy === 'other' ? '' : '−'}
+                    {eur(sub.price)}
+                  </span>
                   {sub.url && (
                     <a href={sub.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${sub.title}`} className={`shrink-0 ${s.muted} ${s.hoverText} transition-colors`}>
                       <Icon name="link" className="h-4 w-4" />
@@ -253,6 +262,35 @@ export function InitiativeSubscriptions({ subs, setSubs, dark }: Props) {
       )}
       <p className={`text-[0.7rem] ${s.faint}`}>{t('El día de renovación se resta solo del dinero, como gasto de categoría «Suscripción».')}</p>
     </div>
+  )
+}
+
+function PayerToggle({ others, onChange, s }: { others: boolean; onChange: (others: boolean) => void; s: Skin }) {
+  return (
+    <div role="group" aria-label={t('Quién paga')} className={`flex overflow-hidden rounded-lg border text-xs ${s.line}`}>
+      {[
+        { value: false, label: t('Pago yo') },
+        { value: true, label: t('Otra persona') },
+      ].map((o) => (
+        <button
+          key={o.label}
+          type="button"
+          aria-pressed={others === o.value}
+          onClick={() => onChange(o.value)}
+          className={`px-3 py-1.5 transition-colors ${others === o.value ? s.active : `${s.muted} ${s.hover}`}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function PayerBadge({ others, s }: { others: boolean; s: Skin }) {
+  return (
+    <span className={`ml-2 rounded border px-1.5 text-[0.6rem] ${others ? 'border-sky-500/50 text-sky-500' : `${s.line} ${s.faint}`}`}>
+      {others ? t('Lo paga otra persona') : t('Pagas tú')}
+    </span>
   )
 }
 
@@ -318,6 +356,10 @@ function SubDetail({
             className={s.field}
           />
         </label>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className={label}>{t('Quién paga')}</span>
+        <PayerToggle others={sub.paidBy === 'other'} onChange={(v) => onPatch({ paidBy: v ? 'other' : undefined })} s={s} />
       </div>
       {sub.lastCharged && <p className={`text-xs ${s.faint}`}>{t('Último cobro')}: {sub.lastCharged}</p>}
       <div className="flex flex-wrap items-center gap-3">

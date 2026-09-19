@@ -57,7 +57,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                     type="button"
                     onClick={() => setWishes((prev) => reorder(prev, i, -1))}
                     aria-label={`Subir ${w.title}`}
-                    className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                    className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
                   >
                     <Icon name="up" className="h-3 w-3" />
                   </button>
@@ -65,7 +65,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                     type="button"
                     onClick={() => setWishes((prev) => reorder(prev, i, 1))}
                     aria-label={`Bajar ${w.title}`}
-                    className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                    className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
                   >
                     <Icon name="down" className="h-3 w-3" />
                   </button>
@@ -93,7 +93,7 @@ export function Wishlist({ wishes, setWishes }: Props) {
                     notifyWithUndo(tp('«{0}» eliminado', w.title), () => setWishes(() => before))
                   }}
                   aria-label={`Eliminar ${w.title}`}
-                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                 >
                   <Icon name="trash" className="h-4 w-4" />
                 </button>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../../../lib/i18n'
 import { Icon } from '../../ui'
 import { skin } from '../skin'
-import { buildGraph, neighborhood, norm, snippetOf, tagHue, type VaultFolder, type VaultNote } from './vaultModel'
+import { buildGraph, neighborhood, norm, snippetOf, type VaultFolder, type VaultNote } from './vaultModel'
 import { useForceGraph } from './useForceGraph'
 
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
   dark: boolean
 }
 
-const FOLDER = '#f59e0b'
+const FOLDER = '#facc15'
 
 export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCreate, dark }: Props) {
   const s = skin(dark)
@@ -34,6 +34,12 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
   const [hover, setHover] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const drag = useRef<{ kind: 'node' | 'pan'; id?: string; x: number; y: number; moved: boolean } | null>(null)
+  const hoverFrame = useRef(0)
+  const scheduleHover = (id: string | null) => {
+    cancelAnimationFrame(hoverFrame.current)
+    hoverFrame.current = requestAnimationFrame(() => setHover(id))
+  }
+  useEffect(() => () => cancelAnimationFrame(hoverFrame.current), [])
   const viewRef = useRef(view)
   viewRef.current = view
 
@@ -201,15 +207,15 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
               const faded = (q || focus) && !lit
               return (
                 <line
+                  className="transition-opacity duration-150"
                   key={`${e.from}>${e.to}`}
                   x1={a.x}
                   y1={a.y}
                   x2={b.x}
                   y2={b.y}
-                  stroke={e.folder ? FOLDER : lit ? ink : muted}
+                  stroke={lit ? ink : e.folder ? FOLDER : muted}
                   strokeWidth={(lit ? 1.6 : 1) / view.k}
-                  strokeDasharray={e.folder ? `${4 / view.k} ${4 / view.k}` : undefined}
-                  opacity={faded ? 0.12 : lit ? 0.9 : e.folder ? 0.55 : 0.5}
+                                    opacity={faded ? 0.12 : lit ? 0.9 : e.folder ? 0.55 : 0.5}
                 />
               )
             })}
@@ -217,8 +223,7 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
               const p = bodies.get(n.id)
               if (!p) return null
               const r = 5 + Math.sqrt(n.degree) * 2.6
-              const hue = n.tags[0] ? tagHue(n.tags[0]) : null
-              const fill = n.folder ? FOLDER : n.ghost ? 'transparent' : hue !== null ? `hsl(${hue} 65% ${dark ? '60%' : '50%'})` : dark ? '#a3a3a3' : '#525252'
+                          const fill = n.folder ? FOLDER : n.ghost ? 'transparent' : dark ? '#9ca3af' : '#6b7280'
               const isActive = n.id === activeId
               const faded = dim(n.id)
               const showLabel = labels && (view.k > 0.6 || n.id === focus || isActive)
@@ -227,20 +232,16 @@ export function GraphView({ notes, folders, onOpenFolder, activeId, onOpen, onCr
                   key={n.id}
                   transform={`translate(${p.x} ${p.y})`}
                   opacity={faded ? 0.2 : 1}
-                  className="cursor-pointer"
+                  className="cursor-pointer transition-opacity duration-150"
                   onPointerDown={(e) => onPointerDown(e, n.id)}
-                  onPointerEnter={() => setHover(n.id)}
-                  onPointerLeave={() => setHover((h) => (h === n.id ? null : h))}
+                  onPointerEnter={() => scheduleHover(n.id)}
+                  onPointerLeave={() => scheduleHover(null)}
                   onDoubleClick={() => (n.folder ? onOpenFolder(n.id.slice(7)) : n.ghost ? onCreate(n.label) : onOpen(n.id))}
                 >
                   {isActive && <circle r={r + 5} fill="none" stroke={ink} strokeWidth={1.5} opacity={0.6} />}
-                  {n.folder ? (
-                    <rect x={-r} y={-r} width={r * 2} height={r * 2} rx={3} fill={fill} stroke={ink} strokeWidth={n.id === selected ? 2 : 0} />
-                  ) : (
-                    <circle r={r} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
-                  )}
+                  <circle r={r} fill={fill} stroke={n.ghost ? muted : ink} strokeWidth={n.ghost ? 1.4 : n.id === selected ? 2 : 0} strokeDasharray={n.ghost ? '3 3' : undefined} />
                   {showLabel && (
-                    <text y={r + 13} textAnchor="middle" fontSize={11 / Math.max(view.k, 0.7)} fill={n.ghost ? muted : n.folder ? FOLDER : ink} className="pointer-events-none">
+                    <text y={r + 13} textAnchor="middle" fontSize={11 / Math.max(view.k, 0.7)} fill={n.ghost ? muted : ink} className="pointer-events-none">
                       {n.label.length > 24 ? `${n.label.slice(0, 23)}…` : n.label}
                     </text>
                   )}

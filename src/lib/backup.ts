@@ -2,7 +2,7 @@ import { dateKey, type Anniversary, type Block, type CalItem } from './store'
 
 const INTERNAL_KEYS = ['nivra-sync', 'nivra-sync-times', 'nivra-notified']
 
-function storedData() {
+export function storedData() {
   const out: Record<string, string> = {}
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
@@ -136,5 +136,11 @@ export async function importJson(fileInput: File) {
     const v = storedData[k]
     localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v))
   }
+  return keys.length
+}
+
+export function restoreData(data: Record<string, string>) {
+  const keys = Object.keys(data).filter((k) => k.startsWith('nivra-') && !INTERNAL_KEYS.includes(k))
+  for (const k of keys) localStorage.setItem(k, data[k])
   return keys.length
 }

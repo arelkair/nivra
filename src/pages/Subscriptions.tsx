@@ -14,7 +14,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const editingItem = subs.find((s) => s.id === editingId)
-  const total = subs.reduce((s, x) => s + x.price, 0)
+  const total = subs.filter((x) => !x.paused && x.paidBy !== 'other').reduce((s, x) => s + x.price, 0)
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -42,14 +42,19 @@ export function Subscriptions({ subs, setSubs }: Props) {
                   className="min-w-0 flex-1 text-left"
                   title={t('Editar')}
                 >
-                  <span className="block truncate text-sm">{s.title}</span>
+                  <span className="block truncate text-sm">
+                    {s.title}
+                    <span className={`ml-2 rounded border px-1.5 text-[0.6rem] ${s.paidBy === 'other' ? 'border-sky-500/50 text-sky-500' : 'border-neutral-300 text-neutral-400 dark:border-white/15 dark:text-neutral-500'}`}>
+                      {s.paidBy === 'other' ? t('Lo paga otra persona') : t('Pagas tú')}
+                    </span>
+                  </span>
                   <span className="block text-[0.7rem] text-neutral-400 dark:text-neutral-500">
                     {tp('Se renueva el día {0} de cada mes', s.day)}
                     {s.lastCharged && tp(' · último cobro {0}', s.lastCharged)}
                   </span>
                 </button>
-                <span className="shrink-0 font-mono text-sm tabular-nums text-red-500">
-                  −{eur(s.price)}
+                <span className={`shrink-0 font-mono text-sm tabular-nums ${s.paidBy === 'other' ? 'text-neutral-400' : 'text-red-500'}`}>
+                  {s.paidBy === 'other' ? '' : '−'}{eur(s.price)}
                 </span>
                 {s.url && (
                   <a
@@ -71,7 +76,7 @@ export function Subscriptions({ subs, setSubs }: Props) {
                     notifyWithUndo(tp('«{0}» eliminada', s.title), () => setSubs(() => before))
                   }}
                   aria-label={`Eliminar ${s.title}`}
-                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                 >
                   <Icon name="trash" className="h-4 w-4" />
                 </button>
@@ -131,6 +136,8 @@ function SubDialog({
             day: dayNumber,
             url: /^https?:\/\//i.test(url) ? url : undefined,
             lastCharged: sub?.lastCharged,
+            paused: sub?.paused,
+            paidBy: data.get('paidBy') === 'other' ? 'other' : undefined,
           })
         }}
         className="flex flex-col gap-2"
@@ -174,6 +181,10 @@ function SubDialog({
             className={`${input} font-mono`}
           />
         </div>
+        <select name="paidBy" defaultValue={sub?.paidBy ?? 'me'} aria-label={t('Quién paga')} className={input}>
+          <option value="me">{t('Pago yo')}</option>
+          <option value="other">{t('Otra persona')}</option>
+        </select>
         <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
           {t('Precio al mes y día del mes en que se renueva.')}
         </p>

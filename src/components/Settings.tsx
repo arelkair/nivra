@@ -3,9 +3,9 @@ import { exportCsv, exportCalendarIcs, exportTimetableIcs, exportJson, importJso
 import { askNotificationPermission, notificationPermission, notificationsSupported } from '../lib/notify'
 import type { Settings } from '../lib/settings'
 import { SHORTCUTS, keyOf } from '../lib/shortcuts'
-import { ACCENTS, reorder, type Anniversary, type Block, type CalItem } from '../lib/store'
+import { ACCENTS, SUBJECT_COLORS, hasSubject, reorder, subjectId, type Anniversary, type Block, type CalItem } from '../lib/store'
 import type { SyncState } from '../lib/sync'
-import { SHAPES, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
+import { SHAPES, GRADIENTS, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
 import { playDrop, playPop } from '../lib/sound'
 import { SyncPanel } from './Sync'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
@@ -22,12 +22,12 @@ type Props = {
   items: CalItem[]
   anniversaries: Anniversary[]
   blocks: Block[]
+  onEditDashboard: () => void
   onActivateInitiative: () => void
 }
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
 
-const SUBJECT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8', '#a855f7', '#ec4899']
 
 export function Settings({
   cfg,
@@ -40,6 +40,7 @@ export function Settings({
   items,
   anniversaries,
   blocks,
+  onEditDashboard,
   onActivateInitiative,
 }: Props) {
   const [openSection, setOpenSection] = useState<string | null>(null)
@@ -110,12 +111,6 @@ export function Settings({
               <VolumeRow value={cfg.menuOpacity} onChange={cfg.setMenuOpacity} label={t('Opacidad')} />
               <VolumeRow value={cfg.menuBlur} onChange={cfg.setMenuBlur} label={t('Desenfoque')} />
             </div>
-            <Switch
-              checked={cfg.transparentMenus}
-              onChange={cfg.setTransparentMenus}
-              label={t('Menús transparentes')}
-              hint={t('Los paneles y ventanas emergentes se ven algo transparentes, con desenfoque de fondo.')}
-            />
             <Switch
               checked={cfg.bankEnabled}
               onChange={cfg.setBankEnabled}
@@ -210,7 +205,7 @@ export function Settings({
           </div>
         </Collapsible>
 
-        <div className="hidden md:block">
+        <div>
           <Collapsible
             title={t('Initiative')}
             open={openSection === 'initiative'}
@@ -434,14 +429,11 @@ export function Settings({
               const name = String(new FormData(form).get('name') ?? '').trim()
               if (!name) return
               playPop()
-              cfg.setSubjects((prev) => [
-                ...prev,
-                {
-                  id: crypto.randomUUID(),
-                  name,
-                  color: SUBJECT_COLORS[prev.length % SUBJECT_COLORS.length],
-                },
-              ])
+              cfg.setSubjects((prev) =>
+                hasSubject(prev, name)
+                  ? prev
+                  : [...prev, { id: subjectId(name), name, color: SUBJECT_COLORS[prev.length % SUBJECT_COLORS.length] }],
+              )
               form.reset()
             }}
             className="mb-3 flex gap-2"
@@ -474,7 +466,7 @@ export function Settings({
                     type="button"
                     onClick={() => cfg.setSubjects((prev) => reorder(prev, i, -1))}
                     aria-label={`Subir ${s.name}`}
-                    className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                    className="shrink-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
                   >
                     <Icon name="up" className="h-3.5 w-3.5" />
                   </button>
@@ -485,7 +477,7 @@ export function Settings({
                       cfg.setSubjects((prev) => prev.filter((x) => x.id !== s.id))
                     }}
                     aria-label={`Eliminar ${s.name}`}
-                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                   >
                     <Icon name="trash" className="h-4 w-4" />
                   </button>
@@ -1046,7 +1038,7 @@ function ShortcutKeys({ cfg, onNotify }: { cfg: Settings; onNotify: (t: string) 
                   })
                 }
                 aria-label={`Restaurar tecla de ${a.label}`}
-                className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-600 dark:hover:text-white"
+                className="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-white"
               >
                 <Icon name="close" className="h-3.5 w-3.5" />
               </button>

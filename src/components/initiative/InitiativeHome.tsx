@@ -17,6 +17,7 @@ import {
   type Subscription,
   type Task,
   type Work,
+  taskWhen,
 } from '../../lib/store'
 import { locale, t, tp } from '../../lib/i18n'
 import { playPop } from '../../lib/sound'
@@ -83,12 +84,12 @@ export function InitiativeHome({
 
   const todayItems = itemsOfDay(items, todayKey).filter((e) => e.origin !== 'tarea')
   const pending = tasks.filter((task) => !task.done)
-  const overdue = pending.filter((task) => task.date && task.date < todayKey)
-  const dueToday = pending.filter((task) => task.date === todayKey)
+  const overdue = pending.filter((task) => taskWhen(task) && taskWhen(task)! < todayKey)
+  const dueToday = pending.filter((task) => taskWhen(task) === todayKey)
   const dayTasks = [...overdue, ...dueToday]
   const focus = pending
     .filter((task) => !dayTasks.includes(task))
-    .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'))
+    .sort((a, b) => (taskWhen(a) ?? '9999').localeCompare(taskWhen(b) ?? '9999'))
 
   const todayBlocks = blocks
     .filter((b) => b.day === weekIndex(now) && blockProfile(b) === profile)
@@ -135,7 +136,7 @@ export function InitiativeHome({
 
   const taskRow = (task: Task) => {
     const subject = subjects.find((x) => x.id === task.subject)
-    const late = !!task.date && task.date < todayKey
+    const late = !!taskWhen(task) && taskWhen(task)! < todayKey
     return (
       <div key={task.id} className={row}>
         <button
@@ -152,7 +153,12 @@ export function InitiativeHome({
             {subject.name}
           </span>
         )}
-        {task.date && (
+        {task.due && (
+          <span className={`shrink-0 rounded border px-1.5 font-mono text-[0.65rem] ${task.due < todayKey ? 'border-red-500/50 text-red-500' : 'border-amber-500/50 text-amber-500'}`}>
+            {t('Entrega')} · {task.due === todayKey ? t('Hoy') : shortDate(task.due)}
+          </span>
+        )}
+        {!task.due && task.date && (
           <span className={`shrink-0 font-mono text-[0.7rem] ${late ? 'text-red-500' : s.faint}`}>
             {task.date === todayKey ? t('Hoy') : shortDate(task.date)}
           </span>
@@ -179,11 +185,11 @@ export function InitiativeHome({
   const dayCount = todayItems.length + dayTasks.length + todayBlocks.length
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 lg:h-full lg:gap-4">
       <div className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-col gap-1">
           <p className={`text-sm ${s.muted}`}>{userName.trim() ? `${greeting}, ${userName.trim()}.` : `${greeting}.`}</p>
-          <p className="font-initiative text-[clamp(2.7rem,9vw,4.5rem)] leading-none font-medium tabular-nums">
+          <p className="font-initiative text-[clamp(2.4rem,7vw,3.6rem)] leading-none font-medium tabular-nums">
             {now.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </p>
           <p className={`font-mono text-sm ${s.muted}`}>
@@ -223,7 +229,7 @@ export function InitiativeHome({
 
       <section
         style={{ animationDelay: '0.08s' }}
-        className={`animate-[fade-in_0.6s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3 rounded-2xl border p-4 sm:p-5 ${s.line} ${s.panel}`}
+        className={`animate-[fade-in_0.6s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3 rounded-2xl border p-4 lg:shrink-0 lg:p-4 ${s.line} ${s.panel}`}
       >
         <div className="flex items-center justify-between gap-3">
           <p className={`font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`}>{t('Ahora')}</p>
@@ -258,9 +264,9 @@ export function InitiativeHome({
         )}
       </section>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="flex flex-col gap-4">
-          <Panel title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <div className="flex flex-col gap-4 lg:min-h-0">
+          <Panel grow={1} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
             {dayCount === 0 && empty(t('Hoy no hay nada planeado.'))}
             {todayItems.map((e) => (
               <div key={e.id + e.date} className={row}>
@@ -286,7 +292,7 @@ export function InitiativeHome({
             })}
           </Panel>
 
-          <Panel title={t('Tareas')} count={pending.length} dark={dark} delay={0.16} onOpen={() => onOpen('tareas')}>
+          <Panel grow={2} title={t('Tareas')} count={pending.length} dark={dark} delay={0.16} onOpen={() => onOpen('tareas')}>
             <form
               onSubmit={(ev) => {
                 ev.preventDefault()
@@ -316,8 +322,8 @@ export function InitiativeHome({
           <InitiativeCountdowns countdowns={countdowns} setCountdowns={setCountdowns} now={now} dark={dark} delay={0.2} />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <Panel title={t('Exámenes y Proyectos')} count={upcomingWorks.length} dark={dark} delay={0.2} onOpen={() => onOpen('examenes')}>
+        <div className="flex flex-col gap-4 lg:min-h-0">
+          <Panel grow={1} title={t('Exámenes y Proyectos')} count={upcomingWorks.length} dark={dark} delay={0.2} onOpen={() => onOpen('examenes')}>
             {upcomingWorks.length === 0
               ? empty(t('Nada por venir.'))
               : upcomingWorks.slice(0, 5).map((w) => {
@@ -325,16 +331,15 @@ export function InitiativeHome({
                   const sub = subjects.find((x) => x.id === w.subject)
                   return (
                     <div key={w.id} className={row}>
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[w.kind]}`} />
+                      <span className={`h-2 w-2 shrink-0 ${w.kind === 'proyecto' ? 'rounded-[2px]' : 'rounded-full'} ${sub ? '' : DOT[w.kind]}`} style={sub ? { background: sub.color } : undefined} />
                       <span className="min-w-0 flex-1 truncate">{w.title}</span>
-                      {sub && <span className="hidden h-2 w-2 shrink-0 rounded-full sm:inline-block" style={{ background: sub.color }} />}
                       <span className={`shrink-0 font-mono text-[0.7rem] ${n <= 3 ? 'text-red-500' : s.faint}`}>{relativeDays(w.date!)}</span>
                     </div>
                   )
                 })}
           </Panel>
 
-          <Panel title={t('Notas')} count={grades.length} dark={dark} delay={0.24} onOpen={() => onOpen('notas')}>
+          <Panel grow={1} title={t('Notas')} count={grades.length} dark={dark} delay={0.24} onOpen={() => onOpen('notas')}>
             {grades.length === 0 ? (
               empty(t('Sin notas.'))
             ) : (

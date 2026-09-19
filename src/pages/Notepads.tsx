@@ -822,7 +822,7 @@ export function Editor({
                   type="button"
                   onClick={() => deleteBookmark(b.id)}
                   aria-label={tp('Eliminar marcador «{0}»', b.title)}
-                  className="shrink-0 rounded-lg p-2 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                  className="shrink-0 rounded-lg p-2 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                 >
                   <Icon name="trash" className="h-3.5 w-3.5" />
                 </button>

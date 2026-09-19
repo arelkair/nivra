@@ -75,7 +75,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                       type="button"
                       onClick={() => remove(g.id)}
                       aria-label={`Eliminar ${savingGoal.title}`}
-                      className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                      className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                     >
                       <Icon name="trash" className="h-4 w-4" />
                     </button>
@@ -120,7 +120,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                       type="button"
                       onClick={() => remove(g.id)}
                       aria-label={`Eliminar ${limit.title}`}
-                      className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                      className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                     >
                       <Icon name="trash" className="h-4 w-4" />
                     </button>
@@ -164,7 +164,7 @@ export function Goals({ goals, setGoals, balance, movements }: Props) {
                     type="button"
                     onClick={() => remove(g.id)}
                     aria-label={`Eliminar ${idea.title}`}
-                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-600"
+                    className="shrink-0 text-neutral-500 transition-colors hover:text-red-500 dark:text-neutral-500"
                   >
                     <Icon name="trash" className="h-4 w-4" />
                   </button>

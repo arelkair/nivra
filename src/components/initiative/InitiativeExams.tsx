@@ -226,7 +226,11 @@ export function InitiativeExams({ works, setWorks, subjects, notes, onCreateNote
             return (
               <li key={w.id} className={open ? s.panel : ''}>
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[w.kind]}`} />
+                  <span
+                    title={t(TYPES[w.kind].label)}
+                    className={`h-2 w-2 shrink-0 ${w.kind === 'proyecto' ? 'rounded-[2px]' : 'rounded-full'} ${sub ? '' : DOT[w.kind]}`}
+                    style={sub ? { background: sub.color } : undefined}
+                  />
                   <button
                     type="button"
                     onClick={() => setOpenId(open ? null : w.id)}
