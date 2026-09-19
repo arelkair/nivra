@@ -53,7 +53,7 @@ export function pendingNotices(
   }
 
   for (const r of datos.reminders) {
-    if (r.date !== key) continue
+    if (r.done || r.date !== key) continue
     const time = r.time ? tp(' a las {0}', r.time) : ''
     añadir(`record:${r.id}:${key}`, tp('Hoy{0}: {1}', time, r.title), true)
   }

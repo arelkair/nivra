@@ -55,7 +55,7 @@ export function Reminders({ reminders, setReminders, works }: Props) {
                     className="min-w-0 flex-1 text-left"
                     title={t('Editar')}
                   >
-                    <span className="block truncate text-sm">{r.title}</span>
+                    <span className={`block truncate text-sm ${r.done ? 'line-through opacity-50' : ''}`}>{r.title}</span>
                     {(r.subtitle || work) && (
                       <span className="block truncate text-[0.7rem] text-neutral-400 dark:text-neutral-500">
                         {[r.subtitle, work?.title].filter(Boolean).join(' · ')}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { UNITS, countdown, progress, type Countdown, type Unit } from '../../lib/store'
+import { UNITS, countdown, progress, type Countdown } from '../../lib/store'
+import { dateOf, draftToCountdown, freshDraft, timeOf, toDraft, type Draft } from './countdownDraft'
 import { notifyWithUndo } from '../../lib/undo'
 import { locale, t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
@@ -15,44 +16,6 @@ type Props = {
   delay: number
 }
 
-const DEFAULT_UNITS: Record<Unit, boolean> = {
-  years: false,
-  months: false,
-  days: true,
-  hours: true,
-  minutes: true,
-  seconds: true,
-}
-
-const pad = (n: number) => String(n).padStart(2, '0')
-const dateOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const timeOf = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
-
-type Draft = { id: string | null; title: string; subtitle: string; date: string; time: string; units: Record<Unit, boolean>; created: string }
-
-const freshDraft = (): Draft => ({
-  id: null,
-  title: '',
-  subtitle: '',
-  date: '',
-  time: '00:00',
-  units: DEFAULT_UNITS,
-  created: new Date().toISOString(),
-})
-
-const toDraft = (c: Countdown): Draft => {
-  const target = new Date(c.target)
-  return {
-    id: c.id,
-    title: c.title,
-    subtitle: c.subtitle ?? '',
-    date: dateOf(target),
-    time: timeOf(target),
-    units: c.units,
-    created: c.created,
-  }
-}
-
 export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, delay }: Props) {
   const s = skin(dark)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -61,15 +24,7 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
 
   const save = () => {
     if (!draft || !valid) return
-    const target = `${draft.date}T${draft.time || '00:00'}`
-    const item: Countdown = {
-      id: draft.id ?? crypto.randomUUID(),
-      title: draft.title.trim(),
-      subtitle: draft.subtitle.trim() || undefined,
-      target,
-      created: draft.id ? draft.created : new Date().toISOString(),
-      units: draft.units,
-    }
+    const item = draftToCountdown(draft)
     playPop()
     setCountdowns((prev) => (draft.id ? prev.map((x) => (x.id === item.id ? item : x)) : [...prev, item]))
     setDraft(null)
@@ -159,7 +114,7 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
   )
 }
 
-function CountdownForm({
+export function CountdownForm({
   draft,
   setDraft,
   s,

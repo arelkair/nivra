@@ -1,78 +1,12 @@
-import { useState, type ComponentType } from 'react'
+import { useState } from 'react'
 import { Icon, Label, card, line } from '../components/ui'
-import {
-  BaseConverter,
-  Fractions,
-  GcdLcm,
-  Percentages,
-  RuleOfThree,
-  Statistics,
-} from '../components/lab/MathTools'
-import { CountdownTimer, DateCalculator, Stopwatch, TimeCalculator } from '../components/lab/TimeTools'
-import { Coin, Dice, RandomNumber, Roulette } from '../components/lab/Generators'
-import { CurrencyConverter, UnitConverter } from '../components/lab/Converters'
-import { Flashcards, Quizzes } from '../components/lab/Study'
+import { LAB_ZONES } from '../components/lab/zones'
 import { t } from '../lib/i18n'
 import type { Subject } from '../lib/store'
 
-type Tool = { id: string; label: string; hint: string; render: (subjects: Subject[]) => React.ReactNode }
-
-const simple = (Component: ComponentType) => () => <Component />
-
-const ZONES: { title: string; tools: Tool[] }[] = [
-  {
-    title: 'Zona matemática',
-    tools: [
-      { id: 'regla3', label: 'Regla de tres', hint: 'Directa e inversa', render: simple(RuleOfThree) },
-      { id: 'porcentajes', label: 'Porcentajes', hint: 'Descuentos, aumentos, variación', render: simple(Percentages) },
-      { id: 'fracciones', label: 'Fracciones', hint: 'Operar y simplificar', render: simple(Fractions) },
-      { id: 'estadistica', label: 'Media, mediana y moda', hint: 'Y más estadísticos', render: simple(Statistics) },
-      { id: 'mcdmcm', label: 'MCD y MCM', hint: 'De varios números', render: simple(GcdLcm) },
-      { id: 'bases', label: 'Cambio de base', hint: 'Binario, hexadecimal…', render: simple(BaseConverter) },
-    ],
-  },
-  {
-    title: 'Zona de tiempo',
-    tools: [
-      { id: 'fechas', label: 'Calculadora de fechas', hint: 'Diferencias y sumas', render: simple(DateCalculator) },
-      { id: 'horas', label: 'Calculadora de horas', hint: 'Sumar y restar duraciones', render: simple(TimeCalculator) },
-      { id: 'temporizador', label: 'Cuenta atrás corta', hint: 'Con alarma configurable', render: simple(CountdownTimer) },
-      { id: 'cronometro', label: 'Cronómetro', hint: 'Con vueltas', render: simple(Stopwatch) },
-    ],
-  },
-  {
-    title: 'Generadores',
-    tools: [
-      { id: 'ruleta', label: 'Ruleta', hint: 'Con probabilidades a medida', render: simple(Roulette) },
-      { id: 'dados', label: 'Dados', hint: 'De cualquier número de caras', render: simple(Dice) },
-      { id: 'moneda', label: 'Moneda', hint: 'Cara o cruz', render: simple(Coin) },
-      { id: 'aleatorio', label: 'Número aleatorio', hint: 'En el rango que quieras', render: simple(RandomNumber) },
-    ],
-  },
-  {
-    title: 'Cambio de cifras',
-    tools: [
-      { id: 'unidades', label: 'Unidades', hint: 'Longitud, masa, temperatura…', render: simple(UnitConverter) },
-      { id: 'divisas', label: 'Divisas', hint: 'Tasas del BCE', render: simple(CurrencyConverter) },
-    ],
-  },
-  {
-    title: 'Estudio',
-    tools: [
-      { id: 'flashcards', label: 'Flashcards', hint: 'Mazos con repaso espaciado', render: simple(Flashcards) },
-      {
-        id: 'examenes',
-        label: 'Exámenes por asignatura',
-        hint: 'Test con corrección',
-        render: (subjects) => <Quizzes subjects={subjects} />,
-      },
-    ],
-  },
-]
-
 export function Lab({ subjects }: { subjects: Subject[] }) {
   const [toolId, setToolId] = useState<string | null>(null)
-  const tool = ZONES.flatMap((z) => z.tools).find((x) => x.id === toolId) ?? null
+  const tool = LAB_ZONES.flatMap((z) => z.tools).find((x) => x.id === toolId) ?? null
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
@@ -99,7 +33,7 @@ export function Lab({ subjects }: { subjects: Subject[] }) {
           {tool.render(subjects)}
         </section>
       ) : (
-        ZONES.map((zone, zi) => (
+        LAB_ZONES.map((zone, zi) => (
           <section
             key={zone.title}
             style={{ animationDelay: `${zi * 0.05}s` }}

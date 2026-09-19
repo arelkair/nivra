@@ -8,8 +8,12 @@ type Action =
   | { kind: 'ajustes' }
   | { kind: 'tema' }
   | { kind: 'nota' }
+  | { kind: 'musica' }
+  | { kind: 'ayuda' }
 
-type Shortcut = { id: string; label: string; key: string; action: Action }
+export type ShortcutAction = Action
+
+export type Shortcut = { id: string; label: string; key: string; action: Action }
 
 export const SHORTCUTS: Shortcut[] = [
   { id: 'dashboard', label: 'Ir al dashboard', key: 'g d', action: { kind: 'ir', page: 'dashboard' } },
@@ -24,10 +28,14 @@ export const SHORTCUTS: Shortcut[] = [
   { id: 'suscripciones', label: 'Ir a suscripciones', key: 'g s', action: { kind: 'ir', page: 'suscripciones' } },
   { id: 'cuentas', label: 'Ir a cuentas atrás', key: 'g u', action: { kind: 'ir', page: 'cuentas' } },
   { id: 'recordatorios', label: 'Ir a recordatorios', key: 'g r', action: { kind: 'ir', page: 'recordatorios' } },
+  { id: 'lab', label: 'Ir al laboratorio', key: 'g x', action: { kind: 'ir', page: 'lab' } },
   { id: 'buscar', label: 'Buscar', key: '/', action: { kind: 'buscar' } },
+  { id: 'paleta', label: 'Buscar en todo', key: 'ctrl+k', action: { kind: 'buscar' } },
   { id: 'ajustes', label: 'Abrir ajustes', key: ',', action: { kind: 'ajustes' } },
   { id: 'tema', label: 'Cambiar tema', key: 'shift+t', action: { kind: 'tema' } },
   { id: 'nota', label: 'Nota flotante', key: 'shift+n', action: { kind: 'nota' } },
+  { id: 'musica', label: 'Mostrar u ocultar la música', key: 'shift+m', action: { kind: 'musica' } },
+  { id: 'ayuda', label: 'Ver los atajos', key: '?', action: { kind: 'ayuda' } },
   { id: 'atras', label: 'Volver atrás', key: 'alt+arrowleft', action: { kind: 'atras' } },
   { id: 'adelante', label: 'Ir adelante', key: 'alt+arrowright', action: { kind: 'adelante' } },
 ]

@@ -578,7 +578,7 @@ function App() {
   )
 
   useEffect(() => {
-    if (!cfg.shortcutsOn) return
+    if (!cfg.shortcutsOn || cfg.initiativeEnabled) return
     let previous = ''
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e.target)) return
@@ -602,7 +602,7 @@ function App() {
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, irA, back, forward, theme, setTheme])
+  }, [cfg.shortcutsOn, cfg.initiativeEnabled, cfg.enabledShortcuts, cfg.customKeys, irA, back, forward, theme, setTheme])
 
   if (!setupDone) {
     return (
@@ -693,8 +693,9 @@ function App() {
           countdowns={countdowns}
           setCountdowns={setCountdowns}
           userName={cfg.userName}
-          setUserName={cfg.setUserName}
           works={works}
+          reminders={reminders}
+          setReminders={setReminders}
           streak={streak}
           setStreak={setStreak}
           grades={grades}
@@ -719,7 +720,18 @@ function App() {
           setWorks={setWorks}
           subjects={subjects}
           manualSubjects={cfg.subjects}
-          setSubjects={cfg.setSubjects}
+          cfg={cfg}
+          music={{
+            embed: musicEmbed,
+            ambientVideoId,
+            consent: embedConsent,
+            setConsent: setEmbedConsent,
+            ambientIframe,
+            player: ytPlayerRef,
+            playing: musicPlaying,
+            time: musicTime,
+            duration: musicDuration,
+          }}
           setTasks={setTasks}
           setEvents={setEvents}
           notepads={notepads}
@@ -1176,7 +1188,9 @@ function App() {
             ? musicMinimized
               ? 160
               : 220
-            : 16
+            : cfg.initiativeEnabled
+              ? 72
+              : 16
         }
       />
     )}

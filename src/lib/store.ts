@@ -278,6 +278,8 @@ export type Reminder = {
   date: string
   time?: string
   work?: string
+  done?: boolean
+  repeat?: 'diario' | 'semanal' | 'mensual'
 }
 
 export type Movement = {

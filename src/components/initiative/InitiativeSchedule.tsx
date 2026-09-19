@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { DAYS, DEFAULT_PROFILE, blockProfile, textOn, useStored, weekIndex, type Block, type Profile, type Subject } from '../../lib/store'
+import { DAYS, DEFAULT_PROFILE, blockProfile, useStored, weekIndex, type Block, type Profile, type Subject } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
@@ -26,6 +26,7 @@ type Interaction =
   | { kind: 'resize'; id: string; edge: 'top' | 'bottom'; day: number; start: number; end: number; moved: boolean }
 
 const PX = 60
+const BREAK = /^(recreo|descanso|pausa|break|comida|almuerzo)(\s|$)/i
 const BASE_START = 8 * 60
 const BASE_END = 15 * 60
 
@@ -606,9 +607,14 @@ export function InitiativeSchedule({
                     const h = Math.max(((end - start) / 60) * PX, 18)
                     const isCurrent = isToday && start <= nowMin && nowMin < end
                     const moving = ix && (ix.kind === 'move' || ix.kind === 'resize') && ix.id === b.id && ix.moved
-                    const ink = b.color ? textOn(b.color) : ''
-                    const showTime = h >= 52
-                    const titleLines = Math.max(1, Math.floor((h - 14 - (showTime ? 16 : 0)) / 15))
+                    const isBreak = BREAK.test(b.title.trim())
+                    const compact = h < 40
+                    const showTime = h >= 52 && !isBreak
+                    const titleLines = Math.max(1, Math.floor((h - 14 - (showTime ? 16 : 0)) / 17))
+                    const accent = b.color ?? (dark ? '#737373' : '#a3a3a3')
+                    const wash = dark ? '#17171b' : '#ffffff'
+                    const fill = `color-mix(in oklab, ${accent} ${isBreak ? 10 : dark ? 22 : 16}%, ${wash})`
+                    const full = isBreak
                     return (
                       <div
                         key={b.id}
@@ -620,18 +626,22 @@ export function InitiativeSchedule({
                         onKeyDown={(e) => e.key === 'Enter' && openEditor(b)}
                         style={{
                           top: ((start - rangeStart) / 60) * PX,
-                          height: h,
-                          left: `calc(${(lane.lane / lane.lanes) * 100}% + 2px)`,
-                          width: `calc(${100 / lane.lanes}% - 4px)`,
-                          background: b.color,
+                          height: full ? Math.max(h, 18) : h - 2,
+                          left: full ? 0 : `calc(${(lane.lane / lane.lanes) * 100}% + 3px)`,
+                          width: full ? '100%' : `calc(${100 / lane.lanes}% - 6px)`,
+                          background: fill,
+                          borderLeftColor: full ? undefined : accent,
+                          marginTop: full ? 0 : 1,
                         }}
-                        className={`group absolute z-10 flex cursor-grab flex-col gap-0.5 overflow-hidden rounded-xl border px-2 py-1.5 text-left shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${
-                          b.color
-                            ? 'border-black/10 shadow-black/10 dark:border-white/10'
-                            : `${dark ? 'bg-neutral-900' : 'bg-white'} ${s.line}`
+                        className={`group absolute z-10 flex cursor-grab flex-col justify-center overflow-hidden text-left transition-[box-shadow,filter] active:cursor-grabbing hover:brightness-110 ${
+                          full
+                            ? `border-y ${dark ? 'border-white/[0.07]' : 'border-black/[0.07]'} px-2`
+                            : `rounded-md border border-l-[3px] ${dark ? 'border-white/[0.07]' : 'border-black/[0.08]'} ${compact ? 'px-2 py-0' : 'px-2 py-1.5'} ${
+                                dark ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]' : 'shadow-[0_1px_1px_rgba(20,20,10,0.05)]'
+                              }`
                         } ${isCurrent ? 'ring-2 ring-emerald-500/70' : ''} ${moving ? 'z-30 opacity-90 shadow-xl' : ''} ${
                           draft?.id === b.id ? (dark ? 'outline-2 outline-white' : 'outline-2 outline-neutral-900') : ''
-                        } ${lane.lanes > 1 ? 'outline-1 outline-red-500/40' : ''}`}
+                        } ${lane.lanes > 1 && !full ? 'outline-1 outline-red-500/40' : ''}`}
                       >
                         <span
                           onPointerDown={(e) => startResize(e, b, 'top')}
@@ -643,15 +653,17 @@ export function InitiativeSchedule({
                             background: b.textBg ?? undefined,
                             display: '-webkit-box',
                             WebkitBoxOrient: 'vertical',
-                            WebkitLineClamp: titleLines,
+                            WebkitLineClamp: full || compact ? 1 : titleLines,
                             overflow: 'hidden',
                           }}
-                          className={`rounded px-1 text-xs leading-[1.2] font-semibold break-words ${!b.textColor && b.color ? ink : ''}`}
+                          className={`leading-tight font-semibold break-words ${
+                            full ? `text-center text-[0.65rem] tracking-[0.16em] uppercase ${dark ? 'text-neutral-400' : 'text-neutral-500'}` : compact ? 'text-xs' : 'text-sm'
+                          } ${b.textBg ? 'rounded px-1' : ''} ${!b.textColor && !full ? (dark ? 'text-neutral-50' : 'text-neutral-900') : ''}`}
                         >
                           {b.title}
                         </span>
                         {showTime && (
-                          <span className={`block truncate px-1 font-mono text-[0.65rem] tabular-nums ${b.color ? `${ink} opacity-80` : s.muted}`}>
+                          <span className={`block truncate font-mono text-[0.65rem] tabular-nums ${dark ? 'text-neutral-50/60' : 'text-neutral-900/60'}`}>
                             {fromMin(start)}–{fromMin(end)}
                             {h >= 72 && ` · ${formatSpan(end - start)}`}
                           </span>

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from './ui'
-import { InitiativeSettings } from './InitiativeSettings'
+import { InitiativeSettingsPage } from './initiative/InitiativeSettingsPage'
+import type { Settings } from '../lib/settings'
 import { t } from '../lib/i18n'
 import {
   useStored,
@@ -13,6 +14,7 @@ import {
   type Goal,
   type Subscription,
   type Wish,
+  type Reminder,
   type Grade,
   type Movement,
   type NivraEvent,
@@ -31,6 +33,15 @@ import { InitiativeSchedule } from './initiative/InitiativeSchedule'
 import { InitiativeMoney } from './initiative/InitiativeMoney'
 import { InitiativeWishlist } from './initiative/InitiativeWishlist'
 import { InitiativeSubscriptions } from './initiative/InitiativeSubscriptions'
+import { InitiativeReminders } from './initiative/InitiativeReminders'
+import { InitiativeCountdownsPage } from './initiative/InitiativeCountdownsPage'
+import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
+import { InitiativeSearch, type Command } from './initiative/InitiativeSearch'
+import { InitiativeNote } from './initiative/InitiativeNote'
+import { InitiativeMusic, type MusicProps } from './initiative/InitiativeMusic'
+import { ShortcutsHelp } from './initiative/ShortcutsPanel'
+import { SHORTCUTS, isTyping, keyOf } from '../lib/shortcuts'
+import { InitiativeLab } from './initiative/InitiativeLab'
 import { InitiativeVault } from './initiative/InitiativeVault'
 import { htmlToMarkdown } from './initiative/vault/convert'
 import { norm, type VaultFolder, type VaultNote } from './initiative/vault/vaultModel'
@@ -41,8 +52,9 @@ type Props = {
   countdowns: Countdown[]
   setCountdowns: (update: (prev: Countdown[]) => Countdown[]) => void
   userName: string
-  setUserName: (name: string) => void
   works: Work[]
+  reminders: Reminder[]
+  setReminders: (update: (prev: Reminder[]) => Reminder[]) => void
   streak: Streak
   setStreak: (update: (prev: Streak) => Streak) => void
   grades: Grade[]
@@ -67,7 +79,6 @@ type Props = {
   setActiveProfile: (id: string) => void
   subjects: Subject[]
   manualSubjects: Subject[]
-  setSubjects: (update: (prev: Subject[]) => Subject[]) => void
   setTasks: (update: (prev: Task[]) => Task[]) => void
   setEvents: (update: (prev: NivraEvent[]) => NivraEvent[]) => void
   notepads: Notepad[]
@@ -80,22 +91,9 @@ type Props = {
   anniversaries: Anniversary[]
   setAnniversaries: (update: (prev: Anniversary[]) => Anniversary[]) => void
   onDisable: () => void
+  cfg: Settings
+  music: MusicProps
 }
-
-type Section = 'inicio' | 'calendario' | 'horario' | 'tareas' | 'examenes' | 'notas' | 'banco' | 'deseos' | 'suscripciones' | 'boveda'
-
-const SECTIONS: { id: Section; group: string; label: string; short: string; icon: string }[] = [
-  { id: 'inicio', group: 'Principal', label: 'Inicio', short: 'Inicio', icon: 'dashboard' },
-  { id: 'calendario', group: 'Principal', label: 'Calendario', short: 'Calend.', icon: 'calendar' },
-  { id: 'horario', group: 'Principal', label: 'Horario', short: 'Horario', icon: 'schedule' },
-  { id: 'tareas', group: 'Estudio', label: 'Tareas', short: 'Tareas', icon: 'tasks' },
-  { id: 'examenes', group: 'Estudio', label: 'Exámenes y Proyectos', short: 'Exám.', icon: 'exams' },
-  { id: 'notas', group: 'Estudio', label: 'Notas', short: 'Notas', icon: 'grades' },
-  { id: 'banco', group: 'Dinero', label: 'Dinero', short: 'Dinero', icon: 'bank' },
-  { id: 'deseos', group: 'Dinero', label: 'Lista de Deseos', short: 'Deseos', icon: 'wish' },
-  { id: 'suscripciones', group: 'Dinero', label: 'Suscripciones', short: 'Subs', icon: 'subs' },
-  { id: 'boveda', group: 'Utilidades', label: 'Bóveda', short: 'Bóveda', icon: 'graph' },
-]
 
 export function InitiativeDashboard({
   tasks,
@@ -103,8 +101,9 @@ export function InitiativeDashboard({
   countdowns,
   setCountdowns,
   userName,
-  setUserName,
   works,
+  reminders,
+  setReminders,
   streak,
   setStreak,
   grades,
@@ -129,7 +128,6 @@ export function InitiativeDashboard({
   setActiveProfile,
   subjects,
   manualSubjects,
-  setSubjects,
   setTasks,
   setEvents,
   notepads,
@@ -142,14 +140,35 @@ export function InitiativeDashboard({
   anniversaries,
   setAnniversaries,
   onDisable,
+  cfg,
+  music,
 }: Props) {
   const [now, setNow] = useState(() => new Date())
   const [theme, setTheme] = useStored<'light' | 'dark'>(
     'nivra-initiative-theme',
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [section, setSection] = useState<Section>('inicio')
+  const [section, setSectionState] = useState<Section>('inicio')
+  const trail = useRef<Section[]>(['inicio'])
+  const cursor = useRef(0)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [musicOpen, setMusicOpen] = useState(false)
+  const [noteOpen, setNoteOpen] = useStored('nivra-initiative-note-open', false)
+
+  const setSection = useCallback((next: Section) => {
+    if (trail.current[cursor.current] === next) return
+    trail.current = [...trail.current.slice(0, cursor.current + 1), next]
+    cursor.current = trail.current.length - 1
+    setSectionState(next)
+  }, [])
+
+  const step = useCallback((delta: number) => {
+    const target = cursor.current + delta
+    if (target < 0 || target >= trail.current.length) return
+    cursor.current = target
+    setSectionState(trail.current[target])
+  }, [])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -219,6 +238,49 @@ export function InitiativeDashboard({
   }
 
   const sections = SECTIONS.filter((x) => x.id !== 'banco' || bankEnabled)
+
+  const toggleTheme = () => setTheme(dark ? 'light' : 'dark')
+
+  const commands: Command[] = [
+    { id: 'tema', label: t('Cambiar tema'), hint: dark ? t('Pasar a claro') : t('Pasar a oscuro'), run: toggleTheme },
+    { id: 'ajustes', label: t('Abrir ajustes'), run: () => setSection('ajustes') },
+    { id: 'nota', label: t('Nota rápida'), hint: t('Abre la nota flotante'), run: () => setNoteOpen(true) },
+    { id: 'musica', label: t('Música y ambiente'), hint: t('Abre el reproductor'), run: () => setMusicOpen(true) },
+    { id: 'atajos', label: t('Ver los atajos'), run: () => setHelpOpen(true) },
+  ]
+
+  useEffect(() => {
+    if (!cfg.shortcutsOn) return
+    let previous = ''
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k' && cfg.enabledShortcuts.paleta !== false) {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+        return
+      }
+      if (searchOpen || helpOpen || isTyping(e.target)) return
+      const pressed = keyOf(e)
+      const combo = previous === 'g' ? `g ${pressed}` : pressed
+      previous = pressed === 'g' ? 'g' : ''
+      const shortcut = SHORTCUTS.find((a) => (cfg.customKeys[a.id] ?? a.key) === combo && cfg.enabledShortcuts[a.id] !== false)
+      if (!shortcut) return
+      e.preventDefault()
+      const a = shortcut.action
+      if (a.kind === 'ir') {
+        const target = PAGE_TO_SECTION[a.page]
+        if (target && (target !== 'banco' || bankEnabled)) setSection(target)
+      } else if (a.kind === 'atras') step(-1)
+      else if (a.kind === 'adelante') step(1)
+      else if (a.kind === 'ajustes') setSection('ajustes')
+      else if (a.kind === 'tema') setTheme((v) => (v === 'dark' ? 'light' : 'dark'))
+      else if (a.kind === 'nota') setNoteOpen((v) => !v)
+      else if (a.kind === 'musica') setMusicOpen((v) => !v)
+      else if (a.kind === 'ayuda') setHelpOpen(true)
+      else if (a.kind === 'buscar') setSearchOpen(true)
+    }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, bankEnabled, searchOpen, helpOpen, setSection, step, setTheme, setNoteOpen])
   const groups = sections.reduce<{ title: string; items: typeof sections }[]>((acc, x) => {
     const last = acc[acc.length - 1]
     if (last && last.title === x.group) last.items.push(x)
@@ -279,6 +341,21 @@ export function InitiativeDashboard({
         <span className="flex gap-2">
         <button
           type="button"
+          onClick={() => setSearchOpen(true)}
+          aria-label={t('Buscar')}
+          title={`${t('Buscar')} (Ctrl+K)`}
+          className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
+            dark
+              ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
+              : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
+          }`}
+        >
+          <Icon name="search" className="h-[18px] w-[18px]" />
+          <span className="hidden md:inline">{t('Buscar')}</span>
+          <kbd className="hidden rounded border border-current/20 px-1.5 font-mono text-[0.6rem] opacity-70 lg:inline">Ctrl K</kbd>
+        </button>
+        <button
+          type="button"
           onClick={() => setTheme(dark ? 'light' : 'dark')}
           aria-label={dark ? t('Tema claro') : t('Tema oscuro')}
           className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
@@ -291,7 +368,8 @@ export function InitiativeDashboard({
         </button>
         <button
           type="button"
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => setSection('ajustes')}
+          aria-current={section === 'ajustes'}
           aria-label={t('Ajustes')}
           className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
             dark
@@ -464,6 +542,39 @@ export function InitiativeDashboard({
         </main>
       )}
 
+      {current === 'recordatorios' && (
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+          <InitiativeReminders reminders={reminders} setReminders={setReminders} works={works} dark={dark} />
+        </main>
+      )}
+
+      {current === 'ajustes' && (
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+          <InitiativeSettingsPage
+            cfg={cfg}
+            dark={dark}
+            onTheme={setTheme}
+            detected={subjects.filter((x) => !manualSubjects.some((m) => m.id === x.id))}
+            items={items}
+            blocks={blocks}
+            anniversaries={anniversaries}
+            onDisable={onDisable}
+          />
+        </main>
+      )}
+
+      {current === 'cuentas' && (
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+          <InitiativeCountdownsPage countdowns={countdowns} setCountdowns={setCountdowns} works={works} now={now} dark={dark} />
+        </main>
+      )}
+
+      {current === 'lab' && (
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+          <InitiativeLab dark={dark} />
+        </main>
+      )}
+
       {current === 'boveda' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
           <InitiativeVault
@@ -478,7 +589,72 @@ export function InitiativeDashboard({
         </main>
       )}
 
-      {settingsOpen && <InitiativeSettings subjects={manualSubjects} detected={subjects.filter((x) => !manualSubjects.some((m) => m.id === x.id))} setSubjects={setSubjects} dark={dark} onClose={() => setSettingsOpen(false)} onDisable={onDisable} name={userName} onName={setUserName} />}
+      <div className="fixed right-4 bottom-4 z-40 flex gap-2 max-md:right-3 max-md:bottom-[4.75rem]">
+        <button
+          type="button"
+          onClick={() => setNoteOpen(!noteOpen)}
+          aria-label={t('Nota rápida')}
+          aria-pressed={noteOpen}
+          title={`${t('Nota rápida')} (⇧ N)`}
+          className={`grid h-10 w-10 place-items-center rounded-full border shadow-lg transition-colors ${
+            noteOpen
+              ? dark
+                ? 'border-white bg-white text-neutral-900'
+                : 'border-neutral-900 bg-neutral-900 text-white'
+              : dark
+                ? 'border-white/[0.12] bg-[#131316] text-neutral-300 hover:text-white'
+                : 'border-black/[0.1] bg-white text-neutral-600 hover:text-neutral-900'
+          }`}
+        >
+          <Icon name="pencil" className="h-[18px] w-[18px]" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setMusicOpen(!musicOpen)}
+          aria-label={t('Música y ambiente')}
+          aria-pressed={musicOpen}
+          title={`${t('Música y ambiente')} (⇧ M)`}
+          className={`relative grid h-10 w-10 place-items-center rounded-full border shadow-lg transition-colors ${
+            musicOpen
+              ? dark
+                ? 'border-white bg-white text-neutral-900'
+                : 'border-neutral-900 bg-neutral-900 text-white'
+              : dark
+                ? 'border-white/[0.12] bg-[#131316] text-neutral-300 hover:text-white'
+                : 'border-black/[0.1] bg-white text-neutral-600 hover:text-neutral-900'
+          }`}
+        >
+          <Icon name="volume" className="h-[18px] w-[18px]" />
+          {cfg.ambientOn && <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 border-inherit bg-emerald-500" />}
+        </button>
+      </div>
+
+      <InitiativeMusic {...music} dark={dark} cfg={cfg} open={musicOpen} onClose={() => setMusicOpen(false)} />
+
+      {noteOpen && (
+        <InitiativeNote
+          dark={dark}
+          notes={vaultNotes}
+          setNotes={setVaultNotes}
+          createNote={createNote}
+          onOpenNote={(id) => {
+            openNote(id)
+          }}
+          onClose={() => setNoteOpen(false)}
+        />
+      )}
+
+      <InitiativeSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        dark={dark}
+        data={{ tasks, items, works, grades, blocks, subs, wishes, countdowns, reminders, goals, subjects, notes: vaultNotes, bankEnabled }}
+        commands={commands}
+        onGo={setSection}
+        onOpenNote={openNote}
+      />
+
+      {helpOpen && <ShortcutsHelp cfg={cfg} dark={dark} onClose={() => setHelpOpen(false)} />}
     </div>
   )
 }
