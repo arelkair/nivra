@@ -39,6 +39,16 @@ import { InitiativeSubscriptions } from './initiative/InitiativeSubscriptions'
 import { InitiativeReminders } from './initiative/InitiativeReminders'
 import { InitiativeCountdownsPage } from './initiative/InitiativeCountdownsPage'
 import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
+
+const ALL_SECTIONS: Section[] = [...SECTIONS.map((x) => x.id), 'ajustes']
+
+const sectionPath = (id: Section) => (id === 'inicio' ? '/dashboard' : `/${id}`)
+
+const sectionFromPath = (): Section => {
+  const slug = location.pathname.slice(1).split('/')[0]
+  if (slug === 'dashboard' || slug === '') return 'inicio'
+  return ALL_SECTIONS.includes(slug as Section) ? (slug as Section) : 'inicio'
+}
 import { InitiativeSearch, type Command } from './initiative/InitiativeSearch'
 import { InitiativeNote } from './initiative/InitiativeNote'
 import { InitiativeMusic, type MusicProps } from './initiative/InitiativeMusic'
@@ -156,9 +166,25 @@ export function InitiativeDashboard({
     'nivra-initiative-theme',
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
-  const [section, setSectionState] = useState<Section>('inicio')
-  const trail = useRef<Section[]>(['inicio'])
+  const [section, setSectionState] = useState<Section>(() => sectionFromPath())
+  const trail = useRef<Section[]>([section])
   const cursor = useRef(0)
+
+  useEffect(() => {
+    history.replaceState({}, '', sectionPath(trail.current[0]))
+  }, [])
+
+  useEffect(() => {
+    const onPop = () => {
+      const next = sectionFromPath()
+      if (next === trail.current[cursor.current]) return
+      trail.current = [...trail.current.slice(0, cursor.current + 1), next]
+      cursor.current = trail.current.length - 1
+      setSectionState(next)
+    }
+    addEventListener('popstate', onPop)
+    return () => removeEventListener('popstate', onPop)
+  }, [])
   const [searchOpen, setSearchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [musicOpen, setMusicOpen] = useState(false)
@@ -169,6 +195,7 @@ export function InitiativeDashboard({
     trail.current = [...trail.current.slice(0, cursor.current + 1), next]
     cursor.current = trail.current.length - 1
     setSectionState(next)
+    history.pushState({}, '', sectionPath(next))
   }, [])
 
   const step = useCallback((delta: number) => {
@@ -176,6 +203,7 @@ export function InitiativeDashboard({
     if (target < 0 || target >= trail.current.length) return
     cursor.current = target
     setSectionState(trail.current[target])
+    history.pushState({}, '', sectionPath(trail.current[target]))
   }, [])
 
   useEffect(() => {

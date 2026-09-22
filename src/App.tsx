@@ -125,6 +125,11 @@ const PAGES = GROUPS.flatMap((g) => g.pages)
 const pageAvailable = (id: PageId, flags: { bankEnabled: boolean; labEnabled: boolean }) =>
   (id !== 'banco' || flags.bankEnabled) && (id !== 'lab' || flags.labEnabled)
 
+const pageFromPath = (): PageId => {
+  const slug = location.pathname.slice(1).split('/')[0]
+  return PAGES.some((p) => p.id === slug) ? (slug as PageId) : 'dashboard'
+}
+
 const BANK_TABS: { id: BankTab; label: string }[] = [
   { id: 'dinero', label: 'Dinero' },
   { id: 'ingresos', label: 'Ingresos' },
@@ -189,15 +194,18 @@ function App() {
   const [sync, setSync] = useSync()
   const cfg = useSettings()
 
-  const [pageHistory, setPageHistory] = useState<PageId[]>(['dashboard'])
+  const [pageHistory, setPageHistory] = useState<PageId[]>(() => [pageFromPath()])
   const [index, setIndex] = useState(0)
   const page = pageHistory[index]
 
   const historyLength = useRef(1)
   historyLength.current = pageHistory.length
+  const indexRef = useRef(0)
+  indexRef.current = index
 
   useEffect(() => {
-    history.replaceState({ nivra: 0 }, '')
+    if (cfg.initiativeEnabled) return
+    history.replaceState({ nivra: 0 }, '', `/${pageHistory[0]}`)
   }, [])
 
   useEffect(() => {
@@ -207,8 +215,13 @@ function App() {
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const i = (e.state as { nivra?: number } | null)?.nivra
-      if (typeof i !== 'number') return
-      setIndex(Math.min(Math.max(i, 0), historyLength.current - 1))
+      if (typeof i === 'number') {
+        setIndex(Math.min(Math.max(i, 0), historyLength.current - 1))
+        return
+      }
+      const destino = pageFromPath()
+      setPageHistory((prev) => [...prev.slice(0, indexRef.current + 1), destino])
+      setIndex(indexRef.current + 1)
     }
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
@@ -228,7 +241,7 @@ function App() {
       const next = index + 1
       setPageHistory((prev) => [...prev.slice(0, index + 1), destino])
       setIndex(next)
-      history.pushState({ nivra: next }, '')
+      history.pushState({ nivra: next }, '', `/${destino}`)
     },
     [index, pageHistory, navFlags],
   )
@@ -236,8 +249,8 @@ function App() {
   const forward = useCallback(() => history.forward(), [])
 
   useEffect(() => {
-    if (!pageAvailable(page, navFlags)) irA('dashboard')
-  }, [page, navFlags, irA])
+    if (!cfg.initiativeEnabled && !pageAvailable(page, navFlags)) irA('dashboard')
+  }, [page, navFlags, irA, cfg.initiativeEnabled])
 
   const notify = useCallback(
     (text: string, undo?: () => void) => {
