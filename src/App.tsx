@@ -125,9 +125,31 @@ const PAGES = GROUPS.flatMap((g) => g.pages)
 const pageAvailable = (id: PageId, flags: { bankEnabled: boolean; labEnabled: boolean }) =>
   (id !== 'banco' || flags.bankEnabled) && (id !== 'lab' || flags.labEnabled)
 
+const PAGE_SLUG: Record<PageId, string> = {
+  dashboard: 'dashboard',
+  calendario: 'calendar',
+  horario: 'schedule',
+  tareas: 'tasks',
+  examenes: 'exams',
+  notas: 'grades',
+  bloc: 'notes',
+  banco: 'money',
+  deseos: 'wishlist',
+  suscripciones: 'subscriptions',
+  cuentas: 'countdowns',
+  recordatorios: 'reminders',
+  lab: 'lab',
+}
+
+const SLUG_TO_PAGE: Record<string, PageId> = Object.fromEntries(
+  (Object.entries(PAGE_SLUG) as [PageId, string][]).map(([id, slug]) => [slug, id]),
+)
+
+const pagePath = (id: PageId) => `/${PAGE_SLUG[id]}`
+
 const pageFromPath = (): PageId => {
   const slug = location.pathname.slice(1).split('/')[0]
-  return PAGES.some((p) => p.id === slug) ? (slug as PageId) : 'dashboard'
+  return SLUG_TO_PAGE[slug] ?? 'dashboard'
 }
 
 const BANK_TABS: { id: BankTab; label: string }[] = [
@@ -205,7 +227,7 @@ function App() {
 
   useEffect(() => {
     if (cfg.initiativeEnabled) return
-    history.replaceState({ nivra: 0 }, '', `/${pageHistory[0]}`)
+    history.replaceState({ nivra: 0 }, '', pagePath(pageHistory[0]))
   }, [])
 
   useEffect(() => {
@@ -241,7 +263,7 @@ function App() {
       const next = index + 1
       setPageHistory((prev) => [...prev.slice(0, index + 1), destino])
       setIndex(next)
-      history.pushState({ nivra: next }, '', `/${destino}`)
+      history.pushState({ nivra: next }, '', pagePath(destino))
     },
     [index, pageHistory, navFlags],
   )

@@ -40,14 +40,33 @@ import { InitiativeReminders } from './initiative/InitiativeReminders'
 import { InitiativeCountdownsPage } from './initiative/InitiativeCountdownsPage'
 import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
 
-const ALL_SECTIONS: Section[] = [...SECTIONS.map((x) => x.id), 'ajustes']
+const SECTION_SLUG: Record<Section, string> = {
+  inicio: 'dashboard',
+  calendario: 'calendar',
+  horario: 'schedule',
+  tareas: 'tasks',
+  examenes: 'exams',
+  notas: 'grades',
+  banco: 'money',
+  deseos: 'wishlist',
+  suscripciones: 'subscriptions',
+  recordatorios: 'reminders',
+  cuentas: 'countdowns',
+  lab: 'lab',
+  boveda: 'vault',
+  ajustes: 'settings',
+}
 
-const sectionPath = (id: Section) => (id === 'inicio' ? '/dashboard' : `/${id}`)
+const SLUG_TO_SECTION: Record<string, Section> = Object.fromEntries(
+  (Object.entries(SECTION_SLUG) as [Section, string][]).map(([id, slug]) => [slug, id]),
+)
+
+const sectionPath = (id: Section) => `/${SECTION_SLUG[id]}`
 
 const sectionFromPath = (): Section => {
   const slug = location.pathname.slice(1).split('/')[0]
-  if (slug === 'dashboard' || slug === '') return 'inicio'
-  return ALL_SECTIONS.includes(slug as Section) ? (slug as Section) : 'inicio'
+  if (slug === '') return 'inicio'
+  return SLUG_TO_SECTION[slug] ?? 'inicio'
 }
 import { InitiativeSearch, type Command } from './initiative/InitiativeSearch'
 import { InitiativeNote } from './initiative/InitiativeNote'

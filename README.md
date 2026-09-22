@@ -69,10 +69,11 @@ already saved on the device.
 ## Pages and deploy
 
 Nivra lives at `nivra.arelkair.dev`. Every top-level section has its own real
-URL (`/dashboard`, `/calendario`, `/tareas`, `/boveda`, `/ajustes`…), so a link
-can be shared or reloaded directly. It is still a single-page app: routes are
-handled client-side and `vercel.json` rewrites any unknown path back to
-`index.html` so a direct load or a refresh never 404s.
+URL, in English regardless of the interface language (`/dashboard`,
+`/calendar`, `/tasks`, `/vault`, `/settings`…), so a link can be shared or
+reloaded directly. It is still a single-page app: routes are handled
+client-side and `vercel.json` rewrites any unknown path back to `index.html`
+so a direct load or a refresh never 404s.
 
 ## Getting started
 
