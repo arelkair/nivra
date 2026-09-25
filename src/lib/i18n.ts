@@ -958,6 +958,7 @@ const EN: Record<string, string> = {
   Reloj: 'Clock',
   Buscador: 'Search bar',
   'Animación de inicio': 'Intro animation',
+  'La animación que aparece al abrir Nivra.': 'The animation shown when Nivra opens.',
   'Animaciones al cambiar de apartado': 'Animations when switching sections',
   'Tema según la hora': 'Theme follows the clock',
   'Formato de 12 horas': '12-hour format',

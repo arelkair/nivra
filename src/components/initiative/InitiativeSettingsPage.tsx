@@ -176,6 +176,9 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
               <Row s={s} label={t('Animaciones')} hint={t('Transiciones suaves al abrir y cerrar cosas.')}>
                 <Toggle s={s} on={cfg.animations} onChange={cfg.setAnimations} label={t('Animaciones')} />
               </Row>
+              <Row s={s} label={t('Animación de inicio')} hint={t('La animación que aparece al abrir Nivra.')}>
+                <Toggle s={s} on={cfg.intro} onChange={cfg.setIntro} label={t('Animación de inicio')} />
+              </Row>
               <Row s={s} label={t('Sonidos de la interfaz')} hint={t('Un pequeño clic al completar o borrar.')}>
                 <Toggle s={s} on={cfg.uiSounds} onChange={cfg.setUiSounds} label={t('Sonidos de la interfaz')} />
               </Row>
