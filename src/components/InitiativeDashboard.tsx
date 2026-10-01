@@ -597,6 +597,7 @@ export function InitiativeDashboard({
             subjects={subjects}
             grades={grades}
             blocks={blocks}
+            anniversaries={anniversaries}
             profile={activeProfile}
             subs={subs}
             bank={bankBalance !== null ? { balance: bankBalance, movements } : null}

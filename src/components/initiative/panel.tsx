@@ -44,7 +44,7 @@ export function Panel({
         )}
         {action}
       </div>
-      <div className="flex flex-1 flex-col px-4 py-2 lg:min-h-0 lg:flex-wrap lg:content-start lg:gap-x-8 lg:overflow-hidden lg:*:w-full">{children}</div>
+      <div className="nivra-scroll flex flex-1 flex-col px-4 py-2 lg:min-h-0 lg:overflow-y-auto">{children}</div>
     </section>
   )
 }
