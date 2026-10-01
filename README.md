@@ -127,7 +127,7 @@ keeps both devices in sync. Without the code the data is unrecoverable.
 
 ### With a Google account
 
-Settings > Sync > **Continue with Google** signs in through Supabase Auth
+Settings > Sync (in Classic, or Settings > Sync in Initiative) > **Continue with Google** signs in through Supabase Auth
 (OAuth with PKCE) and creates the account the first time. Google only
 identifies the person; it never sees the data.
 

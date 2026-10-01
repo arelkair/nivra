@@ -596,7 +596,7 @@ const EN: Record<string, string> = {
   'Initiative (beta)': 'Initiative (beta)',
   'Una interfaz alternativa de Nivra. Comparte los mismos datos que Classic.': 'An alternative Nivra interface. It shares the same data as Classic.',
   'Privacidad': 'Privacy',
-  'Nada sale de tu navegador salvo que actives la sincronización desde Classic.': 'Nothing leaves your browser unless you enable sync from Classic.',
+  'Nada sale de tu navegador salvo que actives la sincronización en Ajustes.': 'Nothing leaves your browser unless you turn on sync in Settings.',
   'Volver a Nivra Classic': 'Back to Nivra Classic',
   'Desactiva Initiative. Tus datos se conservan.': 'Turns Initiative off. Your data is kept.',
   'Desactivar {0}': 'Turn off {0}',

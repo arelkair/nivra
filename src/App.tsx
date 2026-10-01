@@ -208,7 +208,6 @@ function App() {
     const id = setTimeout(() => void snapshotNow().catch(() => undefined), 4000)
     return () => clearTimeout(id)
   }, [])
-  const [settingsOpen, setSettingsOpen] = useState(() => shouldReturnToSync())
   const [dashboardEditorOpen, setDashboardEditorOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [floatingNote, setFloatingNote] = useState(false)
@@ -216,6 +215,7 @@ function App() {
   const [toasts, setToasts] = useState<Toast[]>([])
   const [sync, setSync] = useSync()
   const cfg = useSettings()
+  const [settingsOpen, setSettingsOpen] = useState(() => shouldReturnToSync() && !cfg.initiativeEnabled)
 
   const [pageHistory, setPageHistory] = useState<PageId[]>(() => [pageFromPath()])
   const [index, setIndex] = useState(0)
@@ -797,6 +797,8 @@ function App() {
           subDays={subscriptionDays}
           anniversaries={anniversaries}
           setAnniversaries={setAnniversaries}
+          sync={sync}
+          setSync={setSync}
           onDisable={() => switchEnvironment(false)}
         />
       )}

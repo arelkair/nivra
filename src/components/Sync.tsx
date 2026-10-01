@@ -10,17 +10,22 @@ import {
   type SyncState,
 } from '../lib/sync'
 import { useStored } from '../lib/store'
-import { Icon, Label, Switch, button, input, line } from './ui'
+import { Icon, Label } from './ui'
 import { locale, t, tp } from '../lib/i18n'
 import { useState } from 'react'
 import { AccountConnected, GoogleAccount } from './Account'
+import { classicUi, type SyncUi } from './syncUi'
 
 export function SyncPanel({
   status,
   setStatus,
+  ui = classicUi,
+  showTitle = true,
 }: {
   status: SyncState | null
   setStatus: (e: SyncState | null) => void
+  ui?: SyncUi
+  showTitle?: boolean
 }) {
   const [visible, setVisible] = useState(false)
   const [working, setWorking] = useState(false)
@@ -63,10 +68,10 @@ export function SyncPanel({
   if (status?.account)
     return (
       <div>
-        <Label>{t('Sincronización')}</Label>
-        <AccountConnected status={status} setStatus={setStatus} onMessage={setToast} />
-        {toast && <p className="mt-2 text-[0.7rem] text-neutral-500 dark:text-neutral-400">{toast}</p>}
-        <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+        {showTitle && <Label>{t('Sincronización')}</Label>}
+        <AccountConnected status={status} setStatus={setStatus} onMessage={setToast} ui={ui} />
+        {toast && <p className={`mt-2 text-[0.7rem] ${ui.muted}`}>{toast}</p>}
+        <p className={`mt-2 text-[0.7rem] ${ui.faint}`}>
           {t('Los datos se cifran en tu navegador con tu frase de paso antes de salir. El servidor guarda algo que no puede leer, y sin la frase no hay forma de recuperarlo.')}
         </p>
       </div>
@@ -74,12 +79,12 @@ export function SyncPanel({
 
   return (
     <div>
-      <Label>{t('Sincronización')}</Label>
+      {showTitle && <Label>{t('Sincronización')}</Label>}
 
       {!status && (
         <>
-          <GoogleAccount setStatus={setStatus} onMessage={setToast} />
-          <p className="my-3 text-center text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          <GoogleAccount setStatus={setStatus} onMessage={setToast} ui={ui} />
+          <p className={`my-3 text-center text-[0.7rem] ${ui.faint}`}>
             {t('o con un código, sin cuenta')}
           </p>
         </>
@@ -87,14 +92,14 @@ export function SyncPanel({
 
       {status ? (
         <div className="flex flex-col gap-2">
-          <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${line}`}>
+          <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${ui.line}`}>
             <span className="min-w-0 flex-1 truncate font-mono text-sm tracking-wider">
               {visible ? withDashes(status.code ?? '') : '••••-••••-••••-••••'}
             </span>
             <button
               type="button"
               onClick={() => setVisible(!visible)}
-              className="shrink-0 text-xs text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+              className={`shrink-0 text-xs ${ui.faint} transition-colors ${ui.hoverText}`}
             >
               {visible ? t('Ocultar') : t('Ver')}
             </button>
@@ -105,13 +110,13 @@ export function SyncPanel({
                 setToast('Código copiado.')
               }}
               aria-label={t('Copiar código')}
-              className="shrink-0 text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white"
+              className={`shrink-0 ${ui.faint} transition-colors ${ui.hoverText}`}
             >
               <Icon name="link" className="h-4 w-4" />
             </button>
           </div>
 
-          <p className="text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          <p className={`text-[0.7rem] ${ui.faint}`}>
             {status.error
               ? tp('Último intento fallido: {0}', status.error)
               : status.lastSeen
@@ -119,7 +124,7 @@ export function SyncPanel({
                 : 'Sin sincronizar todavía.'}
           </p>
 
-          <Switch
+          <ui.Switch
             checked={!syncVisual}
             onChange={(v) => setSyncVisual(!v)}
             label={t('Mantener el aspecto propio de este dispositivo')}
@@ -135,13 +140,13 @@ export function SyncPanel({
               setStatus(null)
               setToast('Este dispositivo ya no se sincroniza. Tus datos siguen aquí.')
             }}
-            className="w-fit text-xs text-neutral-400 transition-colors hover:text-red-500"
+            className={`w-fit text-xs ${ui.faint} transition-colors hover:text-red-500`}
           >
             {t('Desconectar este dispositivo')}
           </button>
         </div>
       ) : (
-        <button type="button" onClick={create} disabled={working} className={`${button} w-full`}>
+        <button type="button" onClick={create} disabled={working} className={`${ui.button} w-full`}>
           {working ? t('Activando…') : t('Crear mi código')}
         </button>
       )}
@@ -164,16 +169,16 @@ export function SyncPanel({
           name="codigo"
           placeholder={t('Código de otro dispositivo')}
           aria-label={t('Código de otro dispositivo')}
-          className={`${input} font-mono tracking-wider`}
+          className={`${ui.input} font-mono tracking-wider`}
         />
-        <button type="submit" disabled={working} className={`${button} shrink-0`}>
+        <button type="submit" disabled={working} className={`${ui.button} shrink-0`}>
           {t('Unir')}
         </button>
       </form>
 
-      {toast && <p className="mt-2 text-[0.7rem] text-neutral-500 dark:text-neutral-400">{toast}</p>}
+      {toast && <p className={`mt-2 text-[0.7rem] ${ui.muted}`}>{toast}</p>}
 
-      <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+      <p className={`mt-2 text-[0.7rem] ${ui.faint}`}>
         {t('Los datos se cifran en tu navegador con el código antes de salir. El servidor guarda algo que no puede leer, y sin el código no hay forma de recuperarlo.')}
       </p>
     </div>
