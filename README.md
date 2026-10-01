@@ -125,11 +125,14 @@ Creating a code derives two independent values from it:
 Entering the same code on another device downloads and decrypts that data and
 keeps both devices in sync. Without the code the data is unrecoverable.
 
-### With a Google account
+### With an account (Google or e-mail)
 
-Settings > Sync (in Classic, or Settings > Sync in Initiative) > **Continue with Google** signs in through Supabase Auth
-(OAuth with PKCE) and creates the account the first time. Google only
-identifies the person; it never sees the data.
+Settings > Sync (in Classic, or Settings > Sync in Initiative) offers
+**Continue with Google** (Supabase Auth, OAuth with PKCE) or **e-mail and
+password** (sign up, sign in and a "forgot my password" link). Signing in and
+signing up are the same step for Google. Either way the account only
+identifies the person; it never sees the data. The login password is separate
+from the passphrase below, and the passphrase is never sent anywhere.
 
 - The first time, you choose a **passphrase** (12 characters or more). The
   encryption key is derived on the device with PBKDF2 (600 000 iterations) and a
@@ -143,6 +146,11 @@ identifies the person; it never sees the data.
   own row. The salt cannot be changed after creation.
 - **Sign out on this device** ends sync here and drops the local session, but
   keeps the data. **Delete my cloud data** removes the stored row.
+- **Moving from a code**: a device connected with a code shows **Move to an
+  account**. It first pulls the latest data from the code, then uploads it to
+  the account (or, if the account already has data, merges both sides by
+  timestamp). The code's data is not deleted and keeps working on every device
+  still using it; each of those devices has to be moved separately.
 - A forgotten passphrase cannot be recovered. This is the price of the server
   being unable to read the data.
 
@@ -166,8 +174,15 @@ dashboard enable **Authentication > Providers > Google** with a Google OAuth
 client ID and secret (type "Web application"), add
 `https://<your-supabase-ref>.supabase.co/auth/v1/callback` as an authorised
 redirect URI in Google Cloud, and list the app's URLs (for example
-`https://nivra.arelkair.dev/**` and `http://localhost:5173/**`) under
+`https://nivra.arelkair.dev/` and `http://localhost:5173/`) under
 **Authentication > URL Configuration > Redirect URLs**.
+
+E-mail and password sign-up sends a confirmation e-mail, and password recovery
+sends a link. Supabase's built-in mail service only delivers to members of your
+organisation and is heavily rate limited, so for real users configure a custom
+SMTP server under **Authentication > Emails > SMTP Settings**. Without one,
+either use Google or turn off **Confirm email** (which also leaves recovery
+unavailable).
 
 ## Third-party media
 

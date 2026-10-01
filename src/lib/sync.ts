@@ -472,10 +472,21 @@ export async function accountVaultExists() {
 
 // Creates this account's vault the first time, or joins the existing one by
 // checking the passphrase against it.
-export async function connectAccount(passphrase: string) {
+export async function connectAccount(passphrase: string, options: { migrate?: boolean } = {}) {
   assertSecureContext()
   const session = await getSession()
   if (!session) throw new Error(SESSION_ERROR)
+
+  // Moving from a code: pull the latest from the code first, so what gets
+  // uploaded to the account is up to date. The code's data is left untouched.
+  const previous = readSyncState()
+  if (options.migrate && previous?.code) {
+    try {
+      await runSync(previous)
+    } catch {
+      throw new Error('No se pudo sincronizar con el código antes de migrar. Inténtalo de nuevo.')
+    }
+  }
   const sb = await getSupabase()
   const user = { userId: session.user.id, email: session.user.email ?? '' }
 
@@ -484,8 +495,15 @@ export async function connectAccount(passphrase: string) {
 
   if (row) {
     const key = await deriveAccountKey(passphrase, fromBase64(row.salt as string))
+    const state: SyncState = { account: { key, ...user }, lastSeen: null }
     try {
-      return await connectWith({ account: { key, ...user }, lastSeen: null })
+      if (options.migrate) {
+        // The account already has data: merge both sides by timestamp rather
+        // than letting either overwrite the other.
+        const r = await runSync({ ...state, dirty: true })
+        return { created: false, change: r.change }
+      }
+      return await connectWith(state)
     } catch (e) {
       if (e instanceof DOMException && e.name === 'OperationError')
         throw new Error('La frase de paso no es correcta.')
@@ -513,6 +531,54 @@ export async function connectAccount(passphrase: string) {
   return { created: true, change: false }
 }
 
+const AUTH_ERRORS: Record<string, string> = {
+  invalid_credentials: 'Correo o contraseña incorrectos.',
+  email_not_confirmed: 'Confirma tu correo antes de entrar: revisa tu bandeja de entrada.',
+  over_email_send_rate_limit: 'Se han enviado demasiados correos. Espera un rato e inténtalo de nuevo.',
+  email_address_not_authorized: 'El servidor aún no puede enviar correos a esa dirección.',
+  weak_password: 'La contraseña es demasiado débil.',
+  user_already_exists: 'Ya existe una cuenta con ese correo.',
+  signup_disabled: 'El registro con correo no está activado.',
+  email_provider_disabled: 'El acceso con correo y contraseña no está activado.',
+  over_request_rate_limit: 'Demasiados intentos. Espera un momento.',
+  same_password: 'La nueva contraseña debe ser distinta de la anterior.',
+}
+
+const authError = (e: { code?: string; message: string }) =>
+  new Error(AUTH_ERRORS[e.code ?? ''] ?? e.message)
+
+export const MIN_PASSWORD = 8
+
+export async function signUpWithEmail(email: string, password: string) {
+  const sb = await getSupabase()
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: `${location.origin}/` },
+  })
+  if (error) throw authError(error)
+  // Without a session, the e-mail still has to be confirmed.
+  return { confirmed: !!data.session }
+}
+
+export async function signInWithEmail(email: string, password: string) {
+  const sb = await getSupabase()
+  const { error } = await sb.auth.signInWithPassword({ email, password })
+  if (error) throw authError(error)
+}
+
+export async function sendPasswordReset(email: string) {
+  const sb = await getSupabase()
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/` })
+  if (error) throw authError(error)
+}
+
+export async function setNewPassword(password: string) {
+  const sb = await getSupabase()
+  const { error } = await sb.auth.updateUser({ password })
+  if (error) throw authError(error)
+}
+
 export async function signInWithGoogle() {
   const sb = await getSupabase()
   const { error } = await sb.auth.signInWithOAuth({
@@ -524,8 +590,8 @@ export async function signInWithGoogle() {
 
 // Ends sync on this device and drops the local session only; other devices
 // keep theirs.
-export async function disconnectAccount() {
-  saveSyncState(null)
+export async function disconnectAccount(options: { keepState?: boolean } = {}) {
+  if (!options.keepState) saveSyncState(null)
   const sb = await getSupabase()
   await sb.auth.signOut({ scope: 'local' })
 }

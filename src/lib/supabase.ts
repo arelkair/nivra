@@ -15,7 +15,13 @@ export const markReturnToSync = () => {
   } catch {}
 }
 
+let returnHandled = false
+
+// True right after coming back from Google or from an e-mail link, so the UI
+// that started the flow can reopen on its sync section.
 export const shouldReturnToSync = () => {
+  if (returnHandled) return false
+  if (callback?.code) return true
   try {
     return sessionStorage.getItem(RETURN_KEY) === '1'
   } catch {
@@ -24,6 +30,7 @@ export const shouldReturnToSync = () => {
 }
 
 export const clearReturnToSync = () => {
+  returnHandled = true
   try {
     sessionStorage.removeItem(RETURN_KEY)
   } catch {}
@@ -57,6 +64,15 @@ const callback = (() => {
 
 let callbackError: string | null = callback?.error ?? null
 
+let recovering = false
+
+// True while the visit comes from a password-recovery e-mail link, until the
+// new password is saved or the session is dropped.
+export const isRecovering = () => recovering
+export const clearRecovery = () => {
+  recovering = false
+}
+
 export const takeAuthError = () => {
   const e = callbackError
   callbackError = null
@@ -78,6 +94,9 @@ export function getSupabase() {
         persistSession: true,
         autoRefreshToken: true,
       },
+    })
+    sb.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') recovering = true
     })
     if (callback?.code) {
       exchange = sb.auth

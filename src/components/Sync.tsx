@@ -13,7 +13,7 @@ import { useStored } from '../lib/store'
 import { Icon, Label } from './ui'
 import { locale, t, tp } from '../lib/i18n'
 import { useState } from 'react'
-import { AccountConnected, GoogleAccount } from './Account'
+import { AccountConnected, AccountSignIn } from './Account'
 import { classicUi, type SyncUi } from './syncUi'
 
 export function SyncPanel({
@@ -83,8 +83,8 @@ export function SyncPanel({
 
       {!status && (
         <>
-          <GoogleAccount setStatus={setStatus} onMessage={setToast} ui={ui} />
-          <p className={`my-3 text-center text-[0.7rem] ${ui.faint}`}>
+          <AccountSignIn setStatus={setStatus} onMessage={setToast} ui={ui} />
+          <p className={`my-4 text-center text-[0.7rem] ${ui.faint}`}>
             {t('o con un código, sin cuenta')}
           </p>
         </>
@@ -175,6 +175,16 @@ export function SyncPanel({
           {t('Unir')}
         </button>
       </form>
+
+      {status && !status.account && (
+        <div className={`mt-5 border-t pt-4 ${ui.line}`}>
+          <p className="text-sm font-medium">{t('Pasar a una cuenta')}</p>
+          <p className={`mb-3 text-[0.7rem] ${ui.faint}`}>
+            {t('Mueve los datos de este código a tu cuenta (Google o correo). El código y sus datos no se borran y seguirán funcionando en los dispositivos que lo usen.')}
+          </p>
+          <AccountSignIn migrate setStatus={setStatus} onMessage={setToast} ui={ui} />
+        </div>
+      )}
 
       {toast && <p className={`mt-2 text-[0.7rem] ${ui.muted}`}>{toast}</p>}
 
