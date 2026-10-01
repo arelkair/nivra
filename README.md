@@ -3,8 +3,9 @@
 A privacy-first personal organizer for the browser. Calendar, timetable, tasks,
 exams, notes and personal finances, all stored on your own device.
 
-No account, no tracking, no backend. Everything lives in `localStorage` unless
-you explicitly turn on the optional end-to-end encrypted sync.
+No account required, no tracking. Everything lives in `localStorage` unless you
+explicitly turn on the optional end-to-end encrypted sync, either with a code or
+with a Google account.
 
 Nivra ships two interfaces over the same data:
 
@@ -109,6 +110,10 @@ safe.
 ## Optional device sync
 
 Sync is disabled by default. Nothing leaves the browser until it is turned on.
+There are two ways to link devices, both end-to-end encrypted with AES-GCM, so
+the server only ever holds ciphertext it cannot read.
+
+### With a code (no account)
 
 Creating a code derives two independent values from it:
 
@@ -117,16 +122,52 @@ Creating a code derives two independent values from it:
 - an **encryption key** (PBKDF2, 200 000 iterations), which never leaves the
   device.
 
-Data is encrypted with AES-GCM before upload, so the server only ever holds
-ciphertext it cannot read. Entering the same code on another device downloads
-and decrypts that data and keeps both devices in sync. Without the code the
-data is unrecoverable.
+Entering the same code on another device downloads and decrypts that data and
+keeps both devices in sync. Without the code the data is unrecoverable.
 
-Both devices can be edited at the same time. Changes are pushed within a couple
-of seconds and pulled every four, then applied without a reload. Each section
-carries its own timestamp and is merged independently, so editing tasks on one
-device and notes on another preserves both. Simultaneous edits to the same
-section resolve to the most recent one.
+### With a Google account
+
+Settings > Sync > **Continue with Google** signs in through Supabase Auth
+(OAuth with PKCE) and creates the account the first time. Google only
+identifies the person; it never sees the data.
+
+- The first time, you choose a **passphrase** (12 characters or more). The
+  encryption key is derived on the device with PBKDF2 (600 000 iterations) and a
+  random per-account salt, and is kept on the device like the code is. Neither
+  the passphrase nor the key is ever sent.
+- On another device, sign in with the same Google account and enter the same
+  passphrase. A wrong passphrase is detected because the existing data fails to
+  decrypt.
+- The server stores one row per account in `account_vaults` (salt and
+  ciphertext), protected by row level security so each user can only touch their
+  own row. The salt cannot be changed after creation.
+- **Sign out on this device** ends sync here and drops the local session, but
+  keeps the data. **Delete my cloud data** removes the stored row.
+- A forgotten passphrase cannot be recovered. This is the price of the server
+  being unable to read the data.
+
+The Google session lives under `sb-nivra-auth` in `localStorage`, deliberately
+outside the `nivra-` prefix so it is never synced or exported.
+
+### How it syncs
+
+Both devices can be edited at the same time. Changes are pushed about a second
+after an edit. Every four seconds a device asks the server only for the
+timestamp of the stored data (a few dozen bytes) and downloads the blob only
+when it changed or when there are local edits to upload, which keeps bandwidth
+low. Each section carries its own timestamp and is merged independently, so
+editing tasks on one device and notes on another preserves both. Simultaneous
+edits to the same section resolve to the most recent one.
+
+### Backend setup
+
+The schema lives in `supabase/migrations`. For Google sign-in, in the Supabase
+dashboard enable **Authentication > Providers > Google** with a Google OAuth
+client ID and secret (type "Web application"), add
+`https://<your-supabase-ref>.supabase.co/auth/v1/callback` as an authorised
+redirect URI in Google Cloud, and list the app's URLs (for example
+`https://nivra.arelkair.dev/**` and `http://localhost:5173/**`) under
+**Authentication > URL Configuration > Redirect URLs**.
 
 ## Third-party media
 
@@ -144,6 +185,7 @@ connection.
 
 ```
 public/                    Icons, manifest and service worker
+supabase/migrations/       Database schema for sync and Google accounts
 src/
   App.tsx                  Shell for Classic and shared state
   main.tsx                 Entry point
@@ -160,6 +202,7 @@ src/
 
 ## Tech stack
 
-React 19, TypeScript, Tailwind CSS 4 and Vite. Arbitrary-precision maths with
+React 19, TypeScript, Tailwind CSS 4 and Vite. Supabase (Auth and Postgres) for
+the optional sync, with `@supabase/supabase-js` loaded only on demand. Arbitrary-precision maths with
 `decimal.js`, PDF editing with `pdf-lib`, and lazily loaded codecs (`gifenc`,
 `utif`, `heic2any`, `@jsquash/avif`) for the image converter.

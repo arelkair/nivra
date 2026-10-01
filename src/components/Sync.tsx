@@ -13,6 +13,7 @@ import { useStored } from '../lib/store'
 import { Icon, Label, Switch, button, input, line } from './ui'
 import { locale, t, tp } from '../lib/i18n'
 import { useState } from 'react'
+import { AccountConnected, GoogleAccount } from './Account'
 
 export function SyncPanel({
   status,
@@ -59,15 +60,36 @@ export function SyncPanel({
     setWorking(false)
   }
 
+  if (status?.account)
+    return (
+      <div>
+        <Label>{t('Sincronización')}</Label>
+        <AccountConnected status={status} setStatus={setStatus} onMessage={setToast} />
+        {toast && <p className="mt-2 text-[0.7rem] text-neutral-500 dark:text-neutral-400">{toast}</p>}
+        <p className="mt-2 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          {t('Los datos se cifran en tu navegador con tu frase de paso antes de salir. El servidor guarda algo que no puede leer, y sin la frase no hay forma de recuperarlo.')}
+        </p>
+      </div>
+    )
+
   return (
     <div>
       <Label>{t('Sincronización')}</Label>
+
+      {!status && (
+        <>
+          <GoogleAccount setStatus={setStatus} onMessage={setToast} />
+          <p className="my-3 text-center text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+            {t('o con un código, sin cuenta')}
+          </p>
+        </>
+      )}
 
       {status ? (
         <div className="flex flex-col gap-2">
           <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${line}`}>
             <span className="min-w-0 flex-1 truncate font-mono text-sm tracking-wider">
-              {visible ? withDashes(status.code) : '••••-••••-••••-••••'}
+              {visible ? withDashes(status.code ?? '') : '••••-••••-••••-••••'}
             </span>
             <button
               type="button"
@@ -79,7 +101,7 @@ export function SyncPanel({
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard.writeText(withDashes(status.code))
+                navigator.clipboard.writeText(withDashes(status.code ?? ''))
                 setToast('Código copiado.')
               }}
               aria-label={t('Copiar código')}

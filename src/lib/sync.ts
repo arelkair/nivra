@@ -1,5 +1,6 @@
-const RPC = 'https://erfwpsvjbebfoeeexgrr.supabase.co/rest/v1/rpc'
-const PUBLIC_KEY = 'sb_publishable_yQ9Uk6CNHcbt4D05JmQVZw_d4Y5P_eh'
+import { PUBLIC_KEY, SUPABASE_URL, getSession, getSupabase } from './supabase'
+
+const RPC = `${SUPABASE_URL}/rest/v1/rpc`
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const STATE_KEY = 'nivra-sync'
@@ -50,9 +51,24 @@ const VISUAL_KEYS = new Set([
 ])
 
 export type SyncState = {
-  code: string
+  // Code mode: the 16-character code is the only secret.
+  code?: string
+  // Account mode: a Google account identifies the vault; the AES key is
+  // derived on the device from a passphrase and kept here, like the code.
+  account?: { key: string; email: string; userId: string }
   lastSeen: string | null
+  // Local edits not yet confirmed on the server.
+  dirty?: boolean
   error?: string
+}
+
+type Remote = { payload: string; updated_at: string }
+
+type Transport = {
+  stamp: () => Promise<string | null>
+  get: () => Promise<Remote | null>
+  put: (payload: string) => Promise<string>
+  key: () => Promise<CryptoKey>
 }
 
 type StoredEntry = { v: string; t: number }
@@ -256,37 +272,134 @@ function apply(paquete: Payload) {
 
 const text = (p: Payload) => JSON.stringify(p)
 
-export async function pushChanges(state: SyncState, paquete = localPayload()) {
-  assertSecureContext()
-  const code = normalizeCode(state.code)
-  const ts = await rpc('vault_put', {
-    vault_id: await identifier(code),
-    vault_payload: await encrypt(text(paquete), await storageKey(code)),
-  })
-  const nextState = { ...state, lastSeen: ts as string, error: undefined }
+const keyCache = new Map<string, Promise<CryptoKey>>()
+
+function cachedKey(id: string, make: () => Promise<CryptoKey>) {
+  let key = keyCache.get(id)
+  if (!key) {
+    key = make()
+    keyCache.set(id, key)
+    key.catch(() => keyCache.delete(id))
+  }
+  return key
+}
+
+function codeTransport(code: string): Transport {
+  return {
+    stamp: async () =>
+      (await rpc('vault_stamp', { vault_id: await identifier(code) })) as string | null,
+    get: async () => {
+      const rows = (await rpc('vault_get', { vault_id: await identifier(code) })) as Remote[]
+      return rows[0] ?? null
+    },
+    put: async (payload) =>
+      (await rpc('vault_put', {
+        vault_id: await identifier(code),
+        vault_payload: payload,
+      })) as string,
+    key: () => cachedKey(`code:${code}`, () => storageKey(code)),
+  }
+}
+
+const SESSION_ERROR = 'La sesión de Google ha caducado. Vuelve a iniciar sesión.'
+
+function accountTransport(account: NonNullable<SyncState['account']>): Transport {
+  const client = async () => {
+    const session = await getSession()
+    if (!session) throw new Error(SESSION_ERROR)
+    if (session.user.id !== account.userId)
+      throw new Error('La sesión de Google es de otra cuenta. Cierra sesión y entra con la correcta.')
+    return getSupabase()
+  }
+  const fail = (e: { message: string }): never => {
+    throw new Error(e.message)
+  }
+  return {
+    stamp: async () => {
+      const { data, error } = await (await client())
+        .from('account_vaults')
+        .select('updated_at')
+        .maybeSingle()
+      if (error) fail(error)
+      return (data?.updated_at as string | undefined) ?? null
+    },
+    get: async () => {
+      const { data, error } = await (await client())
+        .from('account_vaults')
+        .select('payload, updated_at')
+        .maybeSingle()
+      if (error) fail(error)
+      return (data as Remote | null) ?? null
+    },
+    put: async (payload) => {
+      const { data, error } = await (await client())
+        .from('account_vaults')
+        .update({ payload })
+        .eq('user_id', account.userId)
+        .select('updated_at')
+        .maybeSingle()
+      if (error) fail(error)
+      if (!data)
+        throw new Error(
+          'Los datos de la nube ya no existen. Desconecta este dispositivo y vuelve a conectarlo para subirlos de nuevo.',
+        )
+      return data.updated_at as string
+    },
+    key: () => cachedKey(`account:${account.key}`, () => importAccountKey(account.key)),
+  }
+}
+
+const transportFor = (state: SyncState): Transport =>
+  state.account ? accountTransport(state.account) : codeTransport(normalizeCode(state.code ?? ''))
+
+let changes = 0
+
+async function pushWith(transport: Transport, state: SyncState, paquete: Payload) {
+  const ts = await transport.put(await encrypt(text(paquete), await transport.key()))
+  const nextState = { ...state, lastSeen: ts, error: undefined }
   saveSyncState(nextState)
   return nextState
 }
 
-async function readRemote(code: string) {
-  const rows = (await rpc('vault_get', { vault_id: await identifier(code) })) as {
-    payload: string
-    updated_at: string
-  }[]
-  if (!rows[0]) return null
+export async function pushChanges(state: SyncState, paquete = localPayload()) {
+  assertSecureContext()
+  return pushWith(transportFor(state), state, paquete)
+}
+
+async function readRemote(transport: Transport) {
+  const row = await transport.get()
+  if (!row) return null
   return {
-    paquete: toPayload(await decrypt(rows[0].payload, await storageKey(code))),
-    updated_at: rows[0].updated_at,
+    paquete: toPayload(await decrypt(row.payload, await transport.key())),
+    updated_at: row.updated_at,
   }
 }
 
 export async function runSync(state: SyncState) {
-  const code = normalizeCode(state.code)
-  const remote = await readRemote(code)
+  const transport = transportFor(state)
+  const started = changes
+  const settle = (next: SyncState) => {
+    const done = { ...next, dirty: changes !== started }
+    saveSyncState(done)
+    return done
+  }
+
+  // Nothing to upload and the server timestamp is unchanged: skip the download.
+  if (state.lastSeen && !(readSyncState()?.dirty ?? state.dirty)) {
+    try {
+      if ((await transport.stamp()) === state.lastSeen) {
+        return { state: state.error ? settle({ ...state, error: undefined }) : state, change: false }
+      }
+    } catch {
+      // The full sync below reports the real error.
+    }
+  }
+
+  const remote = await readRemote(transport)
   const local = localPayload()
 
   if (!remote) {
-    const nextState = await pushChanges(state, local)
+    const nextState = settle(await pushWith(transport, state, local))
     return { state: nextState, change: false }
   }
 
@@ -294,27 +407,137 @@ export async function runSync(state: SyncState) {
   const change = localChanged ? apply(merged) : false
 
   let next = { ...state, lastSeen: remote.updated_at, error: undefined }
-  if (remoteChanged) next = await pushChanges(next, merged)
-  else saveSyncState(next)
+  if (remoteChanged) next = await pushWith(transport, next, merged)
 
-  return { state: next, change }
+  return { state: settle(next), change }
+}
+
+async function connectWith(initial: SyncState) {
+  assertSecureContext()
+  const transport = transportFor(initial)
+
+  const remote = await readRemote(transport)
+  if (!remote) {
+    saveSyncState(await pushWith(transport, initial, localPayload()))
+    return { created: true, change: false }
+  }
+
+  const change = apply(remote.paquete)
+  // dirty: the next sync must merge fully so data that only exists here is uploaded.
+  saveSyncState({ ...initial, lastSeen: remote.updated_at, dirty: true })
+  return { created: false, change }
 }
 
 export async function connect(code: string) {
   assertSecureContext()
   const clean = normalizeCode(code)
   if (clean.length !== 16) throw new Error('El código debe tener 16 caracteres.')
-  const inicial: SyncState = { code: clean, lastSeen: null }
+  return connectWith({ code: clean, lastSeen: null })
+}
 
-  const remote = await readRemote(clean)
-  if (!remote) {
-    saveSyncState(await pushChanges(inicial))
-    return { created: true, change: false }
+const PASSPHRASE_ITERATIONS = 600000
+export const MIN_PASSPHRASE = 12
+
+const importAccountKey = (raw: string) =>
+  crypto.subtle.importKey('raw', fromBase64(raw), 'AES-GCM', false, ['encrypt', 'decrypt'])
+
+async function deriveAccountKey(passphrase: string, salt: Uint8Array) {
+  const base = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(passphrase.normalize('NFKC')),
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  )
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: salt as BufferSource, iterations: PASSPHRASE_ITERATIONS, hash: 'SHA-256' },
+    base,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt'],
+  )
+  return toBase64(new Uint8Array(await crypto.subtle.exportKey('raw', key)))
+}
+
+export async function accountVaultExists() {
+  const session = await getSession()
+  if (!session) throw new Error(SESSION_ERROR)
+  const { data, error } = await (await getSupabase())
+    .from('account_vaults')
+    .select('salt')
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return !!data
+}
+
+// Creates this account's vault the first time, or joins the existing one by
+// checking the passphrase against it.
+export async function connectAccount(passphrase: string) {
+  assertSecureContext()
+  const session = await getSession()
+  if (!session) throw new Error(SESSION_ERROR)
+  const sb = await getSupabase()
+  const user = { userId: session.user.id, email: session.user.email ?? '' }
+
+  const { data: row, error } = await sb.from('account_vaults').select('salt').maybeSingle()
+  if (error) throw new Error(error.message)
+
+  if (row) {
+    const key = await deriveAccountKey(passphrase, fromBase64(row.salt as string))
+    try {
+      return await connectWith({ account: { key, ...user }, lastSeen: null })
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'OperationError')
+        throw new Error('La frase de paso no es correcta.')
+      throw e
+    }
   }
 
-  const change = apply(remote.paquete)
-  saveSyncState({ ...inicial, lastSeen: remote.updated_at })
-  return { created: false, change }
+  if (passphrase.length < MIN_PASSPHRASE)
+    throw new Error('La frase de paso debe tener al menos 12 caracteres.')
+
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const key = await deriveAccountKey(passphrase, salt)
+  const payload = await encrypt(text(localPayload()), await importAccountKey(key))
+  const { data, error: insertError } = await sb
+    .from('account_vaults')
+    .insert({ user_id: user.userId, salt: toBase64(salt), payload })
+    .select('updated_at')
+    .single()
+  if (insertError) {
+    if (insertError.code === '23505')
+      throw new Error('Esta cuenta ya tiene datos en la nube. Introduce su frase de paso.')
+    throw new Error(insertError.message)
+  }
+  saveSyncState({ account: { key, ...user }, lastSeen: data.updated_at as string })
+  return { created: true, change: false }
+}
+
+export async function signInWithGoogle() {
+  const sb = await getSupabase()
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${location.origin}/` },
+  })
+  if (error) throw new Error(error.message)
+}
+
+// Ends sync on this device and drops the local session only; other devices
+// keep theirs.
+export async function disconnectAccount() {
+  saveSyncState(null)
+  const sb = await getSupabase()
+  await sb.auth.signOut({ scope: 'local' })
+}
+
+export async function deleteCloudData(state: SyncState) {
+  if (!state.account) return
+  const { error } = await (await getSupabase())
+    .from('account_vaults')
+    .delete()
+    .eq('user_id', state.account.userId)
+  if (error) throw new Error(error.message)
+  await disconnectAccount()
 }
 
 let pendiente: ReturnType<typeof setTimeout> | null = null
@@ -326,6 +549,8 @@ export function markChanged(storageKey: string, inicial = false) {
 
   const state = readSyncState()
   if (!state) return
+  changes++
+  saveSyncState({ ...state, dirty: true })
   if (pendiente) clearTimeout(pendiente)
   pendiente = setTimeout(() => {
     runSync(readSyncState() ?? state).catch((e) =>

@@ -1,3 +1,4 @@
+import { AUTH_KEY } from './supabase'
 import { dateKey, type Anniversary, type Block, type CalItem } from './store'
 
 const INTERNAL_KEYS = ['nivra-sync', 'nivra-sync-times', 'nivra-notified']
@@ -120,6 +121,10 @@ export function clearAllData() {
     if (k && k.startsWith('nivra-')) keys.push(k)
   }
   for (const k of keys) localStorage.removeItem(k)
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i)
+    if (k?.startsWith(AUTH_KEY)) localStorage.removeItem(k)
+  }
   indexedDB.deleteDatabase('nivra-files')
 }
 
