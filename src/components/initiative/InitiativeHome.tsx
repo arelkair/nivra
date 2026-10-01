@@ -4,9 +4,11 @@ import {
   dateKey,
   eur,
   itemsOfDay,
+  monthDay,
   shortDate,
   textOn,
   weekIndex,
+  type Anniversary,
   type Block,
   type CalItem,
   type Countdown,
@@ -46,6 +48,7 @@ type Props = {
   subjects: Subject[]
   grades: Grade[]
   blocks: Block[]
+  anniversaries: Anniversary[]
   profile: string
   subs: Subscription[]
   bank: { balance: number; movements: Movement[] } | null
@@ -69,6 +72,7 @@ export function InitiativeHome({
   subjects,
   grades,
   blocks,
+  anniversaries,
   profile,
   subs,
   bank,
@@ -83,6 +87,7 @@ export function InitiativeHome({
   const greeting = hour < 6 ? t('Buenas noches') : hour < 13 ? t('Buenos días') : hour < 21 ? t('Buenas tardes') : t('Buenas noches')
 
   const todayItems = itemsOfDay(items, todayKey).filter((e) => e.origin !== 'tarea')
+  const todayAnniversaries = anniversaries.filter((a) => a.md === monthDay(todayKey))
   const pending = tasks.filter((task) => !task.done)
   const overdue = pending.filter((task) => taskWhen(task) && taskWhen(task)! < todayKey)
   const dueToday = pending.filter((task) => taskWhen(task) === todayKey)
@@ -182,7 +187,7 @@ export function InitiativeHome({
   const progress = currentBlock
     ? (nowMin - toMin(currentBlock.start)) / Math.max(1, toMin(currentBlock.end) - toMin(currentBlock.start))
     : 0
-  const dayCount = todayItems.length + dayTasks.length + todayBlocks.length
+  const dayCount = todayAnniversaries.length + todayItems.length + dayTasks.length
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 lg:h-full lg:gap-4">
@@ -266,8 +271,15 @@ export function InitiativeHome({
 
       <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         <div className="flex flex-col gap-4 lg:min-h-0">
-          <Panel grow={1} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
+          <Panel grow={2} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
             {dayCount === 0 && empty(t('Hoy no hay nada planeado.'))}
+            {todayAnniversaries.map((a) => (
+              <div key={a.id} className={row}>
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-500" />
+                <span className="min-w-0 flex-1 truncate">{a.name || t('Aniversario')}</span>
+                <span className={`shrink-0 font-mono text-[0.7rem] ${s.faint}`}>{t('Todo el día')}</span>
+              </div>
+            ))}
             {todayItems.map((e) => (
               <div key={e.id + e.date} className={row}>
                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
@@ -276,20 +288,6 @@ export function InitiativeHome({
               </div>
             ))}
             {dayTasks.map((task) => taskRow(task))}
-            {todayBlocks.map((b) => {
-              const isNow = b.id === currentBlock?.id
-              const past = toMin(b.end) <= nowMin
-              return (
-                <div key={b.id} className={`${row} ${past ? 'opacity-50' : ''}`}>
-                  <span className="h-4 w-1 shrink-0 rounded-full" style={{ background: b.color ?? (dark ? '#525252' : '#d4d4d4') }} />
-                  <span className={`w-24 shrink-0 font-mono text-[0.7rem] tabular-nums ${isNow ? 'text-emerald-500' : s.faint}`}>
-                    {b.start}–{b.end}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{b.title}</span>
-                  {isNow && <span className="shrink-0 text-[0.65rem] text-emerald-500">●</span>}
-                </div>
-              )
-            })}
           </Panel>
 
           <Panel grow={2} title={t('Tareas')} count={pending.length} dark={dark} delay={0.16} onOpen={() => onOpen('tareas')}>

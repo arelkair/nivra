@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './ui'
 import { InitiativeSettingsPage } from './initiative/InitiativeSettingsPage'
 import type { Settings } from '../lib/settings'
+import type { SyncState } from '../lib/sync'
+import { shouldReturnToSync } from '../lib/supabase'
 import { t } from '../lib/i18n'
 import {
   useStored,
@@ -126,6 +128,8 @@ type Props = {
   anniversaries: Anniversary[]
   setAnniversaries: (update: (prev: Anniversary[]) => Anniversary[]) => void
   onDisable: () => void
+  sync: SyncState | null
+  setSync: (e: SyncState | null) => void
   cfg: Settings
   music: MusicProps
 }
@@ -177,6 +181,8 @@ export function InitiativeDashboard({
   anniversaries,
   setAnniversaries,
   onDisable,
+  sync,
+  setSync,
   cfg,
   music,
 }: Props) {
@@ -185,7 +191,7 @@ export function InitiativeDashboard({
     'nivra-initiative-theme',
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
-  const [section, setSectionState] = useState<Section>(() => sectionFromPath())
+  const [section, setSectionState] = useState<Section>(() => (shouldReturnToSync() ? 'ajustes' : sectionFromPath()))
   const trail = useRef<Section[]>([section])
   const cursor = useRef(0)
 
@@ -591,6 +597,7 @@ export function InitiativeDashboard({
             subjects={subjects}
             grades={grades}
             blocks={blocks}
+            anniversaries={anniversaries}
             profile={activeProfile}
             subs={subs}
             bank={bankBalance !== null ? { balance: bankBalance, movements } : null}
@@ -694,6 +701,8 @@ export function InitiativeDashboard({
             items={items}
             blocks={blocks}
             anniversaries={anniversaries}
+            sync={sync}
+            setSync={setSync}
             onDisable={onDisable}
           />
         </main>

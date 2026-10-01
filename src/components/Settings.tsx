@@ -8,6 +8,7 @@ import type { SyncState } from '../lib/sync'
 import { SHAPES, GRADIENTS, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
 import { playDrop, playPop } from '../lib/sound'
 import { SyncPanel } from './Sync'
+import { clearReturnToSync, shouldReturnToSync } from '../lib/supabase'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
 import { LANGS, getLang, setLang, t, tp } from '../lib/i18n'
 
@@ -43,7 +44,8 @@ export function Settings({
   onEditDashboard,
   onActivateInitiative,
 }: Props) {
-  const [openSection, setOpenSection] = useState<string | null>(null)
+  const [openSection, setOpenSection] = useState<string | null>(() => (shouldReturnToSync() ? 'sync' : null))
+  useEffect(clearReturnToSync, [])
   const alterna = (id: string) => setOpenSection((prev) => (prev === id ? null : id))
 
   return (
@@ -537,6 +539,11 @@ export function Settings({
             <li>
               {t(
                 'Si activas la sincronización, tus datos se cifran en tu dispositivo antes de enviarse; el servidor (Supabase) solo guarda el resultado cifrado y nunca la clave.',
+              )}
+            </li>
+            <li>
+              {t(
+                'Si entras con Google, Google solo sirve para identificarte; tus datos siguen cifrados en tu dispositivo con tu frase de paso.',
               )}
             </li>
             <li>

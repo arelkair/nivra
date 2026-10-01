@@ -27,6 +27,7 @@ import { useSettings } from './lib/settings'
 import { showSystemNotice, markNoticesSent, pendingNotices } from './lib/notify'
 import { SHORTCUTS, isTyping, keyOf } from './lib/shortcuts'
 import { useSync } from './lib/useSync'
+import { shouldReturnToSync } from './lib/supabase'
 import { registerNotifier } from './lib/undo'
 import { playTick, startAmbient, stopAmbient, setAmbientVolume as applyAmbientVolume } from './lib/sound'
 import { SHAPES, SHAPE_SIZE, GRADIENTS, loadBackgroundImage, onBackgroundImageChange } from './lib/background'
@@ -207,7 +208,6 @@ function App() {
     const id = setTimeout(() => void snapshotNow().catch(() => undefined), 4000)
     return () => clearTimeout(id)
   }, [])
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [dashboardEditorOpen, setDashboardEditorOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [floatingNote, setFloatingNote] = useState(false)
@@ -215,6 +215,7 @@ function App() {
   const [toasts, setToasts] = useState<Toast[]>([])
   const [sync, setSync] = useSync()
   const cfg = useSettings()
+  const [settingsOpen, setSettingsOpen] = useState(() => shouldReturnToSync() && !cfg.initiativeEnabled)
 
   const [pageHistory, setPageHistory] = useState<PageId[]>(() => [pageFromPath()])
   const [index, setIndex] = useState(0)
@@ -796,6 +797,8 @@ function App() {
           subDays={subscriptionDays}
           anniversaries={anniversaries}
           setAnniversaries={setAnniversaries}
+          sync={sync}
+          setSync={setSync}
           onDisable={() => switchEnvironment(false)}
         />
       )}

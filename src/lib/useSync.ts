@@ -5,10 +5,11 @@ const POLL_INTERVAL = 4000
 
 export function useSync() {
   const [status, setStatus] = useState<SyncState | null>(() => readSyncState())
-  const code = status?.code
+  // Identifies the active connection (code or account) so the poll restarts when it changes.
+  const connection = status ? (status.account ? `account:${status.account.userId}` : `code:${status.code}`) : null
 
   useEffect(() => {
-    if (!code) return
+    if (!connection) return
     let alive = true
     let working = false
 
@@ -33,7 +34,7 @@ export function useSync() {
       removeEventListener('focus', tick)
       document.removeEventListener('visibilitychange', tick)
     }
-  }, [code])
+  }, [connection])
 
   return [status, setStatus] as const
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { deleteSnapshot, listSnapshots, restoreSnapshot, snapshotNow, type Snapshot } from '../../lib/autoBackup'
 import { clearAllData, exportCalendarIcs, exportCsv, exportJson, exportTimetableIcs, importJson } from '../../lib/backup'
 import { LANGS, getLang, setLang, t, tp } from '../../lib/i18n'
@@ -7,6 +7,10 @@ import type { Settings } from '../../lib/settings'
 import { SUBJECT_COLORS, hasSubject, reorder, subjectId, type Anniversary, type Block, type CalItem, type Subject } from '../../lib/store'
 import { notify } from '../../lib/undo'
 import { Icon } from '../ui'
+import { SyncPanel } from '../Sync'
+import type { SyncUi } from '../syncUi'
+import type { SyncState } from '../../lib/sync'
+import { clearReturnToSync, shouldReturnToSync } from '../../lib/supabase'
 import { ShortcutsEditor } from './ShortcutsPanel'
 import { skin, type Skin } from './skin'
 
@@ -18,10 +22,12 @@ type Props = {
   items: CalItem[]
   blocks: Block[]
   anniversaries: Anniversary[]
+  sync: SyncState | null
+  setSync: (e: SyncState | null) => void
   onDisable: () => void
 }
 
-type Group = 'general' | 'apariencia' | 'avisos' | 'atajos' | 'asignaturas' | 'datos' | 'acerca'
+type Group = 'general' | 'apariencia' | 'avisos' | 'atajos' | 'asignaturas' | 'sincronizacion' | 'datos' | 'acerca'
 
 const GROUPS: { id: Group; label: string }[] = [
   { id: 'general', label: 'General' },
@@ -29,6 +35,7 @@ const GROUPS: { id: Group; label: string }[] = [
   { id: 'avisos', label: 'Avisos' },
   { id: 'atajos', label: 'Atajos de teclado' },
   { id: 'asignaturas', label: 'Asignaturas' },
+  { id: 'sincronizacion', label: 'Sincronización' },
   { id: 'datos', label: 'Datos y copias' },
   { id: 'acerca', label: 'Acerca de Initiative' },
 ]
@@ -85,9 +92,27 @@ const storageKilobytes = () => {
   return Math.round((chars * 2) / 1024)
 }
 
-export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, blocks, anniversaries, onDisable }: Props) {
+export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, blocks, anniversaries, sync, setSync, onDisable }: Props) {
   const s = skin(dark)
-  const [group, setGroup] = useState<Group>('general')
+  const [group, setGroup] = useState<Group>(() => (shouldReturnToSync() ? 'sincronizacion' : 'general'))
+  useEffect(clearReturnToSync, [])
+  const syncUi = useMemo<SyncUi>(() => {
+    const k = skin(dark)
+    return {
+      button: `rounded-lg px-4 py-2 text-sm transition-colors ${k.primary}`,
+      ghost: k.ghost,
+      input: k.field,
+      line: k.line,
+      faint: k.faint,
+      muted: k.muted,
+      hoverText: k.hoverText,
+      Switch: ({ checked, onChange, label, hint }) => (
+        <Row s={k} label={label} hint={hint}>
+          <Toggle s={k} on={checked} onChange={onChange} label={label} />
+        </Row>
+      ),
+    }
+  }, [dark])
   const [newSubject, setNewSubject] = useState('')
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null)
@@ -298,6 +323,12 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
             </section>
           )}
 
+          {group === 'sincronizacion' && (
+            <section className={`${panel} py-4`}>
+              <SyncPanel status={sync} setStatus={setSync} ui={syncUi} showTitle={false} />
+            </section>
+          )}
+
           {group === 'datos' && (
             <>
               <section className={panel}>
@@ -408,7 +439,7 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
               <Row s={s} label={t('Initiative (beta)')} hint={t('Una interfaz alternativa de Nivra. Comparte los mismos datos que Classic.')}>
                 <span />
               </Row>
-              <Row s={s} label={t('Privacidad')} hint={t('Nada sale de tu navegador salvo que actives la sincronización desde Classic.')}>
+              <Row s={s} label={t('Privacidad')} hint={t('Nada sale de tu navegador salvo que actives la sincronización en Ajustes.')}>
                 <span />
               </Row>
               <Row s={s} label={t('Volver a Nivra Classic')} hint={t('Desactiva Initiative. Tus datos se conservan.')}>
