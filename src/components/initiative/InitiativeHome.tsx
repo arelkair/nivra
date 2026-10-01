@@ -182,7 +182,7 @@ export function InitiativeHome({
   const progress = currentBlock
     ? (nowMin - toMin(currentBlock.start)) / Math.max(1, toMin(currentBlock.end) - toMin(currentBlock.start))
     : 0
-  const dayCount = todayItems.length + dayTasks.length + todayBlocks.length
+  const dayCount = todayItems.length + dayTasks.length
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 lg:h-full lg:gap-4">
@@ -276,20 +276,6 @@ export function InitiativeHome({
               </div>
             ))}
             {dayTasks.map((task) => taskRow(task))}
-            {todayBlocks.map((b) => {
-              const isNow = b.id === currentBlock?.id
-              const past = toMin(b.end) <= nowMin
-              return (
-                <div key={b.id} className={`${row} ${past ? 'opacity-50' : ''}`}>
-                  <span className="h-4 w-1 shrink-0 rounded-full" style={{ background: b.color ?? (dark ? '#525252' : '#d4d4d4') }} />
-                  <span className={`w-24 shrink-0 font-mono text-[0.7rem] tabular-nums ${isNow ? 'text-emerald-500' : s.faint}`}>
-                    {b.start}–{b.end}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{b.title}</span>
-                  {isNow && <span className="shrink-0 text-[0.65rem] text-emerald-500">●</span>}
-                </div>
-              )
-            })}
           </Panel>
 
           <Panel grow={2} title={t('Tareas')} count={pending.length} dark={dark} delay={0.16} onOpen={() => onOpen('tareas')}>
