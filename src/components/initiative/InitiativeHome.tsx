@@ -190,7 +190,7 @@ export function InitiativeHome({
   const dayCount = todayAnniversaries.length + todayItems.length + dayTasks.length
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 lg:h-full lg:gap-4">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 md:h-full md:gap-4">
       <div className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-col gap-1">
           <p className={`text-sm ${s.muted}`}>{userName.trim() ? `${greeting}, ${userName.trim()}.` : `${greeting}.`}</p>
@@ -234,7 +234,7 @@ export function InitiativeHome({
 
       <section
         style={{ animationDelay: '0.08s' }}
-        className={`animate-[fade-in_0.6s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3 rounded-2xl border p-4 lg:shrink-0 lg:p-4 ${s.line} ${s.panel}`}
+        className={`animate-[fade-in_0.6s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3 rounded-2xl border p-4 md:shrink-0 md:p-4 ${s.line} ${s.panel}`}
       >
         <div className="flex items-center justify-between gap-3">
           <p className={`font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`}>{t('Ahora')}</p>
@@ -269,8 +269,8 @@ export function InitiativeHome({
         )}
       </section>
 
-      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
-        <div className="flex flex-col gap-4 lg:min-h-0">
+      <div className="grid gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
+        <div className="flex flex-col gap-4 md:min-h-0">
           <Panel grow={2} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
             {dayCount === 0 && empty(t('Hoy no hay nada planeado.'))}
             {todayAnniversaries.map((a) => (
@@ -320,7 +320,7 @@ export function InitiativeHome({
           <InitiativeCountdowns countdowns={countdowns} setCountdowns={setCountdowns} now={now} dark={dark} delay={0.2} />
         </div>
 
-        <div className="flex flex-col gap-4 lg:min-h-0">
+        <div className="flex flex-col gap-4 md:min-h-0">
           <Panel grow={1} title={t('Exámenes y Proyectos')} count={upcomingWorks.length} dark={dark} delay={0.2} onOpen={() => onOpen('examenes')}>
             {upcomingWorks.length === 0
               ? empty(t('Nada por venir.'))

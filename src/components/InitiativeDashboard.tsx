@@ -581,7 +581,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'inicio' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64 lg:overflow-hidden lg:py-4 lg:pb-5">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:overflow-hidden md:py-4 md:pr-8 md:pb-5 md:pl-64">
           <InitiativeHome
             now={now}
             dark={dark}
