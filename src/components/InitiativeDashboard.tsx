@@ -420,7 +420,7 @@ export function InitiativeDashboard({
   return (
     <div
       className={`relative z-10 flex h-svh flex-col overflow-hidden transition-colors ${
-        dark ? 'bg-[#0a0a0c] text-neutral-100 [color-scheme:dark]' : 'bg-[#f5f4f0] text-neutral-900'
+        dark ? 'bg-(--nv-root) text-neutral-100 [color-scheme:dark]' : 'bg-(--nv-root) text-neutral-900'
       }`}
     >
       <aside
@@ -508,7 +508,7 @@ export function InitiativeDashboard({
 
       <nav
         className={`nivra-scroll fixed inset-x-0 bottom-0 z-20 flex overflow-x-auto border-t pb-[env(safe-area-inset-bottom)] md:hidden ${
-          dark ? 'border-white/[0.08] bg-[#0a0a0c]/95' : 'border-black/[0.08] bg-[#f5f4f0]/95'
+          dark ? 'border-white/[0.08] bg-(--nv-root)/95' : 'border-black/[0.08] bg-(--nv-root)/95'
         } backdrop-blur`}
       >
         {sections.map((sec) => (
@@ -739,7 +739,7 @@ export function InitiativeDashboard({
                 ? 'border-white bg-white text-neutral-900'
                 : 'border-neutral-900 bg-neutral-900 text-white'
               : dark
-                ? 'border-white/[0.12] bg-[#131316] text-neutral-300 hover:text-white'
+                ? 'border-white/[0.12] bg-(--nv-surface) text-neutral-300 hover:text-white'
                 : 'border-black/[0.1] bg-white text-neutral-600 hover:text-neutral-900'
           }`}
         >
@@ -757,7 +757,7 @@ export function InitiativeDashboard({
                 ? 'border-white bg-white text-neutral-900'
                 : 'border-neutral-900 bg-neutral-900 text-white'
               : dark
-                ? 'border-white/[0.12] bg-[#131316] text-neutral-300 hover:text-white'
+                ? 'border-white/[0.12] bg-(--nv-surface) text-neutral-300 hover:text-white'
                 : 'border-black/[0.1] bg-white text-neutral-600 hover:text-neutral-900'
           }`}
         >

@@ -108,7 +108,7 @@ export function InitiativeNote({ dark, notes, setNotes, createNote, onOpenNote, 
           : undefined
       }
       className={`fixed z-40 flex flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-sm max-md:inset-x-3 max-md:bottom-[4.75rem] ${frame.collapsed ? '' : 'max-md:h-64'} ${s.line} ${
-        dark ? 'bg-[#131316]/95 text-neutral-100 [color-scheme:dark]' : 'bg-white/95 text-neutral-900'
+        dark ? 'bg-(--nv-surface)/95 text-neutral-100 [color-scheme:dark]' : 'bg-white/95 text-neutral-900'
       }`}
     >
       <header

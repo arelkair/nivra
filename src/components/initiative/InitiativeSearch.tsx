@@ -155,7 +155,7 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
       <div
         role="dialog"
         aria-label={t('Buscar')}
-        className={`relative flex max-h-[70svh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${s.line} ${dark ? 'bg-[#131316] text-neutral-100 [color-scheme:dark]' : 'bg-white text-neutral-900'}`}
+        className={`relative flex max-h-[70svh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${s.line} ${dark ? 'bg-(--nv-surface) text-neutral-100 [color-scheme:dark]' : 'bg-white text-neutral-900'}`}
       >
         <div className="flex items-center gap-3 px-4">
           <Icon name="search" className={`h-4 w-4 shrink-0 ${s.muted}`} />
