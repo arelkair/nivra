@@ -236,6 +236,10 @@ function App() {
   }, [cfg.initiativeEnabled])
 
   useEffect(() => {
+    document.documentElement.dataset.v2 = cfg.v2 ? 'on' : 'off'
+  }, [cfg.v2])
+
+  useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const i = (e.state as { nivra?: number } | null)?.nivra
       if (typeof i === 'number') {

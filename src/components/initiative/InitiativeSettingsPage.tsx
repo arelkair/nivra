@@ -159,6 +159,9 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
         <div className="flex min-w-0 flex-col gap-4">
           {group === 'general' && (
             <section className={panel}>
+              <Row s={s} label={t('Nivra 2.0')} hint={t('Activa las novedades de la versión 2.0. Desactívalo para volver a la versión anterior.')}>
+                <Toggle s={s} on={cfg.v2} onChange={cfg.setV2} label={t('Nivra 2.0')} />
+              </Row>
               <Row s={s} label={t('Tu nombre')} hint={t('Se usa en el saludo del Inicio.')}>
                 <input value={cfg.userName} onChange={(e) => cfg.setUserName(e.target.value)} maxLength={30} aria-label={t('Tu nombre')} className={`${s.field} !w-48`} />
               </Row>

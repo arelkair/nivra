@@ -53,6 +53,12 @@ export function Settings({
       <div className="flex flex-col gap-2">
         <Collapsible title={t('General')} open={openSection === 'general'} animar={cfg.animations} onToggle={() => alterna('general')}>
           <div className="flex flex-col gap-1">
+            <Switch
+              checked={cfg.v2}
+              onChange={cfg.setV2}
+              label={t('Nivra 2.0')}
+              hint={t('Activa las novedades de la versión 2.0. Desactívalo para volver a la versión anterior.')}
+            />
             <div className="mb-2 flex items-center justify-between gap-4 py-1">
               <span className="block text-sm font-medium">{t('Idioma')}</span>
               <div className="flex shrink-0 gap-1.5">
