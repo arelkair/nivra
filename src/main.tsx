@@ -24,12 +24,15 @@ import '@fontsource/space-grotesk/latin-ext-500.css'
 import '@fontsource/space-grotesk/latin-ext-600.css'
 import './index.css'
 import App from './App.tsx'
+import { preloadSections } from './lib/lazy'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 )
+
+preloadSections()
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   addEventListener('load', () => {

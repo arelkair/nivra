@@ -1,13 +1,14 @@
-import { useState, type ReactNode } from 'react'
+import { Suspense, useState, type ReactNode } from 'react'
+import { lazyNamed } from '../../lib/lazy'
 import { t } from '../../lib/i18n'
 import { Icon } from '../ui'
 import { CalcTab } from './calc/CalcTab'
 import { BaseMode, EquationsMode, MatrixMode, StatsMode, TableMode } from './calc/modes'
 import { skin, type Skin } from './skin'
 import { Dice, Roulette } from '../lab/Generators'
-import { Base64Tool } from './tools/Base64Tool'
-import { ImageConverter } from './tools/ImageConverter'
-import { PdfTool } from './tools/PdfTool'
+const Base64Tool = lazyNamed(() => import('./tools/Base64Tool'), 'Base64Tool', false)
+const ImageConverter = lazyNamed(() => import('./tools/ImageConverter'), 'ImageConverter', false)
+const PdfTool = lazyNamed(() => import('./tools/PdfTool'), 'PdfTool', false)
 
 const CALC_TABS = [
   { id: 'calc', label: 'Calcular' },
@@ -140,7 +141,7 @@ export function InitiativeLab({ dark }: { dark: boolean }) {
           <span>{t(located.zone.title)}</span>
         </button>
         <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t(located.tool.label)}</h1>
-        {located.tool.render(s)}
+        <Suspense fallback={null}>{located.tool.render(s)}</Suspense>
       </div>
     )
   }
