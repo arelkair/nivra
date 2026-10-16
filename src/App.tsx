@@ -1,25 +1,27 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bank, type BankTab } from './pages/Bank'
-import { Calendar } from './pages/Calendar'
-import { Dashboard } from './pages/Dashboard'
-import { Exams } from './pages/Exams'
-import { Grades } from './pages/Grades'
-import { Notepads } from './pages/Notepads'
-import { Reminders } from './pages/Reminders'
-import { Schedule } from './pages/Schedule'
-import { SetupScreen } from './pages/SetupScreen'
-import { Subscriptions } from './pages/Subscriptions'
-import { Tasks } from './pages/Tasks'
-import { Wishlist } from './pages/Wishlist'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazyNamed } from './lib/lazy'
+import type { BankTab } from './pages/Bank'
+const Calendar = lazyNamed(() => import('./pages/Calendar'), 'Calendar')
+const Dashboard = lazyNamed(() => import('./pages/Dashboard'), 'Dashboard')
+const Exams = lazyNamed(() => import('./pages/Exams'), 'Exams')
+const Grades = lazyNamed(() => import('./pages/Grades'), 'Grades')
+const Notepads = lazyNamed(() => import('./pages/Notepads'), 'Notepads')
+const Reminders = lazyNamed(() => import('./pages/Reminders'), 'Reminders')
+const Schedule = lazyNamed(() => import('./pages/Schedule'), 'Schedule')
+const SetupScreen = lazyNamed(() => import('./pages/SetupScreen'), 'SetupScreen')
+const Subscriptions = lazyNamed(() => import('./pages/Subscriptions'), 'Subscriptions')
+const Tasks = lazyNamed(() => import('./pages/Tasks'), 'Tasks')
+const Wishlist = lazyNamed(() => import('./pages/Wishlist'), 'Wishlist')
 import { Intro } from './components/Intro'
-import { InitiativeIntro } from './components/InitiativeIntro'
-import { InitiativeDashboard } from './components/InitiativeDashboard'
+const Bank = lazyNamed(() => import('./pages/Bank'), 'Bank')
+const InitiativeIntro = lazyNamed(() => import('./components/InitiativeIntro'), 'InitiativeIntro')
+const InitiativeDashboard = lazyNamed(() => import('./components/InitiativeDashboard'), 'InitiativeDashboard')
 import { Search, type Destination, type SearchResult } from './components/Search'
-import { Lab } from './pages/Lab'
-import { Settings } from './components/Settings'
+const Lab = lazyNamed(() => import('./pages/Lab'), 'Lab')
+const Settings = lazyNamed(() => import('./components/Settings'), 'Settings')
 import { snapshotNow } from './lib/autoBackup'
 import { realVolume } from './lib/volume'
-import { DashboardEditor } from './components/DashboardEditor'
+const DashboardEditor = lazyNamed(() => import('./components/DashboardEditor'), 'DashboardEditor')
 import { FloatingNote } from './components/FloatingNote'
 import { Countdowns } from './components/Countdowns'
 import { Clock, Confetti, Icon, Toasts, line, type Toast } from './components/ui'
@@ -667,14 +669,16 @@ function App() {
     return (
       <>
         {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
-        <SetupScreen
-          delay={cfg.intro ? 2.25 : 0}
-          onDone={(name) => {
-            cfg.setUserName(name)
-            localStorage.setItem(SETUP_KEY, '1')
-            setSetupDone(true)
-          }}
-        />
+        <Suspense fallback={null}>
+          <SetupScreen
+            delay={cfg.intro ? 2.25 : 0}
+            onDone={(name) => {
+              cfg.setUserName(name)
+              localStorage.setItem(SETUP_KEY, '1')
+              setSetupDone(true)
+            }}
+          />
+        </Suspense>
       </>
     )
   }
@@ -688,6 +692,7 @@ function App() {
     <>
       {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
       {initiativeIntro && (
+        <Suspense fallback={null}>
         <InitiativeIntro
           onDone={(useExisting) => {
             localStorage.setItem('nivra-initiative-use-data', String(useExisting))
@@ -695,6 +700,7 @@ function App() {
             setInitiativeIntro(false)
           }}
         />
+        </Suspense>
       )}
 
       {cfg.themePack !== 'ninguno' && (
@@ -747,6 +753,7 @@ function App() {
         )}
 
       {cfg.initiativeEnabled && (
+        <Suspense fallback={null}>
         <InitiativeDashboard
           tasks={tasks}
           items={items}
@@ -805,6 +812,7 @@ function App() {
           setSync={setSync}
           onDisable={() => switchEnvironment(false)}
         />
+        </Suspense>
       )}
 
       {!cfg.initiativeEnabled && (
@@ -898,15 +906,6 @@ function App() {
               </button>
               <button
                 type="button"
-                onClick={() => switchEnvironment(true)}
-                aria-label={t('Cambiar a Initiative')}
-                title={t('Cambiar a Initiative')}
-                className={headerButton}
-              >
-                <Icon name="classic" className="h-[18px] w-[18px]" />
-              </button>
-              <button
-                type="button"
                 onClick={() => setSettingsOpen(true)}
                 aria-label={t('Ajustes')}
                 className={headerButton}
@@ -924,6 +923,7 @@ function App() {
               page === 'bloc' ? 'overflow-hidden' : ''
             }`}
           >
+            <Suspense fallback={null}>
             {page === 'dashboard' && (
               <Dashboard
                 items={items}
@@ -1014,6 +1014,7 @@ function App() {
             {page === 'recordatorios' && (
               <Reminders reminders={reminders} setReminders={setReminders} works={works} />
             )}
+            </Suspense>
           </main>
         </div>
 
@@ -1262,6 +1263,7 @@ function App() {
     )}
 
       {settingsOpen && (
+        <Suspense fallback={null}>
         <Settings
           cfg={cfg}
           sync={sync}
@@ -1279,14 +1281,17 @@ function App() {
           }}
           onActivateInitiative={() => switchEnvironment(true)}
         />
+        </Suspense>
       )}
 
       {dashboardEditorOpen && (
-        <DashboardEditor
-          slots={cfg.dashboardSlots}
-          setSlots={cfg.setDashboardSlots}
-          onClose={() => setDashboardEditorOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <DashboardEditor
+            slots={cfg.dashboardSlots}
+            setSlots={cfg.setDashboardSlots}
+            onClose={() => setDashboardEditorOpen(false)}
+          />
+        </Suspense>
       )}
     </>
   )

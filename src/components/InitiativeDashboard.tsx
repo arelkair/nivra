@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazyNamed } from '../lib/lazy'
 import { Icon } from './ui'
-import { InitiativeSettingsPage } from './initiative/InitiativeSettingsPage'
+const InitiativeSettingsPage = lazyNamed(() => import('./initiative/InitiativeSettingsPage'), 'InitiativeSettingsPage')
 import type { Settings } from '../lib/settings'
 import type { SyncState } from '../lib/sync'
 import { shouldReturnToSync } from '../lib/supabase'
@@ -29,17 +30,17 @@ import {
   type Task,
   type Work,
 } from '../lib/store'
-import { InitiativeCalendar } from './initiative/InitiativeCalendar'
-import { InitiativeTasks } from './initiative/InitiativeTasks'
-import { InitiativeExams } from './initiative/InitiativeExams'
-import { InitiativeHome } from './initiative/InitiativeHome'
-import { InitiativeGrades } from './initiative/InitiativeGrades'
-import { InitiativeSchedule } from './initiative/InitiativeSchedule'
-import { InitiativeMoney } from './initiative/InitiativeMoney'
-import { InitiativeWishlist } from './initiative/InitiativeWishlist'
-import { InitiativeSubscriptions } from './initiative/InitiativeSubscriptions'
-import { InitiativeReminders } from './initiative/InitiativeReminders'
-import { InitiativeCountdownsPage } from './initiative/InitiativeCountdownsPage'
+const InitiativeCalendar = lazyNamed(() => import('./initiative/InitiativeCalendar'), 'InitiativeCalendar')
+const InitiativeTasks = lazyNamed(() => import('./initiative/InitiativeTasks'), 'InitiativeTasks')
+const InitiativeExams = lazyNamed(() => import('./initiative/InitiativeExams'), 'InitiativeExams')
+const InitiativeHome = lazyNamed(() => import('./initiative/InitiativeHome'), 'InitiativeHome')
+const InitiativeGrades = lazyNamed(() => import('./initiative/InitiativeGrades'), 'InitiativeGrades')
+const InitiativeSchedule = lazyNamed(() => import('./initiative/InitiativeSchedule'), 'InitiativeSchedule')
+const InitiativeMoney = lazyNamed(() => import('./initiative/InitiativeMoney'), 'InitiativeMoney')
+const InitiativeWishlist = lazyNamed(() => import('./initiative/InitiativeWishlist'), 'InitiativeWishlist')
+const InitiativeSubscriptions = lazyNamed(() => import('./initiative/InitiativeSubscriptions'), 'InitiativeSubscriptions')
+const InitiativeReminders = lazyNamed(() => import('./initiative/InitiativeReminders'), 'InitiativeReminders')
+const InitiativeCountdownsPage = lazyNamed(() => import('./initiative/InitiativeCountdownsPage'), 'InitiativeCountdownsPage')
 import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
 
 const SECTION_SLUG: Record<Section, string> = {
@@ -75,8 +76,8 @@ import { InitiativeNote } from './initiative/InitiativeNote'
 import { InitiativeMusic, type MusicProps } from './initiative/InitiativeMusic'
 import { ShortcutsHelp } from './initiative/ShortcutsPanel'
 import { SHORTCUTS, isTyping, keyOf, prettyKey } from '../lib/shortcuts'
-import { InitiativeLab } from './initiative/InitiativeLab'
-import { InitiativeVault } from './initiative/InitiativeVault'
+const InitiativeLab = lazyNamed(() => import('./initiative/InitiativeLab'), 'InitiativeLab')
+const InitiativeVault = lazyNamed(() => import('./initiative/InitiativeVault'), 'InitiativeVault')
 import type { AppLink, LinkTarget } from './initiative/vault/appLinks'
 import { htmlToMarkdown } from './initiative/vault/convert'
 import { norm, type VaultFolder, type VaultNote } from './initiative/vault/vaultModel'
@@ -491,19 +492,6 @@ export function InitiativeDashboard({
         </button>
         <button
           type="button"
-          onClick={onDisable}
-          aria-label={t('Volver a Nivra Classic')}
-          title={t('Volver a Nivra Classic')}
-          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
-            dark
-              ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
-              : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
-          }`}
-        >
-          <Icon name="initiative" className="h-[18px] w-[18px]" />
-        </button>
-        <button
-          type="button"
           onClick={() => setSection('ajustes')}
           aria-current={section === 'ajustes'}
           aria-label={t('Ajustes')}
@@ -545,6 +533,7 @@ export function InitiativeDashboard({
         ))}
       </nav>
 
+      <Suspense fallback={null}>
       {current === 'calendario' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
           <InitiativeCalendar
@@ -735,6 +724,7 @@ export function InitiativeDashboard({
           />
         </main>
       )}
+      </Suspense>
 
       <div className="fixed right-4 bottom-4 z-40 flex gap-2 max-md:right-3 max-md:bottom-[4.75rem]">
         <button
