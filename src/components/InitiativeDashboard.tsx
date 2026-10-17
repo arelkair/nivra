@@ -432,7 +432,7 @@ export function InitiativeDashboard({
         <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pb-2">
           {groups.map((g) => (
             <div key={g.title} className="flex flex-col gap-0.5">
-              <p className={`mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+              <p className={`nv-label mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
                 {t(g.title)}
               </p>
               {g.items.map((s) => (
@@ -441,7 +441,7 @@ export function InitiativeDashboard({
                   type="button"
                   onClick={() => setSection(s.id)}
                   aria-current={current === s.id}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                  className={`nv-nav flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
                     current === s.id
                       ? dark
                         ? 'bg-white/10 font-medium text-white'
@@ -468,7 +468,7 @@ export function InitiativeDashboard({
           onClick={() => setSearchOpen(true)}
           aria-label={t('Buscar')}
           title={searchHint ? `${t('Buscar')} (${searchHint})` : t('Buscar')}
-          className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
+          className={`nv-iconbtn flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
@@ -482,7 +482,7 @@ export function InitiativeDashboard({
           type="button"
           onClick={() => setTheme(dark ? 'light' : 'dark')}
           aria-label={dark ? t('Tema claro') : t('Tema oscuro')}
-          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
+          className={`nv-iconbtn grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
@@ -495,7 +495,7 @@ export function InitiativeDashboard({
           onClick={() => setSection('ajustes')}
           aria-current={section === 'ajustes'}
           aria-label={t('Ajustes')}
-          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
+          className={`nv-iconbtn grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'

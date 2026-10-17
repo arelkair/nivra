@@ -423,6 +423,65 @@ main [class*='animate-[fade-in'] {
   transition-timing-function: var(--nv-ease-out);
 }
 
+:root[data-v2='on'] .uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+}
+
+:root[data-v2='on'] .nv-panel {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0.625rem;
+}
+
+:root[data-v2='on'] .nv-field {
+  border-color: transparent;
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, currentColor 5%, transparent);
+}
+
+:root[data-v2='on'] .nv-field:hover {
+  background: color-mix(in oklab, currentColor 7%, transparent);
+}
+
+:root[data-v2='on'] .nv-field:focus {
+  border-color: color-mix(in oklab, currentColor 28%, transparent);
+  background: color-mix(in oklab, currentColor 6%, transparent);
+}
+
+:root[data-v2='on'] .nv-ghost,
+:root[data-v2='on'] .nv-iconbtn {
+  border-color: transparent;
+}
+
+:root[data-v2='on'] .nv-iconbtn {
+  height: 2.25rem;
+}
+
+:root[data-v2='on'] .nv-primary {
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+:root[data-v2='on'] .nv-nav {
+  border-radius: 0.5rem;
+  padding-block: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+:root[data-v2='on'] .nv-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.6875rem;
+}
+
+:root[data-v2='on'] h1.font-initiative {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
 @media (hover: hover) and (pointer: fine) {
   :root[data-v2='on'] button:not(:disabled):active,
   :root[data-v2='on'] [role='button']:active {
