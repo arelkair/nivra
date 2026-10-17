@@ -481,6 +481,12 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   bell: <path d="M18 16v-5a6 6 0 10-12 0v5l-2 3h16zM10 22h4" />,
+  cards: (
+    <>
+      <rect x="3" y="7" width="13" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-3" />
+    </>
+  ),
   lock: <path d="M7 11V8a5 5 0 0110 0v3M6 11h12v9H6z" />,
   unlock: <path d="M7 11V8a5 5 0 019.6-1.6M6 11h12v9H6z" />,
   initiative: <path d="M13 3L5 13.5h6L10 21l8-10.5h-6z" />,

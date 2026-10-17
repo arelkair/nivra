@@ -41,7 +41,7 @@ const InitiativeWishlist = lazyNamed(() => import('./initiative/InitiativeWishli
 const InitiativeSubscriptions = lazyNamed(() => import('./initiative/InitiativeSubscriptions'), 'InitiativeSubscriptions')
 const InitiativeReminders = lazyNamed(() => import('./initiative/InitiativeReminders'), 'InitiativeReminders')
 const InitiativeCountdownsPage = lazyNamed(() => import('./initiative/InitiativeCountdownsPage'), 'InitiativeCountdownsPage')
-import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
+import { PAGE_TO_SECTION, SECTIONS, V2_SECTIONS, type Section } from './initiative/sections'
 
 const SIDE_RAIL = 56
 const SIDE_SNAP = 140
@@ -55,6 +55,7 @@ const SECTION_SLUG: Record<Section, string> = {
   tareas: 'tasks',
   examenes: 'exams',
   notas: 'grades',
+  tarjetas: 'flashcards',
   banco: 'money',
   deseos: 'wishlist',
   suscripciones: 'subscriptions',
@@ -81,6 +82,7 @@ import { InitiativeNote } from './initiative/InitiativeNote'
 import { InitiativeMusic, type MusicProps } from './initiative/InitiativeMusic'
 import { ShortcutsHelp } from './initiative/ShortcutsPanel'
 import { SHORTCUTS, isTyping, keyOf, prettyKey } from '../lib/shortcuts'
+const InitiativeCards = lazyNamed(() => import('./initiative/InitiativeCards'), 'InitiativeCards')
 const InitiativeLab = lazyNamed(() => import('./initiative/InitiativeLab'), 'InitiativeLab')
 const InitiativeVault = lazyNamed(() => import('./initiative/InitiativeVault'), 'InitiativeVault')
 import type { AppLink, LinkTarget } from './initiative/vault/appLinks'
@@ -386,7 +388,7 @@ export function InitiativeDashboard({
     ].filter((x) => x.label)
   }, [items, tasks, works, reminders, wishes, subs, countdowns, accounts, bankEnabled, bankInitial])
 
-  const sections = SECTIONS.filter((x) => x.id !== 'banco' || bankEnabled)
+  const sections = SECTIONS.filter((x) => (x.id !== 'banco' || bankEnabled) && (cfg.v2 || !V2_SECTIONS.includes(x.id)))
 
   const toggleTheme = () => setTheme(dark ? 'light' : 'dark')
 
@@ -448,7 +450,7 @@ export function InitiativeDashboard({
     else acc.push({ title: x.group, items: [x] })
     return acc
   }, [])
-  const current: Section = section === 'banco' && !bankEnabled ? 'inicio' : section
+  const current: Section = (section === 'banco' && !bankEnabled) || (!cfg.v2 && V2_SECTIONS.includes(section)) ? 'inicio' : section
 
   useEffect(() => {
     if (!pendingFocus) return
@@ -803,6 +805,12 @@ export function InitiativeDashboard({
         </main>
       )}
 
+      {current === 'tarjetas' && (
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
+          <InitiativeCards dark={dark} />
+        </main>
+      )}
+
       {current === 'lab' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeLab dark={dark} />
@@ -885,7 +893,7 @@ export function InitiativeDashboard({
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         dark={dark}
-        data={{ tasks, items, works, grades, blocks, subs, wishes, countdowns, reminders, goals, subjects, notes: vaultNotes, bankEnabled }}
+        data={{ tasks, items, works, grades, blocks, subs, wishes, countdowns, reminders, goals, subjects, notes: vaultNotes, bankEnabled, v2: cfg.v2 }}
         commands={commands}
         closeKeys={searchKeys}
         onGo={setSection}

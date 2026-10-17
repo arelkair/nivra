@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { t } from '../../lib/i18n'
 import type { Block, CalItem, Countdown, Goal, Grade, Reminder, Subject, Subscription, Task, Wish, Work } from '../../lib/store'
 import { Icon } from '../ui'
-import { SECTIONS, type Section } from './sections'
+import { SECTIONS, V2_SECTIONS, type Section } from './sections'
 import { keyOf } from '../../lib/shortcuts'
 import { skin } from './skin'
 import { snippetOf, type VaultNote } from './vault/vaultModel'
@@ -23,6 +23,7 @@ type Data = {
   subjects: Subject[]
   notes: VaultNote[]
   bankEnabled: boolean
+  v2: boolean
 }
 
 type Props = {
@@ -85,7 +86,7 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
   const buildHits = (): Hit[] => {
     const q = norm(query.trim())
     const out: Hit[] = []
-    const sectionList = SECTIONS.filter((x) => x.id !== 'banco' || data.bankEnabled)
+    const sectionList = SECTIONS.filter((x) => (x.id !== 'banco' || data.bankEnabled) && (data.v2 || !V2_SECTIONS.includes(x.id)))
 
     if (!q) {
       for (const c of commands) out.push({ key: `c-${c.id}`, title: c.label, kind: t('Acción'), detail: c.hint, score: 0, run: () => { onClose(); c.run() }, icon: 'settings' })

@@ -45,6 +45,8 @@ names used in the timetable.
 - **Links to Initiative** inside vault notes: the editor's Initiative button inserts
   a link to a section or to an exact task, exam, reminder, wish, subscription,
   countdown or calendar day (`[text](nivra:tareas/ID)`).
+- **Flashcards** with spaced repetition: decks, bulk import and review
+  sessions that schedule each card by how well you remembered it.
 - **Global search** across every section and the contents of vault notes.
 - **Keyboard shortcuts**, all configurable, with a cheat sheet on `?`.
 - **Music and ambience** player for Spotify, YouTube and SoundCloud links and

@@ -7,6 +7,7 @@ export type Section =
   | 'tareas'
   | 'examenes'
   | 'notas'
+  | 'tarjetas'
   | 'banco'
   | 'deseos'
   | 'suscripciones'
@@ -25,6 +26,7 @@ export const SECTIONS: SectionInfo[] = [
   { id: 'tareas', group: 'Estudio', label: 'Tareas', short: 'Tareas', icon: 'tasks' },
   { id: 'examenes', group: 'Estudio', label: 'Exámenes y Proyectos', short: 'Exám.', icon: 'exams' },
   { id: 'notas', group: 'Estudio', label: 'Notas', short: 'Notas', icon: 'grades' },
+  { id: 'tarjetas', group: 'Estudio', label: 'Tarjetas', short: 'Tarjetas', icon: 'cards' },
   { id: 'banco', group: 'Dinero', label: 'Dinero', short: 'Dinero', icon: 'bank' },
   { id: 'deseos', group: 'Dinero', label: 'Lista de Deseos', short: 'Deseos', icon: 'wish' },
   { id: 'suscripciones', group: 'Dinero', label: 'Suscripciones', short: 'Subs', icon: 'subs' },
@@ -33,6 +35,8 @@ export const SECTIONS: SectionInfo[] = [
   { id: 'lab', group: 'Utilidades', label: 'Laboratorio', short: 'Lab', icon: 'lab' },
   { id: 'boveda', group: 'Conocimiento', label: 'Bóveda', short: 'Bóveda', icon: 'graph' },
 ]
+
+export const V2_SECTIONS: Section[] = ['tarjetas']
 
 export const PAGE_TO_SECTION: Partial<Record<PageId, Section>> = {
   dashboard: 'inicio',
