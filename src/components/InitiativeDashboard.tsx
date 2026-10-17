@@ -43,7 +43,7 @@ const InitiativeReminders = lazyNamed(() => import('./initiative/InitiativeRemin
 const InitiativeCountdownsPage = lazyNamed(() => import('./initiative/InitiativeCountdownsPage'), 'InitiativeCountdownsPage')
 import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
 
-const SIDE_RAIL = 64
+const SIDE_RAIL = 56
 const SIDE_SNAP = 140
 const SIDE_OPEN = 224
 const SIDE_MAX = 320
@@ -200,8 +200,30 @@ export function InitiativeDashboard({
   const [side, setSide] = useStored<number>('nivra-initiative-side', SIDE_OPEN)
   const [liveSide, setLiveSide] = useState<number | null>(null)
   const dragRef = useRef<{ x: number; start: number } | null>(null)
-  const railWidth = liveSide ?? Math.min(SIDE_MAX, Math.max(SIDE_RAIL, side))
+  const railWidth = cfg.v2 ? (liveSide ?? Math.min(SIDE_MAX, Math.max(SIDE_RAIL, side))) : SIDE_OPEN
   const collapsed = railWidth < SIDE_SNAP
+  const [tip, setTip] = useState<{ label: string; group: string; y: number } | null>(null)
+  const tipTimer = useRef(0)
+  const tipWarm = useRef(false)
+
+  const showTip = (label: string, group: string, el: HTMLElement) => {
+    clearTimeout(tipTimer.current)
+    const rect = el.getBoundingClientRect()
+    const open = () => {
+      tipWarm.current = true
+      setTip({ label, group, y: rect.top + rect.height / 2 })
+    }
+    if (tipWarm.current) open()
+    else tipTimer.current = window.setTimeout(open, 350)
+  }
+
+  const hideTip = () => {
+    clearTimeout(tipTimer.current)
+    setTip(null)
+    tipTimer.current = window.setTimeout(() => {
+      tipWarm.current = false
+    }, 300)
+  }
 
   const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -461,6 +483,7 @@ export function InitiativeDashboard({
           dark ? 'border-white/10' : 'border-black/[0.07]'
         }`}
       >
+        {cfg.v2 && (
         <div
           role="separator"
           aria-orientation="vertical"
@@ -478,15 +501,14 @@ export function InitiativeDashboard({
         >
           <span className={`mx-auto block h-full w-px transition-colors ${dark ? 'group-hover:bg-white/30' : 'group-hover:bg-black/30'}`} />
         </div>
-        <span className={`font-initiative mb-4 flex items-center text-lg font-medium tracking-tight ${collapsed ? 'justify-center' : 'px-2'}`}>
-          {collapsed ? <Icon name="initiative" className="h-[19px] w-[19px]" /> : 'Initiative'}
+        )}
+        <span className={`font-initiative mb-4 flex items-center text-lg font-medium tracking-tight ${collapsed ? 'h-10 justify-center text-xl font-semibold' : 'px-2'}`}>
+          {collapsed ? 'I' : 'Initiative'}
         </span>
         <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden overscroll-contain pb-2">
           {groups.map((g) => (
             <div key={g.title} className="flex flex-col gap-0.5">
-              {collapsed ? (
-                <span className={`mx-3 mb-1 block border-t ${dark ? 'border-white/10' : 'border-black/[0.07]'}`} />
-              ) : (
+              {!collapsed && (
                 <p className={`nv-label mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
                   {t(g.title)}
                 </p>
@@ -498,18 +520,25 @@ export function InitiativeDashboard({
                   onClick={() => setSection(s.id)}
                   aria-current={current === s.id}
                   aria-label={collapsed ? t(s.label) : undefined}
-                  title={collapsed ? `${t(g.title)} · ${t(s.label)}` : undefined}
-                  className={`nv-nav flex w-full items-center rounded-xl py-2 text-left text-sm transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} ${
+                  onMouseEnter={collapsed ? (e) => showTip(t(s.label), t(g.title), e.currentTarget) : undefined}
+                  onMouseLeave={collapsed ? hideTip : undefined}
+                  onFocus={collapsed ? (e) => showTip(t(s.label), t(g.title), e.currentTarget) : undefined}
+                  onBlur={collapsed ? hideTip : undefined}
+                  className={`nv-nav flex w-full items-center text-left text-sm transition-colors ${
+                    collapsed
+                      ? `relative mx-auto h-10 w-10 justify-center rounded-lg before:absolute before:top-1/2 before:-left-2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-current before:transition-opacity ${current === s.id ? 'before:opacity-100' : 'before:opacity-0'}`
+                      : 'gap-3 rounded-xl px-3 py-2'
+                  } ${
                     current === s.id
                       ? dark
-                        ? 'bg-white/10 font-medium text-white'
-                        : 'bg-black/[0.06] font-medium text-neutral-900'
+                        ? `${collapsed ? 'bg-white/[0.07]' : 'bg-white/10 font-medium'} text-white`
+                        : `${collapsed ? 'bg-black/[0.05]' : 'bg-black/[0.06] font-medium'} text-neutral-900`
                       : dark
-                        ? 'text-neutral-400 hover:bg-white/5 hover:text-neutral-100'
-                        : 'text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
+                        ? `${collapsed ? 'text-neutral-500' : 'text-neutral-400'} hover:bg-white/5 hover:text-neutral-100`
+                        : `${collapsed ? 'text-neutral-500' : 'text-neutral-600'} hover:bg-black/[0.04] hover:text-neutral-900`
                   }`}
                 >
-                  <Icon name={s.icon} className="h-[17px] w-[17px] shrink-0" />
+                  <Icon name={s.icon} className={`${collapsed ? 'h-[18px] w-[18px]' : 'h-[17px] w-[17px]'} shrink-0`} />
                   {!collapsed && t(s.label)}
                 </button>
               ))}
@@ -517,6 +546,19 @@ export function InitiativeDashboard({
           ))}
         </nav>
       </aside>
+
+      {collapsed && tip && (
+        <div
+          role="tooltip"
+          style={{ left: railWidth + 8, top: tip.y }}
+          className={`pointer-events-none fixed z-50 flex -translate-y-1/2 items-baseline gap-2 rounded-lg px-2.5 py-1.5 text-sm whitespace-nowrap shadow-lg ${
+            dark ? 'bg-neutral-100 text-neutral-900' : 'bg-neutral-900 text-white'
+          }`}
+        >
+          {tip.label}
+          <span className="text-xs opacity-55">{tip.group}</span>
+        </div>
+      )}
 
       <header className="relative z-10 flex shrink-0 items-center justify-between gap-2 px-4 py-3 md:justify-end md:py-4 md:pr-8 md:pl-[calc(var(--nv-side)+2rem)]">
         <span className="font-initiative text-lg font-medium tracking-tight md:hidden">Initiative</span>
