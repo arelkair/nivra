@@ -107,6 +107,16 @@ Data lives only in the browser that created it. Clearing site data, switching
 browser or changing computer loses it, so keep an exported backup somewhere
 safe.
 
+## Security
+
+The site is served with a strict Content Security Policy (no inline scripts, no
+`eval`, only the media hosts the player needs), HSTS, `nosniff`, a restrictive
+Permissions Policy and `frame-ancestors 'none'`; see `vercel.json`. Rich text
+from the notepads goes through an allow-listing sanitizer. HEIC input is
+unavailable because its decoder needs `eval`. Privacy and cookie policies live
+at `/privacy` and `/cookies`, and the security contact at
+`/.well-known/security.txt`.
+
 ## Optional device sync
 
 Sync is disabled by default. Nothing leaves the browser until it is turned on.

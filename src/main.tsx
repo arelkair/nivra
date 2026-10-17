@@ -26,15 +26,15 @@ import '@fontsource-variable/geist'
 import '@fontsource-variable/geist-mono'
 import './index.css'
 import App from './App.tsx'
+import { Legal } from './pages/Legal'
+import { legalFromPath } from './lib/legal'
 import { preloadSections } from './lib/lazy'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const legal = legalFromPath()
 
-preloadSections(localStorage.getItem('nivra-initiative') === 'true' ? 'initiative' : 'classic')
+createRoot(document.getElementById('root')!).render(<StrictMode>{legal ? <Legal kind={legal} /> : <App />}</StrictMode>)
+
+if (!legal) preloadSections(localStorage.getItem('nivra-initiative') === 'true' ? 'initiative' : 'classic')
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   addEventListener('load', () => {

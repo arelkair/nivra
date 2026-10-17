@@ -155,7 +155,10 @@ export async function decodeFile(file: File): Promise<Decoded> {
     }
     if (ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
       const heic2any = (await import('heic2any')).default
-      const result = await heic2any({ blob: file, toType: 'image/png' })
+      const result = await heic2any({ blob: file, toType: 'image/png' }).catch((error: unknown) => {
+        if (error instanceof EvalError || /Content Security Policy|unsafe-eval/i.test(String((error as Error)?.message))) throw new Error(t('Los archivos HEIC no están disponibles por motivos de seguridad.'))
+        throw error
+      })
       const blob = Array.isArray(result) ? result[0] : result
       const bitmap = await createImageBitmap(blob)
       return { source: bitmap, w: bitmap.width, h: bitmap.height, close: () => bitmap.close() }

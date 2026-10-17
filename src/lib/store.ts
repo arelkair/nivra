@@ -149,7 +149,23 @@ export type Notepad = { id: string; title: string; html?: string; pages?: Notepa
 export const pagesOf = (n: Notepad): NotepadPage[] =>
   n.pages?.length ? n.pages : [{ id: `${n.id}-1`, html: n.html ?? '' }]
 
-const FORBIDDEN_TAGS = /^(script|style|iframe|object|embed|link|savingGoal|form)$/i
+const FORBIDDEN_TAGS =
+  /^(script|style|iframe|frame|frameset|object|embed|applet|link|meta|base|form|input|button|textarea|select|template|noscript|audio|video|source|track|portal|math|foreignobject|animate|animatemotion|animatetransform|set|use|image|feimage)$/i
+
+const URL_ATTRS = /^(href|src|xlink:href|action|formaction|poster|background|srcset|data|cite|ping)$/i
+const SAFE_IMAGE = /^data:image\/(png|jpe?g|gif|webp|avif);base64,[a-z0-9+/=]+$/i
+
+function isSafeUrl(value: string, image: boolean) {
+  const url = Array.from(value)
+    .filter((ch) => {
+      const code = ch.charCodeAt(0)
+      return code > 32 && (code < 127 || code > 159)
+    })
+    .join('')
+  if (image && SAFE_IMAGE.test(url)) return true
+  if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return /^(https?|mailto|tel):/i.test(url)
+  return !url.startsWith('//')
+}
 
 export function sanitize(html: string) {
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
@@ -158,10 +174,14 @@ export function sanitize(html: string) {
       element.remove()
       continue
     }
+    const image = /^(img|image)$/i.test(element.tagName)
     for (const attr of Array.from(element.attributes)) {
-      const attrName = attr.name.toLowerCase()
-      const value = attr.value.replace(/\s/g, '').toLowerCase()
-      if (attrName.startsWith('on') || value.startsWith('javascript:')) element.removeAttribute(attr.name)
+      const name = attr.name.toLowerCase()
+      const bad =
+        name.startsWith('on') ||
+        (URL_ATTRS.test(name) && !isSafeUrl(attr.value, image && name === 'src')) ||
+        (name === 'style' && /url\s*\(|expression|@import|javascript:/i.test(attr.value))
+      if (bad) element.removeAttribute(attr.name)
     }
   }
   return doc.body.firstElementChild?.innerHTML ?? ''

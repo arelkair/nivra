@@ -582,6 +582,14 @@ export function Settings({
             {t('Ese día, todos los años, cae confeti.')}
           </p>
         </Collapsible>
+        <p className="mt-2 flex gap-4 px-1 text-[0.7rem] text-neutral-400 dark:text-neutral-500">
+          <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-neutral-900 dark:hover:text-white">
+            {t('Política de privacidad')}
+          </a>
+          <a href="/cookies" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-neutral-900 dark:hover:text-white">
+            {t('Cookies')}
+          </a>
+        </p>
       </div>
     </Modal>
   )

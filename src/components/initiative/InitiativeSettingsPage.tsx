@@ -440,7 +440,14 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
                 <span />
               </Row>
               <Row s={s} label={t('Privacidad')} hint={t('Nada sale de tu navegador salvo que actives la sincronización en Ajustes.')}>
-                <span />
+                <span className="flex gap-3 text-xs">
+                  <a href="/privacy" target="_blank" rel="noopener" className={`underline underline-offset-4 ${s.muted} ${s.hoverText}`}>
+                    {t('Política de privacidad')}
+                  </a>
+                  <a href="/cookies" target="_blank" rel="noopener" className={`underline underline-offset-4 ${s.muted} ${s.hoverText}`}>
+                    {t('Cookies')}
+                  </a>
+                </span>
               </Row>
               <Row s={s} label={t('Volver a Nivra Classic')} hint={t('Desactiva Initiative. Tus datos se conservan.')}>
                 <button type="button" onClick={onDisable} className={s.ghost}>
