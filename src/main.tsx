@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-preloadSections()
+preloadSections(localStorage.getItem('nivra-initiative') === 'true' ? 'initiative' : 'classic')
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   addEventListener('load', () => {

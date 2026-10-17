@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { lazyNamed } from '../lib/lazy'
 import { Icon } from './ui'
 const InitiativeSettingsPage = lazyNamed(() => import('./initiative/InitiativeSettingsPage'), 'InitiativeSettingsPage')
@@ -206,7 +206,7 @@ export function InitiativeDashboard({
       if (next === trail.current[cursor.current]) return
       trail.current = [...trail.current.slice(0, cursor.current + 1), next]
       cursor.current = trail.current.length - 1
-      setSectionState(next)
+      startTransition(() => setSectionState(next))
     }
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
@@ -220,7 +220,7 @@ export function InitiativeDashboard({
     if (trail.current[cursor.current] === next) return
     trail.current = [...trail.current.slice(0, cursor.current + 1), next]
     cursor.current = trail.current.length - 1
-    setSectionState(next)
+    startTransition(() => setSectionState(next))
     history.pushState({}, '', sectionPath(next))
   }, [])
 
@@ -228,7 +228,7 @@ export function InitiativeDashboard({
     const target = cursor.current + delta
     if (target < 0 || target >= trail.current.length) return
     cursor.current = target
-    setSectionState(trail.current[target])
+    startTransition(() => setSectionState(trail.current[target]))
     history.pushState({}, '', sectionPath(trail.current[target]))
   }, [])
 
@@ -468,7 +468,7 @@ export function InitiativeDashboard({
           onClick={() => setSearchOpen(true)}
           aria-label={t('Buscar')}
           title={searchHint ? `${t('Buscar')} (${searchHint})` : t('Buscar')}
-          className={`nv-iconbtn flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
+          className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
@@ -482,7 +482,7 @@ export function InitiativeDashboard({
           type="button"
           onClick={() => setTheme(dark ? 'light' : 'dark')}
           aria-label={dark ? t('Tema claro') : t('Tema oscuro')}
-          className={`nv-iconbtn grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
+          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
@@ -495,7 +495,7 @@ export function InitiativeDashboard({
           onClick={() => setSection('ajustes')}
           aria-current={section === 'ajustes'}
           aria-label={t('Ajustes')}
-          className={`nv-iconbtn grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
+          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'

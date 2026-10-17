@@ -1,26 +1,26 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { lazyNamed } from './lib/lazy'
 import type { BankTab } from './pages/Bank'
-const Calendar = lazyNamed(() => import('./pages/Calendar'), 'Calendar')
-const Dashboard = lazyNamed(() => import('./pages/Dashboard'), 'Dashboard')
-const Exams = lazyNamed(() => import('./pages/Exams'), 'Exams')
-const Grades = lazyNamed(() => import('./pages/Grades'), 'Grades')
-const Notepads = lazyNamed(() => import('./pages/Notepads'), 'Notepads')
-const Reminders = lazyNamed(() => import('./pages/Reminders'), 'Reminders')
-const Schedule = lazyNamed(() => import('./pages/Schedule'), 'Schedule')
-const SetupScreen = lazyNamed(() => import('./pages/SetupScreen'), 'SetupScreen')
-const Subscriptions = lazyNamed(() => import('./pages/Subscriptions'), 'Subscriptions')
-const Tasks = lazyNamed(() => import('./pages/Tasks'), 'Tasks')
-const Wishlist = lazyNamed(() => import('./pages/Wishlist'), 'Wishlist')
-const Bank = lazyNamed(() => import('./pages/Bank'), 'Bank')
-const InitiativeIntro = lazyNamed(() => import('./components/InitiativeIntro'), 'InitiativeIntro')
+const Calendar = lazyNamed(() => import('./pages/Calendar'), 'Calendar', 'classic')
+const Dashboard = lazyNamed(() => import('./pages/Dashboard'), 'Dashboard', 'classic')
+const Exams = lazyNamed(() => import('./pages/Exams'), 'Exams', 'classic')
+const Grades = lazyNamed(() => import('./pages/Grades'), 'Grades', 'classic')
+const Notepads = lazyNamed(() => import('./pages/Notepads'), 'Notepads', 'classic')
+const Reminders = lazyNamed(() => import('./pages/Reminders'), 'Reminders', 'classic')
+const Schedule = lazyNamed(() => import('./pages/Schedule'), 'Schedule', 'classic')
+const SetupScreen = lazyNamed(() => import('./pages/SetupScreen'), 'SetupScreen', false)
+const Subscriptions = lazyNamed(() => import('./pages/Subscriptions'), 'Subscriptions', 'classic')
+const Tasks = lazyNamed(() => import('./pages/Tasks'), 'Tasks', 'classic')
+const Wishlist = lazyNamed(() => import('./pages/Wishlist'), 'Wishlist', 'classic')
+const Bank = lazyNamed(() => import('./pages/Bank'), 'Bank', 'classic')
+const InitiativeIntro = lazyNamed(() => import('./components/InitiativeIntro'), 'InitiativeIntro', false)
 const InitiativeDashboard = lazyNamed(() => import('./components/InitiativeDashboard'), 'InitiativeDashboard')
 import { Search, type Destination, type SearchResult } from './components/Search'
-const Lab = lazyNamed(() => import('./pages/Lab'), 'Lab')
-const Settings = lazyNamed(() => import('./components/Settings'), 'Settings')
+const Lab = lazyNamed(() => import('./pages/Lab'), 'Lab', 'classic')
+const Settings = lazyNamed(() => import('./components/Settings'), 'Settings', 'classic')
 import { snapshotNow } from './lib/autoBackup'
 import { realVolume } from './lib/volume'
-const DashboardEditor = lazyNamed(() => import('./components/DashboardEditor'), 'DashboardEditor')
+const DashboardEditor = lazyNamed(() => import('./components/DashboardEditor'), 'DashboardEditor', 'classic')
 import { FloatingNote } from './components/FloatingNote'
 import { Countdowns } from './components/Countdowns'
 import { Clock, Confetti, Icon, Toasts, line, type Toast } from './components/ui'
@@ -237,12 +237,14 @@ function App() {
     const onPop = (e: PopStateEvent) => {
       const i = (e.state as { nivra?: number } | null)?.nivra
       if (typeof i === 'number') {
-        setIndex(Math.min(Math.max(i, 0), historyLength.current - 1))
+        startTransition(() => setIndex(Math.min(Math.max(i, 0), historyLength.current - 1)))
         return
       }
       const destino = pageFromPath()
-      setPageHistory((prev) => [...prev.slice(0, indexRef.current + 1), destino])
-      setIndex(indexRef.current + 1)
+      startTransition(() => {
+        setPageHistory((prev) => [...prev.slice(0, indexRef.current + 1), destino])
+        setIndex(indexRef.current + 1)
+      })
     }
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
@@ -260,8 +262,10 @@ function App() {
       if (pageHistory[index] === destino) return
       if (destino === 'banco') setBankTab('dinero')
       const next = index + 1
-      setPageHistory((prev) => [...prev.slice(0, index + 1), destino])
-      setIndex(next)
+      startTransition(() => {
+        setPageHistory((prev) => [...prev.slice(0, index + 1), destino])
+        setIndex(next)
+      })
       history.pushState({ nivra: next }, '', pagePath(destino))
     },
     [index, pageHistory, navFlags],
