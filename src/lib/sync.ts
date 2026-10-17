@@ -40,7 +40,6 @@ const VISUAL_KEYS = new Set([
   'nivra-search',
   'nivra-animations',
   'nivra-auto-theme',
-  'nivra-intro',
   'nivra-initiative',
   'nivra-shortcuts',
   'nivra-shortcut-keys',

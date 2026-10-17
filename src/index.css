@@ -304,12 +304,19 @@ body {
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+main[class*='animate-[fade-in'],
+main [class*='animate-[fade-in'] {
+  animation-duration: 140ms !important;
+  animation-delay: 0ms !important;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 
 @keyframes word-enter {
@@ -339,18 +346,6 @@ body {
   }
 }
 
-@keyframes intro-exit {
-  to {
-    transform: translateY(-100%);
-  }
-}
-
-@keyframes drift {
-  to {
-    translate: 0 18px;
-  }
-}
-
 @keyframes confetti-fall {
   from {
     transform: translateY(-10vh) rotate(0deg);
@@ -377,54 +372,17 @@ body {
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
   --nv-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --nv-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --nv-accent: #2f6f4f;
-  --nv-ring: color-mix(in oklab, var(--nv-accent) 70%, transparent);
-  --color-white: #faf9f4;
-  --color-black: #0c1410;
-  --color-neutral-50: #f7f6f1;
-  --color-neutral-100: #efeee7;
-  --color-neutral-200: #e1e0d6;
-  --color-neutral-300: #c7c8bb;
-  --color-neutral-400: #9da69b;
-  --color-neutral-500: #667269;
-  --color-neutral-600: #4d5a52;
-  --color-neutral-700: #3a453f;
-  --color-neutral-800: #26302b;
-  --color-neutral-900: #141d18;
-  --color-neutral-950: #0c1410;
+  --nv-ring: color-mix(in oklab, currentColor 55%, transparent);
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.625rem;
   --radius-2xl: 0.75rem;
   --radius-3xl: 1rem;
-  --paper: #f2f0e9;
-  --surface: #f8f7f2;
-  --sunken: #ebe9e0;
-  --nv-root: #f2f0e9;
-  --nv-surface: #f8f7f2;
-  --nv-raised: #f8f7f2;
-  color: #17211b;
-}
-
-:root.dark[data-v2='on'] {
-  --nv-accent: #6fbf92;
-  --paper: #0b1410;
-  --surface: #101b16;
-  --sunken: #08100d;
-  --nv-root: #0b1410;
-  --nv-surface: #101b16;
-  --nv-raised: #101b16;
-  color: #e8efe9;
 }
 
 :root[data-v2='on'] body {
-  color: #17211b;
   font-feature-settings: 'cv11', 'ss01';
   letter-spacing: -0.006em;
-}
-
-:root.dark[data-v2='on'] body {
-  color: #e8efe9;
 }
 
 :root[data-v2='on'].initiative-mode body,
@@ -451,7 +409,7 @@ body {
 }
 
 :root[data-v2='on'] ::selection {
-  background: color-mix(in oklab, var(--nv-accent) 28%, transparent);
+  background: color-mix(in oklab, currentColor 22%, transparent);
 }
 
 :root[data-v2='on'] :focus-visible {

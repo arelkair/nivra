@@ -9,7 +9,7 @@ const FEATURES = [
   { icon: 'dashboard', title: 'Privado', desc: 'Todo en tu navegador.' },
 ]
 
-export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void; delay: number }) {
+export function SetupScreen({ onDone }: { onDone: (name: string) => void }) {
   const lang = getLang()
   const [name, setName] = useState('')
 
@@ -17,7 +17,6 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void;
     <div className="flex min-h-svh items-center bg-[var(--paper)] px-6 py-16 text-neutral-900 sm:px-10  dark:text-neutral-200">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-10">
         <div
-          style={{ animationDelay: `${delay}s` }}
           className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3 text-left"
         >
           <h1 className="font-display text-6xl font-semibold tracking-tight sm:text-7xl">Nivra</h1>
@@ -27,7 +26,7 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void;
         </div>
 
         <div
-          style={{ animationDelay: `${delay + 0.1}s` }}
+          style={{ animationDelay: `${0.1}s` }}
           className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-2"
         >
           <span className="text-[0.68rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
@@ -56,7 +55,7 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void;
           {FEATURES.map((f, i) => (
             <li
               key={f.title}
-              style={{ animationDelay: `${delay + 0.2 + i * 0.08}s` }}
+              style={{ animationDelay: `${0.2 + i * 0.08}s` }}
               className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex items-center gap-4 border-b border-black/[0.07] py-4 last:border-0 dark:border-white/[0.08]"
             >
               <Icon name={f.icon} className="h-5 w-5 shrink-0 text-neutral-400 dark:text-neutral-500" />
@@ -73,7 +72,7 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void;
             ev.preventDefault()
             onDone(name.trim())
           }}
-          style={{ animationDelay: `${delay + 0.55}s` }}
+          style={{ animationDelay: `${0.55}s` }}
           className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3"
         >
           <label className="flex flex-col gap-2">

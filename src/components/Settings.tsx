@@ -80,12 +80,6 @@ export function Settings({
               </div>
             </div>
             <Switch
-              checked={cfg.intro}
-              onChange={cfg.setIntro}
-              label={t('Animación de inicio')}
-              hint={t('La presentación de Nivra al abrir o recargar la web.')}
-            />
-            <Switch
               checked={cfg.animations}
               onChange={cfg.setAnimations}
               label={t('Animaciones al cambiar de apartado')}

@@ -959,8 +959,6 @@ const EN: Record<string, string> = {
   Cumpleaños: 'Birthday',
   Reloj: 'Clock',
   Buscador: 'Search bar',
-  'Animación de inicio': 'Intro animation',
-  'La animación que aparece al abrir Nivra.': 'The animation shown when Nivra opens.',
   'Animaciones al cambiar de apartado': 'Animations when switching sections',
   'Tema según la hora': 'Theme follows the clock',
   'Formato de 12 horas': '12-hour format',
@@ -973,8 +971,6 @@ const EN: Record<string, string> = {
   'Instalar Nivra': 'Install Nivra',
   'Importar copia': 'Import backup',
   'Fecha de cumpleaños': 'Birthday date',
-  'La presentación de Nivra al abrir o recargar la web.':
-    'The Nivra intro shown when opening or reloading the app.',
   'Aparece en la cabecera y busca en todos los apartados.':
     'Appears in the header and searches every section.',
   'Claro de 7:00 a 20:00 y oscuro el resto. Si lo cambias a mano, aguanta hasta el siguiente tramo.':

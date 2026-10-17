@@ -3,7 +3,6 @@ import { DEFAULT_DASHBOARD_SLOTS, type WidgetType } from './dashboardLayout'
 
 export function useSettings() {
   const [v2, setV2] = useStored('nivra-v2', true)
-  const [intro, setIntro] = useStored('nivra-intro', true)
   const [accent, setAccent] = useStored('nivra-accent', 'basico')
   const [clockOn, setClockOn] = useStored('nivra-clock', false)
   const [autoTheme, setAutoTheme] = useStored('nivra-auto-theme', false)
@@ -57,8 +56,6 @@ export function useSettings() {
   return {
     v2,
     setV2,
-    intro,
-    setIntro,
     accent,
     setAccent,
     clockOn,

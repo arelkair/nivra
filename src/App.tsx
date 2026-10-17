@@ -12,7 +12,6 @@ const SetupScreen = lazyNamed(() => import('./pages/SetupScreen'), 'SetupScreen'
 const Subscriptions = lazyNamed(() => import('./pages/Subscriptions'), 'Subscriptions')
 const Tasks = lazyNamed(() => import('./pages/Tasks'), 'Tasks')
 const Wishlist = lazyNamed(() => import('./pages/Wishlist'), 'Wishlist')
-import { Intro } from './components/Intro'
 const Bank = lazyNamed(() => import('./pages/Bank'), 'Bank')
 const InitiativeIntro = lazyNamed(() => import('./components/InitiativeIntro'), 'InitiativeIntro')
 const InitiativeDashboard = lazyNamed(() => import('./components/InitiativeDashboard'), 'InitiativeDashboard')
@@ -71,14 +70,12 @@ import { t, tp } from './lib/i18n'
 const SETUP_KEY = 'nivra-setup-done'
 const INITIATIVE_PENDING_KEY = 'nivra-initiative-pending'
 const INITIATIVE_SEEN_KEY = 'nivra-initiative-intro-seen'
-const SKIP_INTRO_KEY = 'nivra-skip-intro'
 
 const initiativeSeen = () => localStorage.getItem(INITIATIVE_SEEN_KEY) === '1' || localStorage.getItem('nivra-initiative-use-data') !== null
 
 const switchEnvironment = (initiative: boolean) => {
   localStorage.setItem('nivra-initiative', String(initiative))
   if (initiative && !initiativeSeen()) sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
-  sessionStorage.setItem(SKIP_INTRO_KEY, '1')
   location.reload()
 }
 
@@ -163,7 +160,6 @@ const BANK_TABS: { id: BankTab; label: string }[] = [
 ]
 
 const SETTING_LABELS = [
-  'Animación de inicio',
   'Animaciones al cambiar de apartado',
   'Tema según la hora',
   'Reloj',
@@ -196,15 +192,11 @@ const headerButton =
 
 function App() {
   const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
-  const [introDone, setIntroDone] = useState(
-    () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1' || sessionStorage.getItem(SKIP_INTRO_KEY) === '1',
-  )
   const [initiativeIntro, setInitiativeIntro] = useState(
     () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1' && !initiativeSeen(),
   )
   useEffect(() => {
     sessionStorage.removeItem(INITIATIVE_PENDING_KEY)
-    sessionStorage.removeItem(SKIP_INTRO_KEY)
   }, [])
   useEffect(() => {
     const id = setTimeout(() => void snapshotNow().catch(() => undefined), 4000)
@@ -668,10 +660,8 @@ function App() {
   if (!setupDone) {
     return (
       <>
-        {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
         <Suspense fallback={null}>
           <SetupScreen
-            delay={cfg.intro ? 2.25 : 0}
             onDone={(name) => {
               cfg.setUserName(name)
               localStorage.setItem(SETUP_KEY, '1')
@@ -690,7 +680,6 @@ function App() {
 
   return (
     <>
-      {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
       {initiativeIntro && (
         <Suspense fallback={null}>
         <InitiativeIntro
