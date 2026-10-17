@@ -43,6 +43,11 @@ const InitiativeReminders = lazyNamed(() => import('./initiative/InitiativeRemin
 const InitiativeCountdownsPage = lazyNamed(() => import('./initiative/InitiativeCountdownsPage'), 'InitiativeCountdownsPage')
 import { PAGE_TO_SECTION, SECTIONS, type Section } from './initiative/sections'
 
+const SIDE_RAIL = 64
+const SIDE_SNAP = 140
+const SIDE_OPEN = 224
+const SIDE_MAX = 320
+
 const SECTION_SLUG: Record<Section, string> = {
   inicio: 'dashboard',
   calendario: 'calendar',
@@ -192,6 +197,33 @@ export function InitiativeDashboard({
     'nivra-initiative-theme',
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
+  const [side, setSide] = useStored<number>('nivra-initiative-side', SIDE_OPEN)
+  const [liveSide, setLiveSide] = useState<number | null>(null)
+  const dragRef = useRef<{ x: number; start: number } | null>(null)
+  const railWidth = liveSide ?? Math.min(SIDE_MAX, Math.max(SIDE_RAIL, side))
+  const collapsed = railWidth < SIDE_SNAP
+
+  const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragRef.current = { x: e.clientX, start: railWidth }
+  }
+
+  const moveResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current
+    if (!d) return
+    setLiveSide(Math.min(SIDE_MAX, Math.max(SIDE_RAIL, d.start + e.clientX - d.x)))
+  }
+
+  const endResize = () => {
+    const d = dragRef.current
+    dragRef.current = null
+    if (!d || liveSide === null) return
+    setSide(liveSide < SIDE_SNAP ? SIDE_RAIL : Math.max(SIDE_OPEN, liveSide))
+    setLiveSide(null)
+  }
+
+  const toggleRail = () => setSide(collapsed ? SIDE_OPEN : SIDE_RAIL)
+
   const [section, setSectionState] = useState<Section>(() => (shouldReturnToSync() ? 'ajustes' : sectionFromPath()))
   const trail = useRef<Section[]>([section])
   const cursor = useRef(0)
@@ -419,29 +451,55 @@ export function InitiativeDashboard({
 
   return (
     <div
+      style={{ '--nv-side': `${railWidth}px` } as React.CSSProperties}
       className={`relative z-10 flex h-svh flex-col overflow-hidden transition-colors ${
         dark ? 'bg-(--nv-root) text-neutral-100 [color-scheme:dark]' : 'bg-(--nv-root) text-neutral-900'
       }`}
     >
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden w-56 flex-col gap-1 border-r px-3 py-4 md:flex ${
+        className={`fixed inset-y-0 left-0 z-20 hidden w-(--nv-side) flex-col gap-1 border-r py-4 md:flex ${collapsed ? 'px-2' : 'px-3'} ${
           dark ? 'border-white/10' : 'border-black/[0.07]'
         }`}
       >
-        <span className="font-initiative mb-4 px-2 text-lg font-medium tracking-tight">Initiative</span>
-        <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pb-2">
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t('Ajustar la barra lateral')}
+          tabIndex={0}
+          onPointerDown={startResize}
+          onPointerMove={moveResize}
+          onPointerUp={endResize}
+          onPointerCancel={endResize}
+          onDoubleClick={toggleRail}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') toggleRail()
+          }}
+          className={`group absolute inset-y-0 -right-1.5 z-30 hidden w-3 cursor-col-resize touch-none md:block pointer-coarse:hidden`}
+        >
+          <span className={`mx-auto block h-full w-px transition-colors ${dark ? 'group-hover:bg-white/30' : 'group-hover:bg-black/30'}`} />
+        </div>
+        <span className={`font-initiative mb-4 flex items-center text-lg font-medium tracking-tight ${collapsed ? 'justify-center' : 'px-2'}`}>
+          {collapsed ? <Icon name="initiative" className="h-[19px] w-[19px]" /> : 'Initiative'}
+        </span>
+        <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden overscroll-contain pb-2">
           {groups.map((g) => (
             <div key={g.title} className="flex flex-col gap-0.5">
-              <p className={`nv-label mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                {t(g.title)}
-              </p>
+              {collapsed ? (
+                <span className={`mx-3 mb-1 block border-t ${dark ? 'border-white/10' : 'border-black/[0.07]'}`} />
+              ) : (
+                <p className={`nv-label mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                  {t(g.title)}
+                </p>
+              )}
               {g.items.map((s) => (
                 <button
                   key={s.id}
                   type="button"
                   onClick={() => setSection(s.id)}
                   aria-current={current === s.id}
-                  className={`nv-nav flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                  aria-label={collapsed ? t(s.label) : undefined}
+                  title={collapsed ? `${t(g.title)} · ${t(s.label)}` : undefined}
+                  className={`nv-nav flex w-full items-center rounded-xl py-2 text-left text-sm transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} ${
                     current === s.id
                       ? dark
                         ? 'bg-white/10 font-medium text-white'
@@ -452,7 +510,7 @@ export function InitiativeDashboard({
                   }`}
                 >
                   <Icon name={s.icon} className="h-[17px] w-[17px] shrink-0" />
-                  {t(s.label)}
+                  {!collapsed && t(s.label)}
                 </button>
               ))}
             </div>
@@ -460,7 +518,7 @@ export function InitiativeDashboard({
         </nav>
       </aside>
 
-      <header className="relative z-10 flex shrink-0 items-center justify-between gap-2 px-4 py-3 md:justify-end md:py-4 md:pr-8 md:pl-64">
+      <header className="relative z-10 flex shrink-0 items-center justify-between gap-2 px-4 py-3 md:justify-end md:py-4 md:pr-8 md:pl-[calc(var(--nv-side)+2rem)]">
         <span className="font-initiative text-lg font-medium tracking-tight md:hidden">Initiative</span>
         <span className="flex gap-2">
         <button
@@ -535,7 +593,7 @@ export function InitiativeDashboard({
 
       <Suspense fallback={null}>
       {current === 'calendario' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeCalendar
             focusDate={calendarFocus}
             onFocusHandled={() => setCalendarFocus(null)}
@@ -556,7 +614,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'tareas' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeTasks
             tasks={tasks}
             setTasks={setTasks}
@@ -570,7 +628,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'inicio' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:overflow-hidden md:py-4 md:pr-8 md:pb-5 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:overflow-hidden md:py-4 md:pr-8 md:pb-5 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeHome
             now={now}
             dark={dark}
@@ -596,7 +654,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'examenes' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeExams
             works={works}
             setWorks={setWorks}
@@ -611,7 +669,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'horario' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeSchedule
             blocks={blocks}
             setBlocks={setBlocks}
@@ -626,13 +684,13 @@ export function InitiativeDashboard({
       )}
 
       {current === 'notas' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeGrades grades={grades} setGrades={setGrades} subjects={subjects} works={works} dark={dark} />
         </main>
       )}
 
       {current === 'banco' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeMoney
             initial={bankInitial}
             setInitial={setBankInitial}
@@ -650,7 +708,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'deseos' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeWishlist
             wishes={wishes}
             setWishes={setWishes}
@@ -669,19 +727,19 @@ export function InitiativeDashboard({
       )}
 
       {current === 'suscripciones' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeSubscriptions subs={subs} setSubs={setSubs} accounts={accounts} dark={dark} />
         </main>
       )}
 
       {current === 'recordatorios' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeReminders reminders={reminders} setReminders={setReminders} works={works} dark={dark} />
         </main>
       )}
 
       {current === 'ajustes' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeSettingsPage
             cfg={cfg}
             dark={dark}
@@ -698,19 +756,19 @@ export function InitiativeDashboard({
       )}
 
       {current === 'cuentas' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeCountdownsPage countdowns={countdowns} setCountdowns={setCountdowns} works={works} now={now} dark={dark} />
         </main>
       )}
 
       {current === 'lab' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeLab dark={dark} />
         </main>
       )}
 
       {current === 'boveda' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeVault
             dark={dark}
             notes={vaultNotes}

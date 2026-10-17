@@ -473,6 +473,7 @@ const EN: Record<string, string> = {
   'Añadir asignatura': 'Add subject',
   'Nueva asignatura': 'New subject',
   Entrega: 'Due',
+  'Ajustar la barra lateral': 'Resize the sidebar',
   'Nivra 2.0': 'Nivra 2.0',
   'Activa las novedades de la versión 2.0. Desactívalo para volver a la versión anterior.': 'Turns on the version 2.0 features. Turn it off to go back to the previous version.',
   'Dinero total': 'Total money',
