@@ -1,3 +1,6 @@
+import { AppearanceEditor } from './AppearanceEditor'
+import { PrivacyPanel } from './PrivacyPanel'
+import { SecurityPanel } from './PinLock'
 import { useEffect, useRef, useState } from 'react'
 import { exportCsv, exportCalendarIcs, exportTimetableIcs, exportJson, importJson, clearAllData } from '../lib/backup'
 import { askNotificationPermission, notificationPermission, notificationsSupported } from '../lib/notify'
@@ -50,7 +53,11 @@ export function Settings({
 
   return (
     <Modal title={t('Ajustes')} onClose={onClose} size="wide">
+      <div className="mb-4 flex flex-wrap gap-2"><a href="/account" className={ghost}>{t('Cuenta')}</a><a href="/changelog" className={ghost}>{t('Novedades')}</a></div>
       <div className="flex flex-col gap-2">
+        <Collapsible title={t('Privacidad y papelera')} open={openSection === 'privacy'} animar={cfg.animations} onToggle={() => alterna('privacy')}><PrivacyPanel /></Collapsible>
+        <Collapsible title={t('Seguridad')} open={openSection === 'security'} animar={cfg.animations} onToggle={() => alterna('security')}><SecurityPanel /></Collapsible>
+        <Collapsible title={t('Tema propio y accesibilidad')} open={openSection === 'custom-theme'} animar={cfg.animations} onToggle={() => alterna('custom-theme')}><AppearanceEditor cfg={cfg} /></Collapsible>
         <Collapsible title={t('General')} open={openSection === 'general'} animar={cfg.animations} onToggle={() => alterna('general')}>
           <div className="flex flex-col gap-1">
             <Switch
@@ -1064,7 +1071,7 @@ function ShortcutKeys({ cfg, onNotify }: { cfg: Settings; onNotify: (t: string) 
               checked={cfg.enabledShortcuts[a.id] !== false}
               disabled={!cfg.shortcutsOn}
               onChange={(e) => cfg.setEnabledShortcuts((prev) => ({ ...prev, [a.id]: e.target.checked }))}
-              aria-label={`Activar ${a.label}`}
+              aria-label={`${t('Activar')} ${t(a.label)}`}
               className="h-4 w-4 shrink-0 accent-neutral-900 dark:accent-white"
             />
           </li>

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { GoogleButton } from './GoogleButton'
+import { authEnabled, backendEnabled } from '../lib/backend'
 import {
   MIN_PASSPHRASE,
   accountVaultExists,
   connectAccount,
+  connectGoogleAccount,
   deleteCloudData,
   disconnectAccount,
   readSyncState,
@@ -45,7 +48,9 @@ export function AccountSignIn({
   const [working, setWorking] = useState(false)
 
   const refresh = useCallback(async () => {
-    if (!authPending()) {
+    const initialError = takeAuthError()
+    if (initialError) onMessage(`${t('No se pudo iniciar sesión')}: ${initialError}`)
+    if (!authPending() || !authEnabled) {
       setPhase('out')
       return
     }
@@ -62,12 +67,16 @@ export function AccountSignIn({
         return
       }
       setPhase({ email: session.user.email ?? '' })
-      setExists(await accountVaultExists())
+      if (backendEnabled) {
+        const automatic = await connectGoogleAccount()
+        if (automatic) { setStatus(automatic); return }
+        setExists(await accountVaultExists())
+      }
     } catch (e) {
       onMessage(message(e))
       setPhase('out')
     }
-  }, [onMessage])
+  }, [onMessage, setStatus])
 
   useEffect(() => {
     refresh()
@@ -212,9 +221,7 @@ export function AccountSignIn({
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
-          <button type="button" onClick={google} disabled={working} className={`${ui.button} w-full`}>
-            {working ? t('Abriendo Google…') : t('Continuar con Google')}
-          </button>
+          <GoogleButton working={working} onClick={google} />
         </div>
         <p className={`text-center text-[0.7rem] ${ui.faint}`}>{t('o con correo y contraseña')}</p>
         <form
@@ -249,11 +256,13 @@ export function AccountSignIn({
           </button>
         </form>
         <p className={`text-[0.7rem] ${ui.faint}`}>
-          {t('Google o tu contraseña solo sirven para identificarte. Después elegirás una frase de paso distinta que cifra tus datos en tu dispositivo.')}
+          {t('Al iniciar sesión se recupera tu copia privada de la cuenta. Las copias antiguas cifradas requieren su frase de paso.')}
         </p>
       </div>
     )
   }
+
+  if (!backendEnabled) return <div className="flex flex-col gap-3"><p className="text-sm">{tp('Sesión iniciada como {0}', phase.email)}</p><p className={`text-xs ${ui.faint}`}>{t('La sincronización está desactivada y tus datos siguen en este dispositivo.')}</p><button type="button" className={ui.ghost} onClick={() => guard(leave)}>{t('Cerrar sesión')}</button></div>
 
   return (
     <form
@@ -330,7 +339,7 @@ export function AccountConnected({ status, setStatus, onMessage, ui = classicUi 
     <div className="flex flex-col gap-2">
       <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${ui.line}`}>
         <span className="min-w-0 flex-1 truncate text-sm">{status?.account?.email}</span>
-        <span className={`shrink-0 text-xs ${ui.faint}`}>Google</span>
+        <span className={`shrink-0 text-xs ${ui.faint}`}>{t('Cuenta')}</span>
       </div>
 
       <p className={`text-[0.7rem] ${ui.faint}`}>

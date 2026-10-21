@@ -57,6 +57,7 @@ const bonus = (base: number, extra: number) => (base > 0 ? base + extra : 0)
 
 const score = (text: string, q: string) => {
   const n = norm(text)
+  if (q.includes(' ')) return q.split(/\s+/).every(word => n.includes(word)) ? 2 : 0
   if (n === q) return 4
   if (n.startsWith(q)) return 3
   if (n.split(/[\s\-_/·:]+/).some((w) => w.startsWith(q))) return 2
@@ -71,11 +72,17 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
   const s = skin(dark)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
+  const [filter, setFilter] = useState('all')
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLUListElement>(null)
+  const dialog = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
     input.current?.focus()
+    const before = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = before; previous?.focus() }
   }, [])
 
   const go = (section: Section) => () => {
@@ -91,6 +98,8 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
     if (!q) {
       for (const c of commands) out.push({ key: `c-${c.id}`, title: c.label, kind: t('Acción'), detail: c.hint, score: 0, run: () => { onClose(); c.run() }, icon: 'settings' })
       for (const sec of sectionList) out.push({ key: `s-${sec.id}`, title: t(sec.label), kind: t('Ir a'), score: 0, run: go(sec.id), icon: sec.icon })
+      for (const task of data.tasks.filter(x => !x.done).slice(0, 5)) out.push({ key: `t-${task.id}`, title: task.title, kind: t('Tarea'), score: 0, run: go('tareas'), icon: 'tasks' })
+      for (const note of data.notes.slice(0, 5)) out.push({ key: `v-${note.id}`, title: note.title, kind: t('Nota de la Bóveda'), score: 0, run: () => { onClose(); onOpenNote(note.id) }, icon: 'graph' })
       return out
     }
 
@@ -100,7 +109,7 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
 
     for (const c of commands) add(`c-${c.id}`, c.label, t('Acción'), bonus(score(`${c.label} ${c.hint ?? ''}`, q), 0.5), () => { onClose(); c.run() }, 'settings', c.hint)
     for (const sec of sectionList) add(`s-${sec.id}`, t(sec.label), t('Ir a'), bonus(score(t(sec.label), q), 0.4), go(sec.id), sec.icon)
-    for (const x of data.tasks) add(`t-${x.id}`, x.title, x.done ? `${t('Tarea')} · ${t('Hecha')}` : t('Tarea'), score(x.title, q), go('tareas'), 'tasks')
+    for (const x of data.tasks) add(`t-${x.id}`, x.title, x.done ? `${t('Tarea')} · ${t('Hecha')}` : t('Tarea'), score(`${x.title} ${data.subjects.find(s => s.id === x.subject)?.name ?? ''}`, q), go('tareas'), 'tasks')
     for (const x of data.works) add(`w-${x.id}`, x.title, x.kind === 'examen' ? t('Examen') : t('Proyecto'), score(x.title, q), go('examenes'), 'exams', x.date)
     for (const x of data.items.filter((i) => i.origin === 'evento')) add(`e-${x.id}-${x.date}`, x.title, t('Actividad del calendario'), score(x.title, q), go('calendario'), 'calendar', x.date)
     for (const x of data.grades) add(`g-${x.id}`, x.desc ?? '', t('Nota'), score(x.desc ?? '', q), go('notas'), 'grades')
@@ -121,23 +130,30 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
       out.push({ key: `v-${note.id}`, title: note.title, kind: t('Nota de la Bóveda'), score: titleScore > 0 ? titleScore + 0.2 : 0.5, run: () => { onClose(); onOpenNote(note.id) }, icon: 'graph', detail })
     }
 
-    return out.sort((a, b) => b.score - a.score).slice(0, 30)
+    return out.sort((a, b) => b.score - a.score)
   }
-  const hits = buildHits()
+  const allHits = buildHits().filter(hit => filter === 'all' || (filter === 'sections' ? hit.key.startsWith('s-') : filter === 'commands' ? hit.key.startsWith('c-') : !/^[sc]-/.test(hit.key)))
+  const hits = allHits.slice(0, 50)
 
-  useEffect(() => setActive(0), [query])
+  useEffect(() => setActive(0), [query, filter])
 
   useEffect(() => {
     list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
   }, [active])
 
   const onKey = (e: React.KeyboardEvent) => {
-    if (query === '' && closeKeys.includes(keyOf(e.nativeEvent)) && !e.nativeEvent.ctrlKey && !e.nativeEvent.altKey && !e.nativeEvent.metaKey) {
+    if (e.key === 'Tab') {
+      const elements = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button, input, [tabindex="0"]') ?? []).filter(el => !el.hasAttribute('disabled'))
+      const first = elements[0], last = elements[elements.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
+    } else if (e.target !== input.current && e.key !== 'Escape') return
+    else if (query === '' && closeKeys.includes(keyOf(e.nativeEvent)) && !e.nativeEvent.ctrlKey && !e.nativeEvent.altKey && !e.nativeEvent.metaKey) {
       e.preventDefault()
       onClose()
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActive((i) => Math.min(hits.length - 1, i + 1))
+      setActive((i) => Math.max(0, Math.min(hits.length - 1, i + 1)))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setActive((i) => Math.max(0, i - 1))
@@ -154,9 +170,11 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
     <div className="fixed inset-0 z-[60] flex items-start justify-center px-3 pt-[10vh]" onKeyDown={onKey}>
       <button type="button" aria-label={t('Cerrar')} onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
+        ref={dialog}
         role="dialog"
+        aria-modal="true"
         aria-label={t('Buscar')}
-        className={`relative flex max-h-[70svh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${s.line} ${dark ? 'bg-(--nv-surface) text-neutral-100 [color-scheme:dark]' : 'bg-white text-neutral-900'}`}
+        className="nv-search-dialog relative flex max-h-[75svh] w-full max-w-2xl flex-col overflow-hidden"
       >
         <div className="flex items-center gap-3 px-4">
           <Icon name="search" className={`h-4 w-4 shrink-0 ${s.muted}`} />
@@ -174,10 +192,14 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
             spellCheck={false}
             className="min-w-0 flex-1 bg-transparent py-4 text-base outline-none placeholder:text-neutral-500"
           />
-          <kbd className={`hidden rounded border px-1.5 py-0.5 font-mono text-[0.6rem] sm:block ${s.line} ${s.muted}`}>Esc</kbd>
+          <button type="button" onClick={onClose} aria-label={t('Cerrar')} className={`rounded border px-2 py-1 text-xs ${s.line} ${s.muted}`}>Esc</button>
+        </div>
+        <div className={`flex flex-wrap gap-1 border-y px-3 py-2 ${s.line}`}>
+          {[['all', 'Todo'], ['sections', 'Apartados'], ['data', 'Contenido'], ['commands', 'Acciones']].map(([id, label]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)} className="nv-search-filter rounded px-3 py-1.5 text-xs">{t(label)}</button>)}
+          <span className={`ml-auto self-center px-2 text-xs ${s.faint}`} role="status">{allHits.length} {t('resultados')}</span>
         </div>
 
-        <ul ref={list} id="initiative-search-list" role="listbox" className="nivra-scroll overflow-y-auto overscroll-contain px-1.5 pb-1.5">
+        <ul ref={list} id="initiative-search-list" role="listbox" className="nv-search-results nivra-scroll overflow-y-auto overscroll-contain">
           {hits.length === 0 ? (
             <li className={`px-3 py-6 text-center text-sm ${s.faint}`}>{t('Nada coincide con tu búsqueda.')}</li>
           ) : (
@@ -189,7 +211,7 @@ function Palette({ onClose, dark, data, commands, closeKeys, onGo, onOpenNote }:
                 aria-selected={i === active}
                 onMouseMove={() => setActive(i)}
                 onClick={hit.run}
-                className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 ${i === active ? s.active : ''}`}
+                className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 ${i === active ? s.active : ''}`}
               >
                 <Icon name={hit.icon} className={`h-4 w-4 shrink-0 ${s.muted}`} />
                 <div className="min-w-0 flex-1">

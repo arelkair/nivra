@@ -1,3 +1,6 @@
+import { PageHeading } from './PageHeading'
+import { NoteHistory } from '../NoteHistory'
+import { ShareNote } from '../ShareNote'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { dateKey } from '../../lib/store'
 import { notify, notifyWithUndo } from '../../lib/undo'
@@ -561,7 +564,7 @@ export function InitiativeVault({ dark, notes, setNotes, folders, setFolders, fo
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 md:h-[calc(100svh-8rem)]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Bóveda')}</h1>
+          <PageHeading title="Bóveda" />
           <p className={`mt-1 text-xs ${s.faint}`}>
             {tp('{0} notas', notes.length)} · {tp('{0} carpetas', folders.length)} ·{' '}
             {tp('{0} enlaces', notes.reduce((a, n) => a + new Set(linkTargets(n.body).map(norm)).size, 0))}
@@ -696,6 +699,8 @@ function NotePane({
   label: string
 }) {
   const [title, setTitle] = useState(note.title)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [sharingOpen, setSharingOpen] = useState(false)
   const area = useRef<HTMLTextAreaElement>(null)
   const [suggest, setSuggest] = useState<{ start: number; items: string[]; index: number } | null>(null)
   const [tablePanel, setTablePanel] = useState(false)
@@ -917,6 +922,8 @@ function NotePane({
 
   return (
     <>
+      {historyOpen && <NoteHistory noteId={note.id} onClose={() => setHistoryOpen(false)} />}
+      {sharingOpen && <ShareNote note={note} onClose={() => setSharingOpen(false)} />}
       <section className={`${mobileVisible ? '' : 'max-md:hidden'} flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border max-md:min-h-[70svh] ${s.line} ${s.panel}`}>
         <div className={`flex shrink-0 items-center gap-2 border-b px-3 py-2 ${s.line}`}>
           <button type="button" onClick={onBack} aria-label={t('Volver')} className={`grid h-8 w-8 place-items-center rounded-md ${s.muted} ${s.hover} md:hidden`}>
@@ -939,6 +946,8 @@ function NotePane({
               className="w-full bg-transparent px-1 py-0.5 text-lg font-medium outline-none"
             />
           </div>
+          <button type="button" aria-label={t('Historial de versiones')} title={t('Historial de versiones')} onClick={() => setHistoryOpen(true)} className={s.iconButton}><Icon name="history" className="h-4 w-4" /></button>
+          <button type="button" aria-label={t('Compartir nota')} title={t('Compartir nota')} onClick={() => setSharingOpen(true)} className={s.iconButton}><Icon name="share" className="h-4 w-4" /></button>
           <div className={`flex rounded-lg border p-0.5 ${s.line}`}>
             {(['vista', 'editar'] as const).map((m) => (
               <button key={m} type="button" onClick={() => setMode(m)} aria-pressed={mode === m} className={`rounded-md px-3 py-1 text-xs transition-colors ${mode === m ? s.active : `${s.muted} ${s.hoverText}`}`}>

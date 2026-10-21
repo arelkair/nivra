@@ -16,14 +16,16 @@ import {
   type Streak,
   type Task,
   type Work,
+  type Subject,
 } from '../lib/store'
 import { Countdowns } from '../components/Countdowns'
 import { Flame } from '../components/Flame'
 import { Empty, Icon, Label, card, line } from '../components/ui'
-import { locale, t } from '../lib/i18n'
+import { formatDate, t } from '../lib/i18n'
 import { normalizeSlots, type WidgetType } from '../lib/dashboardLayout'
 
 type Props = {
+  subjects: Subject[]
   items: CalItem[]
   tasks: Task[]
   blocks: Block[]
@@ -41,6 +43,7 @@ type Props = {
 }
 
 export function Dashboard({
+  subjects,
   items,
   tasks,
   blocks,
@@ -112,7 +115,7 @@ export function Dashboard({
               <ul className="flex flex-col">
                 {todayItems.map((e) => (
                   <Row key={e.id}>
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[e.type].dot}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                     <span className="min-w-0 flex-1 truncate">{e.title}</span>
                     <span className="shrink-0 text-[0.7rem] text-neutral-400">{t(TYPES[e.type].label)}</span>
                   </Row>
@@ -149,7 +152,7 @@ export function Dashboard({
               <ul className="flex flex-col">
                 {nextWorks.map((w) => (
                   <Row key={w.id}>
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[w.kind].dot}`} />
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[w.kind].dot}`} style={{ background: subjects.find(s => s.id === w.subject)?.color }} />
                     <span className="min-w-0 flex-1 truncate">{w.title}</span>
                     <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">
                       {shortDate(w.date!)}
@@ -169,7 +172,7 @@ export function Dashboard({
               <ul className="flex flex-col">
                 {upcoming.map(({ date, item }) => (
                   <Row key={item.id + date}>
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[item.type].dot}`} />
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPES[item.type].dot}`} style={{ background: subjects.find(x => x.id === item.subject)?.color }} />
                     <span className="min-w-0 flex-1 truncate">{item.title}</span>
                     <span className="shrink-0 font-mono text-[0.7rem] text-neutral-400">{shortDate(date)}</span>
                   </Row>
@@ -234,10 +237,10 @@ export function Dashboard({
 
       <header className="animate-[fade-in_0.4s_ease-out] shrink-0">
         <p className="text-sm text-neutral-400 first-letter:uppercase dark:text-neutral-500">
-          {today.toLocaleDateString(locale(), { weekday: 'long' })}
+          {formatDate(today, { weekday: 'long' })}
         </p>
         <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-          {today.toLocaleDateString(locale(), { day: 'numeric', month: 'long' })}
+          {formatDate(today, { day: 'numeric', month: 'long' })}
         </h2>
       </header>
 

@@ -1,3 +1,4 @@
+import { PageHeading } from './PageHeading'
 import { useState } from 'react'
 import { dateKey, eur, shortDate, type Wish } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
@@ -126,7 +127,7 @@ export function InitiativeWishlist({ wishes, setWishes, balance, onExpense, onUn
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Lista de Deseos')}</h1>
+        <PageHeading title="Lista de Deseos" />
         {balance !== null && (
           <p className={`text-xs ${s.faint}`}>
             {t('Dinero actual')}: <span className={`tabular-nums ${s.muted}`}>{eur(balance)}</span>

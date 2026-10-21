@@ -1,3 +1,4 @@
+import { noticesSilenced } from './focusEngine'
 import {
   TYPES,
   dateKey,
@@ -99,6 +100,7 @@ export function markNoticesSent(keys: string[]) {
 }
 
 export async function showSystemNotice(text: string) {
+  if (noticesSilenced()) return false
   if (notificationPermission() !== 'granted') return false
   const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined
   if (reg) {

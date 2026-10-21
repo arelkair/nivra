@@ -1,3 +1,4 @@
+import { PageHeading } from './PageHeading'
 import { Suspense, useState, type ReactNode } from 'react'
 import { lazyNamed } from '../../lib/lazy'
 import { t } from '../../lib/i18n'
@@ -100,7 +101,7 @@ const ZONES: { id: string; title: string; hint: string; tools: Tool[] }[] = [
       {
         id: 'imagenes',
         label: 'Conversor de imágenes',
-        hint: '11 formatos, con AVIF, ICO y HEIC de entrada',
+        hint: '11 formatos, con AVIF, ICO y TIFF',
         render: (s) => <ImageConverter s={s} />,
       },
       {
@@ -149,7 +150,7 @@ export function InitiativeLab({ dark }: { dark: boolean }) {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <div className="flex flex-col gap-1">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Laboratorio')}</h1>
+        <PageHeading title="Laboratorio" />
         <p className={`text-sm ${s.muted}`}>{t('Herramientas para el día a día.')}</p>
       </div>
       {ZONES.map((zone) => (

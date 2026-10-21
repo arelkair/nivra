@@ -1,3 +1,5 @@
+import { validColor } from './lib/appearance'
+import { useFocusEngine, noticesSilenced } from './lib/focusEngine'
 import { Suspense, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { lazyNamed } from './lib/lazy'
 import type { BankTab } from './pages/Bank'
@@ -75,7 +77,7 @@ const initiativeSeen = () => localStorage.getItem(INITIATIVE_SEEN_KEY) === '1' |
 
 const switchEnvironment = (initiative: boolean) => {
   localStorage.setItem('nivra-initiative', String(initiative))
-  if (initiative && !initiativeSeen()) sessionStorage.setItem(INITIATIVE_PENDING_KEY, '1')
+  if (initiative) localStorage.setItem(INITIATIVE_SEEN_KEY, '1')
   location.reload()
 }
 
@@ -191,7 +193,9 @@ const headerButton =
   'grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-black/[0.07] text-neutral-500 transition-colors hover:bg-black/[0.03] hover:text-neutral-900 disabled:opacity-30 disabled:hover:bg-transparent dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.05] dark:hover:text-white'
 
 function App() {
-  const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1')
+  useFocusEngine()
+  const [integratedStart] = useState(() => ['/account', '/login', '/changelog', '/study'].includes(location.pathname))
+  const [setupDone, setSetupDone] = useState(() => localStorage.getItem(SETUP_KEY) === '1' && !(import.meta.env.DEV && new URLSearchParams(location.search).has('welcome')))
   const [initiativeIntro, setInitiativeIntro] = useState(
     () => sessionStorage.getItem(INITIATIVE_PENDING_KEY) === '1' && !initiativeSeen(),
   )
@@ -208,7 +212,22 @@ function App() {
   const [bankTab, setBankTab] = useState<BankTab>('dinero')
   const [toasts, setToasts] = useState<Toast[]>([])
   const [sync, setSync] = useSync()
-  const cfg = useSettings()
+  const storedSettings = useSettings()
+  const cfg = integratedStart ? { ...storedSettings, initiativeEnabled: true } : storedSettings
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.contrast = cfg.highContrast ? 'high' : 'normal'
+    root.dataset.largeText = String(cfg.largeText)
+    root.dataset.dyslexia = String(cfg.dyslexiaFont)
+    root.dataset.customTheme = String(cfg.customThemeOn)
+    for (const mode of ['light', 'dark'] as const) {
+      for (const key of ['background', 'surface', 'text', 'accent'] as const) {
+        const value = cfg.customTheme?.[mode]?.[key]
+        if (value && validColor(value)) root.style.setProperty(`--custom-${mode}-${key}`, value)
+        else root.style.removeProperty(`--custom-${mode}-${key}`)
+      }
+    }
+  }, [cfg.customTheme, cfg.customThemeOn, cfg.highContrast, cfg.largeText, cfg.dyslexiaFont])
   const [settingsOpen, setSettingsOpen] = useState(() => shouldReturnToSync() && !cfg.initiativeEnabled)
 
   const [pageHistory, setPageHistory] = useState<PageId[]>(() => [pageFromPath()])
@@ -529,6 +548,7 @@ function App() {
   useEffect(() => {
     if (alreadyNotified.current) return
     alreadyNotified.current = true
+    if (noticesSilenced()) return
     const list = pendingNotices(new Date(), {
       countdowns,
       anniversaries,
@@ -661,7 +681,7 @@ function App() {
     return () => removeEventListener('keydown', onKey)
   }, [cfg.shortcutsOn, cfg.initiativeEnabled, cfg.enabledShortcuts, cfg.customKeys, irA, back, forward, theme, setTheme])
 
-  if (!setupDone) {
+  if (!setupDone && !integratedStart) {
     return (
       <>
         <Suspense fallback={null}>
@@ -669,6 +689,7 @@ function App() {
             onDone={(name) => {
               cfg.setUserName(name)
               localStorage.setItem(SETUP_KEY, '1')
+              if (import.meta.env.DEV && new URLSearchParams(location.search).has('welcome')) history.replaceState(null, '', '/dashboard')
               setSetupDone(true)
             }}
           />
@@ -919,6 +940,7 @@ function App() {
             <Suspense fallback={null}>
             {page === 'dashboard' && (
               <Dashboard
+                subjects={subjects}
                 items={items}
                 tasks={tasks}
                 blocks={blocks}
@@ -1005,7 +1027,7 @@ function App() {
             )}
             {page === 'lab' && cfg.labEnabled && <Lab subjects={subjects} />}
             {page === 'recordatorios' && (
-              <Reminders reminders={reminders} setReminders={setReminders} works={works} />
+              <Reminders subjects={subjects} reminders={reminders} setReminders={setReminders} works={works} />
             )}
             </Suspense>
           </main>

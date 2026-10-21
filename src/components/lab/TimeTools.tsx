@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Segmented, button, ghost, input, line, select } from '../ui'
-import { locale, t, tp } from '../../lib/i18n'
+import { formatDate, t, tp } from '../../lib/i18n'
 import { playAlarm, type AlarmPattern, toNumber } from '../../lib/lab'
 import { Field, NumberInput, Result } from './shared'
 
@@ -61,7 +61,7 @@ export function DateCalculator() {
       if (unit === 'years') result.setFullYear(result.getFullYear() + signed)
       content = (
         <Result label={t('Fecha resultante')}>
-          {result.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          {formatDate(result, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </Result>
       )
     }
@@ -72,7 +72,7 @@ export function DateCalculator() {
     content = (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Result label={t('Día de la semana')}>
-          {a.toLocaleDateString(locale(), { weekday: 'long' })}
+          {formatDate(a, { weekday: 'long' })}
         </Result>
         <Result label={t('Día del año')}>{dayOfYear}</Result>
       </div>

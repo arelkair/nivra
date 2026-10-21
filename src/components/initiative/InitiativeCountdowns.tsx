@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { UNITS, countdown, progress, type Countdown } from '../../lib/store'
 import { dateOf, draftToCountdown, freshDraft, timeOf, toDraft, type Draft } from './countdownDraft'
 import { notifyWithUndo } from '../../lib/undo'
-import { locale, t, tp } from '../../lib/i18n'
+import { formatDate, t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { Panel } from './panel'
@@ -96,7 +96,7 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
                 <p className="truncate text-sm font-medium">{c.title}</p>
                 <p className={`truncate text-[0.7rem] ${s.faint}`}>
                   {c.subtitle ? `${c.subtitle} · ` : ''}
-                  {target.toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: 'numeric' })} {timeOf(target)}
+                  {formatDate(target, { day: 'numeric', month: 'short', year: 'numeric' })} {timeOf(target)}
                 </p>
               </div>
               <button

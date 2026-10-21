@@ -1,3 +1,5 @@
+import { PageHeading } from './PageHeading'
+import { TaskBoard } from '../study/TaskBoard'
 import { useState } from 'react'
 import { dateKey, reorder, taskWhen, shortDate, textOn, type Subject, type Task } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
@@ -30,6 +32,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
   const s = skin(dark)
   const todayKey = dateKey(new Date())
   const [filter, setFilter] = useState<Filter>('pendientes')
+  const [view, setView] = useState<'list' | 'board'>('list')
   const [subjectFilter, setSubjectFilter] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
@@ -89,11 +92,14 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Tareas')}</h1>
+        <PageHeading title="Tareas" />
         <p className={`font-mono text-xs ${s.faint}`}>
           {tp('{0} pendientes', tasks.filter((task) => !task.done).length)}
         </p>
       </div>
+      <nav className="flex gap-2" aria-label={t('Vista de tareas')}><button type="button" onClick={() => setView('list')} aria-pressed={view === 'list'} className={s.ghost}>{t('Lista')}</button><button type="button" onClick={() => setView('board')} aria-pressed={view === 'board'} className={s.ghost}>{t('Kanban')}</button></nav>
+      {view === 'board' && <TaskBoard tasks={tasks} subjects={subjects} setTasks={setTasks} />}
+      {view === 'list' && <div className="contents">
 
       <form
         onSubmit={(ev) => {
@@ -328,6 +334,7 @@ export function InitiativeTasks({ tasks, setTasks, subjects, notes, onCreateNote
           {t('Vaciar')}
         </button>
       )}
+      </div>}
     </div>
   )
 }
@@ -363,6 +370,7 @@ function TaskDetail({
   return (
     <div className={`flex flex-col gap-4 border-t px-4 py-4 ${s.line}`}>
       <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5 sm:col-span-2"><span className={label}>{t('Repetición')}</span><select value={task.repeat || ''} onChange={e => onPatch({ repeat: (e.target.value || undefined) as Task['repeat'] })} className={s.field}><option value="">{t('No repetir')}</option><option value="daily">{t('Cada día')}</option><option value="weekly">{t('Cada semana')}</option><option value="monthly">{t('Cada mes')}</option></select><span className="text-xs text-(--minimal-muted)">{t('Al completarla se crea la siguiente tarea. Añade una fecha para activar la repetición.')}</span></label>
         <label className="flex flex-col gap-1.5 sm:col-span-2">
           <span className={label}>{t('Título')}</span>
           <input

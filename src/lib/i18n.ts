@@ -1,8 +1,11 @@
-export type Lang = 'es' | 'en'
+import { GL } from './gl'
+import { FEATURE_EN } from './featureMessages'
+export type Lang = 'es' | 'en' | 'gl'
 
 export const LANGS: { id: Lang; label: string }[] = [
   { id: 'es', label: 'Español' },
   { id: 'en', label: 'English' },
+  { id: 'gl', label: 'Galego' },
 ]
 
 const KEY = 'nivra-lang'
@@ -10,7 +13,8 @@ const KEY = 'nivra-lang'
 const guardado = (): Lang => {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw === 'es' || raw === 'en') return raw
+    if (raw === 'es' || raw === 'en' || raw === 'gl') return raw
+    if (navigator.language.toLowerCase().startsWith('gl')) return 'gl'
     return navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en'
   } catch {
     return 'es'
@@ -22,7 +26,20 @@ if (typeof document !== 'undefined') document.documentElement.lang = lang
 
 export const getLang = () => lang
 
-export const locale = () => (lang === 'en' ? 'en-GB' : 'es-ES')
+export const locale = () => (lang === 'gl' ? 'gl-ES' : lang === 'en' ? 'en-GB' : 'es-ES')
+
+// Some embedded browsers omit Galician ICU data. Translate date parts explicitly
+// so their locale fallback cannot silently show Spanish month and weekday names.
+export function formatDate(date: Date, options: Intl.DateTimeFormatOptions): string {
+  if (lang !== 'gl') return date.toLocaleDateString(locale(), options)
+  const months = ['xaneiro', 'febreiro', 'marzo', 'abril', 'maio', 'xuño', 'xullo', 'agosto', 'setembro', 'outubro', 'novembro', 'decembro']
+  const weekdays = ['domingo', 'luns', 'martes', 'mércores', 'xoves', 'venres', 'sábado']
+  return new Intl.DateTimeFormat('es-ES', options).formatToParts(date).map(part => {
+    const width = part.type === 'month' ? options.month : options.weekday
+    const name = part.type === 'month' ? months[date.getMonth()] : part.type === 'weekday' ? weekdays[date.getDay()] : undefined
+    return name && (width === 'long' || width === 'short' || width === 'narrow') ? width === 'long' ? name : name.slice(0, width === 'narrow' ? 1 : 3) : part.value
+  }).join('')
+}
 
 export function setLang(next: Lang) {
   localStorage.setItem(KEY, next)
@@ -30,6 +47,62 @@ export function setLang(next: Lang) {
 }
 
 const EN: Record<string, string> = {
+  'Tu espacio, a tu ritmo.': 'Your space, your pace.',
+  'Un poco de orden. Más espacio para ti.': 'A little order. More room for you.',
+  'Tus días, tus ideas y tus planes, en un lugar tranquilo que puedes hacer tuyo.': 'Your days, ideas and plans, in a quiet place you can make your own.',
+  'Organiza lo importante': 'Organise what matters',
+  'Conecta tus ideas': 'Connect your ideas',
+  'Hazlo a tu manera': 'Make it yours',
+  'Privado desde el principio. Sin cuenta obligatoria.': 'Private from the start. No account required.',
+  Progreso: 'Progress',
+  'Empecemos por ti': 'Let’s start with you',
+  'Elige tu espacio': 'Choose your space',
+  'Tu nombre (opcional)': 'Your name (optional)',
+  Entorno: 'Environment',
+  Recomendado: 'Recommended',
+  'Un espacio minimalista con Inicio personalizable y Bóveda.': 'A minimal space with a customisable Home and Vault.',
+  'La organización original de Nivra, con un aspecto renovado.': 'Nivra’s original organisation, with a fresh look.',
+  'Entrar en Nivra': 'Open Nivra',
+  'Podrás cambiar todo esto en Ajustes cuando quieras.': 'You can change all of this in Settings whenever you like.',
+  'Personalizar Inicio': 'Customise Home',
+  'Terminar edición': 'Finish editing',
+  'Elegir paneles': 'Choose panels',
+  'Elige los paneles y arrástralos o usa las flechas para moverlos.': 'Choose panels, then drag them or use the arrows to move them.',
+  'Elige paneles para crear tu Inicio.': 'Choose panels to create your Home.',
+  'Restablecer distribución': 'Reset layout',
+  'Tema propio y accesibilidad': 'Custom theme and accessibility',
+  'Tema propio': 'Custom theme',
+  'Edita los colores de los modos claro y oscuro. Los cambios se guardan automáticamente.': 'Edit the colours for light and dark modes. Changes save automatically.',
+  'Usar tema propio': 'Use custom theme',
+  'Nombre del tema': 'Theme name',
+  'Mi tema': 'My theme',
+  Superficie: 'Surface',
+  Acento: 'Accent',
+  'Restablecer tema': 'Reset theme',
+  'Guardar tema': 'Save theme',
+  'Temas guardados': 'Saved themes',
+  'Quitar tema guardado': 'Remove saved theme',
+  Accesibilidad: 'Accessibility',
+  'Alto contraste': 'High contrast',
+  'Letra grande': 'Large text',
+  'Fuente para dislexia': 'Dyslexia font',
+  'Configurar dinero': 'Set up money',
+  Apartados: 'Sections',
+  Acciones: 'Actions',
+  resultados: 'results',
+  'Una cosa cada vez.': 'One thing at a time.',
+  'Un lugar para todo lo que viene.': 'A place for everything ahead.',
+  'Dale forma a tu semana.': 'Shape your week.',
+  'Prepárate con tiempo.': 'Give yourself time to prepare.',
+  'Tu progreso, con perspectiva.': 'Your progress, in perspective.',
+  'Tus cuentas, claras.': 'Your money, at a glance.',
+  'Lo que te gustaría hacer realidad.': 'What you’d like to make happen.',
+  'Ten a mano tus próximos pagos.': 'Keep track of upcoming payments.',
+  'Deja aquí lo que no quieres olvidar.': 'A place for things to remember.',
+  'Algo que esperar.': 'Something to look forward to.',
+  'Pequeñas herramientas para grandes ideas.': 'Small tools for big ideas.',
+  'Un espacio para pensar y conectar.': 'A space to think and connect.',
+  'Haz que Nivra se adapte a ti.': 'Make Nivra work for you.',
   'Color de texto': 'Text colour',
   'Color del texto': 'Text colour',
   'Color del recuadro del texto': 'Text box colour',
@@ -1425,10 +1498,11 @@ const EN: Record<string, string> = {
   'Mueve los datos de este código a tu cuenta (Google o correo). El código y sus datos no se borran y seguirán funcionando en los dispositivos que lo usen.': 'Move this code\'s data to your account (Google or e-mail). The code and its data are not deleted and keep working on the devices that use it.',
 }
 
+Object.assign(EN, FEATURE_EN)
 export const tp = (s: string, ...args: (string | number)[]) =>
   args.reduce<string>((acc, v, i) => acc.split('{' + i + '}').join(String(v)), t(s))
 
 export const weekdayLetters = () =>
-  lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['L', 'M', 'X', 'J', 'V', 'S', 'D']
+  lang === 'gl' ? ['L', 'M', 'M', 'X', 'V', 'S', 'D'] : lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
-export const t = (s: string): string => (lang === 'en' ? (EN[s] ?? s) : s)
+export const t = (s: string): string => (lang === 'gl' ? (GL[s] ?? s) : lang === 'en' ? (EN[s] ?? s) : s)

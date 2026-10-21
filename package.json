@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:interface": "node scripts/verify-interface.mjs",
+    "test:security": "node scripts/verify-security.mjs",
+    "test:features": "node scripts/verify-features.mjs",
+    "test:study": "node scripts/verify-study.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,13 +24,14 @@
     "@supabase/supabase-js": "^2.117.2",
     "decimal.js": "^10.6.0",
     "gifenc": "^1.0.3",
-    "heic2any": "^0.0.4",
+    "ical.js": "^2.2.1",
     "pdf-lib": "^1.17.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "utif": "^3.1.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",

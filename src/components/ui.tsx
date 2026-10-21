@@ -2,19 +2,19 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { locale, t } from '../lib/i18n'
 import { playTick } from '../lib/sound'
 
-export const line = 'border-black/[0.07] dark:border-white/[0.08]'
+export const line = 'border-(--minimal-line)'
 
 export const card = `nivra-menu rounded-2xl border bg-[var(--surface)] ${line}`
 
 export const input =
-  'w-full rounded-xl border border-black/[0.07] bg-[var(--sunken)] px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-400 sm:px-4 sm:py-3 dark:border-white/[0.08] dark:focus:border-neutral-600'
+  'nv-field w-full rounded-md border bg-(--sunken) px-3 py-2 text-sm outline-none transition-colors placeholder:text-(--minimal-muted)'
 
 export const select = `${input} appearance-none`
 
 export const button =
-  'rounded-xl bg-neutral-800 px-4 py-2.5 text-sm font-medium text-neutral-50 transition-opacity hover:opacity-85 active:scale-[.98] sm:px-5 sm:py-3 dark:bg-white dark:text-neutral-900'
+  'nv-primary rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-85 active:scale-[.98]'
 
-export const ghost = `rounded-xl border px-4 py-2.5 text-sm text-neutral-500 transition-colors hover:bg-black/[0.03] sm:px-5 ${line} dark:text-neutral-400 dark:hover:bg-white/[0.04]`
+export const ghost = `nv-ghost rounded-md border px-3 py-2 text-sm text-(--minimal-muted) transition-colors hover:bg-(--sunken) ${line}`
 
 export function Label({ children }: { children: ReactNode }) {
   return (
@@ -278,6 +278,8 @@ export function Collapsible({
         />
       </button>
       <div
+        inert={!open}
+        aria-hidden={!open}
         className={`grid ${animar ? 'transition-[grid-template-rows] duration-300 ease-out' : ''} ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
@@ -488,6 +490,9 @@ const PATHS: Record<string, ReactNode> = {
     </>
   ),
   lock: <path d="M7 11V8a5 5 0 0110 0v3M6 11h12v9H6z" />,
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0116 0v2" /></>,
+  history: <><path d="M3 10a9 9 0 119 11M3 4v6h6M12 7v5l3 2" /></>,
+  share: <><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4" /></>,
   unlock: <path d="M7 11V8a5 5 0 019.6-1.6M6 11h12v9H6z" />,
   initiative: <path d="M13 3L5 13.5h6L10 21l8-10.5h-6z" />,
   classic: <path d="M5 4.5h10.5A3.5 3.5 0 0119 8v12.5H8.5A3.5 3.5 0 015 17zM5 17a3.5 3.5 0 013.5-3.5H19" />,

@@ -4,14 +4,14 @@ A privacy-first personal organizer for the browser. Calendar, timetable, tasks,
 exams, notes and personal finances, all stored on your own device.
 
 No account required, no tracking. Everything lives in `localStorage` unless you
-explicitly turn on the optional end-to-end encrypted sync, either with a code or
-with a Google account.
+connect an account for automatic private cloud restore, or enable encrypted sync
+with a code or a legacy passphrase.
 
 Nivra ships two interfaces over the same data:
 
 - **Nivra Classic**, the original layout with swappable dashboard blocks,
   backgrounds, themes and the full toolset.
-- **Initiative** (beta), a minimalist redesign with its own sections, a note
+- **Initiative** (the default for new installations), a minimalist redesign with its own sections, a note
   vault, a laboratory of tools, global search and more. Switch between the two
   at any time with the button next to Settings; nothing is lost.
 
@@ -40,7 +40,7 @@ names used in the timetable.
 - **Laboratory**: scientific calculator (arbitrary precision, fractions,
   complex numbers, calculus, statistics, equations, base-N, matrices and
   tables), dice, roulette, image converter (11 formats including AVIF, ICO,
-  TIFF and HEIC input), PDF tools (merge, split, rotate, images to PDF) and
+  TIFF input; HEIC remains disabled), PDF tools (merge, split, rotate, images to PDF) and
   Base64. Files are processed in the browser and never uploaded.
 - **Links to Initiative** inside vault notes: the editor's Initiative button inserts
   a link to a section or to an exact task, exam, reminder, wish, subscription,
@@ -48,26 +48,40 @@ names used in the timetable.
 - **Flashcards** with spaced repetition: decks, bulk import and review
   sessions that schedule each card by how well you remembered it.
 - **Global search** across every section and the contents of vault notes.
+- **Customisable Home**: choose panels, drag to reorder or use the arrow buttons;
+  the layout is saved on the device.
+- **Custom themes**: edit and save separate light and dark palettes in Settings →
+  Appearance and sound. Accessibility options include high contrast, larger text
+  and a locally hosted OpenDyslexic font.
 - **Keyboard shortcuts**, all configurable, with a cheat sheet on `?`.
 - **Music and ambience** player for Spotify, YouTube and SoundCloud links and
   playlists, plus ambient sounds and a sleep timer.
 - **Quick note**, a small draggable window that writes into the vault.
 
-Also included: Spanish and English interfaces, undo for deletions, light and
+Also included: Spanish, English and Galician interfaces, undo for deletions, light and
 dark themes, browser notifications, automatic daily backups, JSON and CSV
 exports and `.ics` export.
 
 ## Language
 
-The interface ships in Spanish and English. The language is chosen on the setup
+The interface ships in Spanish, English and Galician. The language is chosen on the setup
 screen the first time the app runs, defaults to the browser locale, and can be
 changed later under Settings. It is stored under `nivra-lang`.
 
-Translations live in `src/lib/i18n.ts`, keyed by the Spanish source string, so
+Translations live in `src/lib/i18n.ts` and `src/lib/gl*.ts`, keyed by the Spanish source string, so
 `t()` is the identity function in Spanish and any missing translation falls back
 to it rather than showing a key. Stored values, category names and localStorage
 keys are deliberately left untranslated, since changing them would orphan data
 already saved on the device.
+
+### Reviewing the Minimal interface locally
+
+Run `npm run dev -- --host 127.0.0.1` and open the local URL printed by Vite.
+This runs a local preview without deploying. Existing environment choices are
+preserved; new installations start with Initiative selected in the welcome flow.
+In development, add `?welcome=1` to the URL to review the welcome flow again.
+Run `npm run test:interface` to verify Galician catalogue coverage and placeholders,
+locale handling, calendar subject propagation and theme colour validation.
 
 ## Pages and deploy
 
@@ -121,9 +135,15 @@ at `/privacy` and `/cookies`, and the security contact at
 
 ## Optional device sync
 
+For local Google sign-in, put `VITE_SUPABASE_AUTH_ENABLED=true` in `.env.local`.
+Authentication is independent of `VITE_SUPABASE_ENABLED`, which can stay `false`
+to keep database synchronization disabled. The Google
+provider must be enabled in Supabase, with `http://127.0.0.1:5173/account` and
+`http://localhost:5173/account` allowed as Auth redirect URLs. No Google client
+secret belongs in the frontend or any `VITE_` variable.
+
 Sync is disabled by default. Nothing leaves the browser until it is turned on.
-There are two ways to link devices, both end-to-end encrypted with AES-GCM, so
-the server only ever holds ciphertext it cannot read.
+New accounts restore automatically through a private, RLS-protected account_sync row. This copy is readable by the service and is not end-to-end encrypted. Code and legacy passphrase copies retain AES-GCM encryption.
 
 ### With a code (no account)
 
@@ -137,7 +157,11 @@ Creating a code derives two independent values from it:
 Entering the same code on another device downloads and decrypts that data and
 keeps both devices in sync. Without the code the data is unrecoverable.
 
-### With an account (Google or e-mail)
+### Automatic account restore
+
+With VITE_SUPABASE_ENABLED=true, signing in restores the private account copy and combines local task records on first connection. New accounts use account_sync, protected by owner-only RLS and conditional updates. This copy is not end-to-end encrypted. Legacy encrypted account_vaults rows remain untouched and still require their passphrase.
+
+### Legacy passphrase account copies (Google or e-mail)
 
 Settings > Sync (in Classic, or Settings > Sync in Initiative) offers
 **Continue with Google** (Supabase Auth, OAuth with PKCE) or **e-mail and
@@ -232,4 +256,4 @@ src/
 React 19, TypeScript, Tailwind CSS 4 and Vite. Supabase (Auth and Postgres) for
 the optional sync, with `@supabase/supabase-js` loaded only on demand. Arbitrary-precision maths with
 `decimal.js`, PDF editing with `pdf-lib`, and lazily loaded codecs (`gifenc`,
-`utif`, `heic2any`, `@jsquash/avif`) for the image converter.
+`utif`, `@jsquash/avif`) for the image converter.

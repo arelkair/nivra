@@ -1,4 +1,5 @@
 import { PUBLIC_KEY, SUPABASE_URL, getSession, getSupabase } from './supabase'
+import { backendEnabled, requireAuth, requireBackend } from './backend'
 
 const RPC = `${SUPABASE_URL}/rest/v1/rpc`
 
@@ -9,6 +10,8 @@ const EVENT_NAME = 'nivra-sync'
 export const SYNC_VISUAL_KEY = 'nivra-sync-visual'
 
 const VISUAL_KEYS = new Set([
+  'nivra-custom-theme', 'nivra-custom-theme-on', 'nivra-saved-themes', 'nivra-high-contrast', 'nivra-large-text', 'nivra-dyslexia-font',
+  'nivra-initiative-home-order', 'nivra-initiative-home-hidden',
   'nivra-accent',
   'nivra-theme',
   'nivra-theme-style',
@@ -55,7 +58,7 @@ export type SyncState = {
   code?: string
   // Account mode: a Google account identifies the vault; the AES key is
   // derived on the device from a passphrase and kept here, like the code.
-  account?: { key: string; email: string; userId: string }
+  account?: { key: string; email: string; userId: string; managed?: boolean }
   lastSeen: string | null
   // Local edits not yet confirmed on the server.
   dirty?: boolean
@@ -68,7 +71,7 @@ type Transport = {
   stamp: () => Promise<string | null>
   get: () => Promise<Remote | null>
   put: (payload: string) => Promise<string>
-  key: () => Promise<CryptoKey>
+  key?: () => Promise<CryptoKey>
 }
 
 type StoredEntry = { v: string; t: number }
@@ -99,13 +102,14 @@ export const readSyncState = () => readJson<SyncState | null>(STATE_KEY, null)
 export function saveSyncState(state: SyncState | null) {
   if (state) localStorage.setItem(STATE_KEY, JSON.stringify(state))
   else localStorage.removeItem(STATE_KEY)
+  dispatchEvent(new Event('nivra-sync-status'))
 }
 
 const readTimes = () => readJson<Record<string, number>>(TIMES_KEY, {})
 const saveTimes = (t: Record<string, number>) =>
   localStorage.setItem(TIMES_KEY, JSON.stringify(t))
 
-const internal = (k: string) => k === STATE_KEY || k === TIMES_KEY || k === SYNC_VISUAL_KEY
+const internal = (k: string) => k === STATE_KEY || k === TIMES_KEY || k === SYNC_VISUAL_KEY || k === 'nivra-return-sync'
 
 const syncsVisual = () => readJson<boolean>(SYNC_VISUAL_KEY, true) !== false
 
@@ -238,7 +242,7 @@ function mergeVaults(local: Payload, remote: Payload) {
     const a = local.keys[k]
     const b = remote.keys[k]
     if (a && b) {
-      const wins = b.t > a.t ? b : a
+      const wins = b.t >= a.t ? b : a
       keys[k] = wins
       if (wins.v !== a.v) localChanged = true
       if (wins.v !== b.v) remoteChanged = true
@@ -258,6 +262,7 @@ function apply(paquete: Payload) {
   const times = readTimes()
   let touched = false
   for (const [k, e] of Object.entries(paquete.keys)) {
+    if (!k.startsWith('nivra-') || internal(k) || typeof e?.v !== 'string' || !Number.isFinite(e.t)) continue
     if (!includeVisual && VISUAL_KEYS.has(k)) continue
     if (localStorage.getItem(k) !== e.v) {
       localStorage.setItem(k, e.v)
@@ -350,19 +355,50 @@ function accountTransport(account: NonNullable<SyncState['account']>): Transport
 }
 
 const transportFor = (state: SyncState): Transport =>
-  state.account ? accountTransport(state.account) : codeTransport(normalizeCode(state.code ?? ''))
+  state.account ? state.account.managed ? managedTransport(state.account) : accountTransport(state.account) : codeTransport(normalizeCode(state.code ?? ''))
+
+function managedTransport(account: NonNullable<SyncState['account']>): Transport {
+  let revision: string | null = null
+  const client = async () => {
+    const session = await getSession()
+    if (!session || session.user.id !== account.userId) throw new Error(SESSION_ERROR)
+    return getSupabase()
+  }
+  return {
+    stamp: async () => {
+      const { data, error } = await (await client()).from('account_sync').select('updated_at').eq('user_id', account.userId).maybeSingle()
+      if (error) throw new Error(error.message)
+      return data?.updated_at ?? null
+    },
+    get: async () => {
+      const { data, error } = await (await client()).from('account_sync').select('payload,updated_at').eq('user_id', account.userId).maybeSingle()
+      if (error) throw new Error(error.message)
+      revision = data?.updated_at ?? null
+      return data ? { payload: JSON.stringify(data.payload), updated_at: data.updated_at } : null
+    },
+    put: async payload => {
+      const sb = await client()
+      const result = revision ? await sb.from('account_sync').update({ payload: JSON.parse(payload) }).eq('user_id', account.userId).eq('updated_at', revision).select('updated_at').maybeSingle() : await sb.from('account_sync').insert({ user_id: account.userId, payload: JSON.parse(payload) }).select('updated_at').single()
+      if (result.error || !result.data) throw new Error(result.error?.message || 'Otro dispositivo ha actualizado los datos. Se reintentará la sincronización.')
+      revision = result.data.updated_at
+      return revision!
+    },
+  }
+}
 
 let changes = 0
 
 async function pushWith(transport: Transport, state: SyncState, paquete: Payload) {
-  const ts = await transport.put(await encrypt(text(paquete), await transport.key()))
+  const ts = await transport.put(transport.key ? await encrypt(text(paquete), await transport.key()) : text(paquete))
   const nextState = { ...state, lastSeen: ts, error: undefined }
   saveSyncState(nextState)
   return nextState
 }
 
 export async function pushChanges(state: SyncState, paquete = localPayload()) {
+  requireBackend()
   assertSecureContext()
+  if (state.account?.managed) return (await runSync({ ...state, dirty: true })).state
   return pushWith(transportFor(state), state, paquete)
 }
 
@@ -370,12 +406,13 @@ async function readRemote(transport: Transport) {
   const row = await transport.get()
   if (!row) return null
   return {
-    paquete: toPayload(await decrypt(row.payload, await transport.key())),
+    paquete: toPayload(transport.key ? await decrypt(row.payload, await transport.key()) : row.payload),
     updated_at: row.updated_at,
   }
 }
 
 export async function runSync(state: SyncState) {
+  requireBackend()
   const transport = transportFor(state)
   const started = changes
   const settle = (next: SyncState) => {
@@ -429,6 +466,7 @@ async function connectWith(initial: SyncState) {
 }
 
 export async function connect(code: string) {
+  requireBackend()
   assertSecureContext()
   const clean = normalizeCode(code)
   if (clean.length !== 16) throw new Error('El código debe tener 16 caracteres.')
@@ -470,9 +508,57 @@ export async function accountVaultExists() {
   return !!data
 }
 
+// New accounts use a private, RLS-protected copy that can be restored with
+// Google alone. Legacy passphrase-encrypted vaults remain untouched.
+let automaticConnection: Promise<SyncState | null> | null = null
+export function connectGoogleAccount() {
+  automaticConnection ??= connectGoogleAccountImpl().finally(() => { automaticConnection = null })
+  return automaticConnection
+}
+async function connectGoogleAccountImpl() {
+  requireBackend()
+  const session = await getSession()
+  if (!session) throw new Error(SESSION_ERROR)
+  const previous = readSyncState()
+  if (previous?.account?.userId === session.user.id) return (await runSync(previous)).state
+  if (await accountVaultExists()) return null
+  const initial: SyncState = { account: { key: '', managed: true, userId: session.user.id, email: session.user.email ?? '' }, lastSeen: null, dirty: true }
+  const transport = managedTransport(initial.account!)
+  const remote = await readRemote(transport)
+  const ownerKey = 'device-nivra-data-owner', owner = localStorage.getItem(ownerKey)
+  if (owner && owner !== session.user.id) {
+    localStorage.setItem(`device-nivra-account-cache:${owner}`, JSON.stringify(localPayload()))
+    const cached = readJson<Payload>(`device-nivra-account-cache:${session.user.id}`, { v: 2, keys: {} })
+    const keys = Object.keys(localValues())
+    for (const key of keys) localStorage.removeItem(key)
+    saveTimes({})
+    apply(cached)
+    dispatchEvent(new Event(EVENT_NAME))
+  }
+  if (remote) {
+    const local = localPayload()
+    for (const [key, entry] of Object.entries(local.keys)) {
+      const other = remote.paquete.keys[key]
+      if (!other) { remote.paquete.keys[key] = entry; continue }
+      try {
+        const a = JSON.parse(entry.v), b = JSON.parse(other.v)
+        if (!Array.isArray(a) || !Array.isArray(b) || ![...a, ...b].every(row => row && typeof row.id === 'string')) continue
+        const ordered = entry.t > other.t ? [...b, ...a] : [...a, ...b]
+        const merged = JSON.stringify([...new Map(ordered.map(row => [row.id, row])).values()])
+        if (merged !== other.v) remote.paquete.keys[key] = { v: merged, t: Date.now() }
+      } catch { /* Scalar settings use timestamp conflict resolution. */ }
+    }
+    apply(remote.paquete)
+  }
+  const result = await runSync(initial)
+  localStorage.setItem(ownerKey, session.user.id)
+  return result.state
+}
+
 // Creates this account's vault the first time, or joins the existing one by
 // checking the passphrase against it.
 export async function connectAccount(passphrase: string, options: { migrate?: boolean } = {}) {
+  requireBackend()
   assertSecureContext()
   const session = await getSession()
   if (!session) throw new Error(SESSION_ERROR)
@@ -550,11 +636,12 @@ const authError = (e: { code?: string; message: string }) =>
 export const MIN_PASSWORD = 8
 
 export async function signUpWithEmail(email: string, password: string) {
+  requireAuth()
   const sb = await getSupabase()
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${location.origin}/` },
+    options: { emailRedirectTo: `${location.origin}/account` },
   })
   if (error) throw authError(error)
   // Without a session, the e-mail still has to be confirmed.
@@ -562,28 +649,32 @@ export async function signUpWithEmail(email: string, password: string) {
 }
 
 export async function signInWithEmail(email: string, password: string) {
+  requireAuth()
   const sb = await getSupabase()
   const { error } = await sb.auth.signInWithPassword({ email, password })
   if (error) throw authError(error)
 }
 
 export async function sendPasswordReset(email: string) {
+  requireAuth()
   const sb = await getSupabase()
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/` })
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/account` })
   if (error) throw authError(error)
 }
 
 export async function setNewPassword(password: string) {
+  requireAuth()
   const sb = await getSupabase()
   const { error } = await sb.auth.updateUser({ password })
   if (error) throw authError(error)
 }
 
 export async function signInWithGoogle() {
+  requireAuth()
   const sb = await getSupabase()
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${location.origin}/` },
+    options: { redirectTo: `${location.origin}/account`, queryParams: { prompt: 'select_account' } },
   })
   if (error) throw new Error(error.message)
 }
@@ -597,9 +688,10 @@ export async function disconnectAccount(options: { keepState?: boolean } = {}) {
 }
 
 export async function deleteCloudData(state: SyncState) {
+  requireBackend()
   if (!state.account) return
   const { error } = await (await getSupabase())
-    .from('account_vaults')
+    .from(state.account.managed ? 'account_sync' : 'account_vaults')
     .delete()
     .eq('user_id', state.account.userId)
   if (error) throw new Error(error.message)
@@ -617,6 +709,7 @@ export function markChanged(storageKey: string, inicial = false) {
   if (!state) return
   changes++
   saveSyncState({ ...state, dirty: true })
+  if (!backendEnabled) return
   if (pendiente) clearTimeout(pendiente)
   pendiente = setTimeout(() => {
     runSync(readSyncState() ?? state).catch((e) =>

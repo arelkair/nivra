@@ -1,3 +1,4 @@
+import { PageHeading } from './PageHeading'
 import { useState } from 'react'
 import { dateKey, shortDate, textOn, type Grade, type Subject, type Work } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
@@ -114,7 +115,7 @@ export function InitiativeGrades({ grades, setGrades, subjects, works, dark }: P
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Notas')}</h1>
+        <PageHeading title="Notas" />
         <p className={`font-mono text-xs ${s.faint}`}>
           {visible.length} {t(visible.length === 1 ? 'nota' : 'notas')}
         </p>

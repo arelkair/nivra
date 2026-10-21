@@ -1,7 +1,8 @@
+import { PageHeading } from './PageHeading'
 import { useState } from 'react'
 import { MAIN_ACCOUNT, accountOf, dateKey, eur, type BankAccount, type Subscription } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
-import { locale, t, tp } from '../../lib/i18n'
+import { formatDate, t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { cleanDecimal, nextRenewal, parseAmount } from './moneyCalc'
@@ -107,7 +108,7 @@ export function InitiativeSubscriptions({ subs, setSubs, accounts, dark }: Props
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Suscripciones')}</h1>
+        <PageHeading title="Suscripciones" />
         {upcoming && (
           <p className={`text-xs ${s.faint}`}>
             {upcoming.sub.title} · {eur(upcoming.sub.price)}
@@ -125,7 +126,7 @@ export function InitiativeSubscriptions({ subs, setSubs, accounts, dark }: Props
       </div>
 
       <section className={`flex flex-col gap-3 rounded-2xl border p-4 ${s.line} ${s.panel}`}>
-        <p className={label}>{now.toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}</p>
+        <p className={label}>{formatDate(now, { month: 'long', year: 'numeric' })}</p>
         <div className="grid grid-cols-[repeat(16,minmax(0,1fr))] gap-1.5 sm:grid-cols-[repeat(31,minmax(0,1fr))]">
           {Array.from({ length: lastDay }, (_, i) => i + 1).map((d) => {
             const renews = renewalDays.has(d)
@@ -237,7 +238,7 @@ export function InitiativeSubscriptions({ subs, setSubs, accounts, dark }: Props
                     <span className={`block text-[0.7rem] ${s.faint}`}>
                       {sub.paused
                         ? tp('Se renovaba el día {0} de cada mes', sub.day)
-                        : `${next.days === 0 ? t('Hoy') : tp('En {0} días', next.days)} · ${next.date.toLocaleDateString(locale(), { day: 'numeric', month: 'short' })}`}
+                        : `${next.days === 0 ? t('Hoy') : tp('En {0} días', next.days)} · ${formatDate(next.date, { day: 'numeric', month: 'short' })}`}
                     </span>
                     {share > 0 && (
                       <span className={`mt-1.5 block h-1 overflow-hidden rounded-full ${dark ? 'bg-white/10' : 'bg-black/[0.07]'}`}>

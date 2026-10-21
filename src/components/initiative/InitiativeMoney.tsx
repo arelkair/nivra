@@ -1,7 +1,8 @@
+import { PageHeading } from './PageHeading'
 import { useEffect, useState } from 'react'
 import { EXPENSE_CATS, INCOME_CATS, MAIN_ACCOUNT, SUBSCRIPTION_CAT, accountBalances, accountOf, dateKey, eur, type BankAccount, type Goal, type Movement } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
-import { locale, t } from '../../lib/i18n'
+import { formatDate, t } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { MoneyGoals } from './MoneyGoals'
@@ -60,7 +61,7 @@ export function InitiativeMoney({ initial, setInitial, movements, setMovements, 
     return (
       <div className="mx-auto flex w-full max-w-md flex-col gap-5 py-10">
         <p className={`font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`}>{t('Primera vez')}</p>
-        <h1 className="font-initiative text-3xl font-medium tracking-tight">{t('¿Cuánto dinero tienes ahora?')}</h1>
+        <PageHeading title="¿Cuánto dinero tienes ahora?" />
         <p className={`text-sm ${s.muted}`}>{t('Sólo se pregunta una vez. Queda en tu navegador.')}</p>
         <form
           onSubmit={(ev) => {
@@ -650,7 +651,7 @@ function Movements({
             return (
               <section key={day} className="flex flex-col gap-2">
                 <p className={label}>
-                  {new Date(y, mo - 1, d).toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })}
+                  {formatDate(new Date(y, mo - 1, d), { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
                 <ul className={`flex flex-col divide-y overflow-hidden rounded-2xl border ${s.line} ${s.divide}`}>
                   {list.map((m) => {

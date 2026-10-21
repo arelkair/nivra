@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import { dateKey, shortDate, type Reminder, type Work } from '../lib/store'
+import { dateKey, shortDate, type Reminder, type Work, type Subject } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Label, Modal, button, card, input, select } from '../components/ui'
 import { t, tp } from '../lib/i18n'
 import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
+  subjects: Subject[]
   reminders: Reminder[]
   setReminders: (update: (prev: Reminder[]) => Reminder[]) => void
   works: Work[]
 }
 
-export function Reminders({ reminders, setReminders, works }: Props) {
+export function Reminders({ reminders, setReminders, works, subjects }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const editing = reminders.find((r) => r.id === editingId)
@@ -39,12 +40,14 @@ export function Reminders({ reminders, setReminders, works }: Props) {
           <ul className="flex flex-col">
             {sorted.map((r) => {
               const work = works.find((w) => w.id === r.work)
+              const subject = subjects.find(s => s.id === (r.subject ?? work?.subject))
               return (
                 <li
                   key={r.id}
                   className="flex items-center gap-3 border-b border-black/[0.06] py-3 last:border-0 dark:border-white/[0.08]"
                 >
                   <span
+                    style={{ background: subject?.color }}
                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                       r.date === todayKey ? 'bg-red-500' : 'bg-neutral-300 dark:bg-neutral-600'
                     }`}

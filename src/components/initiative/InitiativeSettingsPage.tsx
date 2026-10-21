@@ -1,3 +1,7 @@
+import { PageHeading } from './PageHeading'
+import { AppearanceEditor } from '../AppearanceEditor'
+import { PrivacyPanel } from '../PrivacyPanel'
+import { SecurityPanel } from '../PinLock'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { deleteSnapshot, listSnapshots, restoreSnapshot, snapshotNow, type Snapshot } from '../../lib/autoBackup'
 import { clearAllData, exportCalendarIcs, exportCsv, exportJson, exportTimetableIcs, importJson } from '../../lib/backup'
@@ -27,7 +31,7 @@ type Props = {
   onDisable: () => void
 }
 
-type Group = 'general' | 'apariencia' | 'avisos' | 'atajos' | 'asignaturas' | 'sincronizacion' | 'datos' | 'acerca'
+type Group = 'general' | 'apariencia' | 'avisos' | 'atajos' | 'asignaturas' | 'sincronizacion' | 'datos' | 'privacidad' | 'seguridad' | 'acerca'
 
 const GROUPS: { id: Group; label: string }[] = [
   { id: 'general', label: 'General' },
@@ -37,6 +41,8 @@ const GROUPS: { id: Group; label: string }[] = [
   { id: 'asignaturas', label: 'Asignaturas' },
   { id: 'sincronizacion', label: 'Sincronización' },
   { id: 'datos', label: 'Datos y copias' },
+  { id: 'privacidad', label: 'Privacidad y papelera' },
+  { id: 'seguridad', label: 'Seguridad' },
   { id: 'acerca', label: 'Acerca de Initiative' },
 ]
 
@@ -138,10 +144,10 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-      <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Ajustes')}</h1>
+      <PageHeading title="Ajustes" />
 
       <div className="grid gap-6 md:grid-cols-[13rem_minmax(0,1fr)]">
-        <div role="tablist" aria-orientation="vertical" className="nivra-scroll flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+        <div role="tablist" aria-orientation="vertical" className="nv-settings-nav nivra-scroll flex self-start gap-1 overflow-x-auto md:flex-col md:overflow-visible">
           {GROUPS.map((g) => (
             <button
               key={g.id}
@@ -157,8 +163,11 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
+          {group === 'privacidad' && <PrivacyPanel />}
+          {group === 'seguridad' && <SecurityPanel />}
           {group === 'general' && (
             <section className={panel}>
+              <Row s={s} label={t('Cuenta')} hint={t('Gestiona tu sesión, privacidad y bloqueo local.')}><a href="/account" className={s.ghost}>{t('Abrir cuenta')}</a></Row>
               <Row s={s} label={t('Nivra 2.0')} hint={t('Activa las novedades de la versión 2.0. Desactívalo para volver a la versión anterior.')}>
                 <Toggle s={s} on={cfg.v2} onChange={cfg.setV2} label={t('Nivra 2.0')} />
               </Row>
@@ -182,6 +191,7 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
 
           {group === 'apariencia' && (
             <section className={panel}>
+              <AppearanceEditor cfg={cfg} />
               <Row s={s} label={t('Tema')} hint={t('«Automático» sigue el día y la noche.')}>
                 <Segmented
                   s={s}
@@ -436,6 +446,7 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
 
           {group === 'acerca' && (
             <section className={panel}>
+              <Row s={s} label={t('Novedades')}><a href="/changelog" className={s.ghost}>{t('Novedades')}</a></Row>
               <Row s={s} label={t('Initiative (beta)')} hint={t('Una interfaz alternativa de Nivra. Comparte los mismos datos que Classic.')}>
                 <span />
               </Row>

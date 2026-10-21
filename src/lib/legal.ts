@@ -8,7 +8,7 @@ const CONTACT = 'arelkair.dev'
 
 const PRIVACY_ES: Doc = {
   title: 'Política de privacidad',
-  updated: 'Última actualización: 17 de octubre de 2026',
+  updated: 'Última actualización: 19 de octubre de 2026',
   intro: 'Nivra es un organizador personal pensado para guardar tus datos en tu propio dispositivo. Esta política explica qué datos se tratan y cuándo.',
   back: 'Volver a Nivra',
   other: 'Política de cookies',
@@ -20,9 +20,9 @@ const PRIVACY_ES: Doc = {
     {
       heading: 'Qué datos se guardan y dónde',
       list: [
-        'Tus datos de la aplicación (tareas, horario, exámenes, notas, bóveda, dinero, ajustes) se guardan únicamente en tu navegador. No los recibimos ni los vemos.',
+        'Sin una cuenta conectada, tus datos de la aplicación se guardan en tu navegador. Al conectar tu cuenta, se guarda también una copia privada en Supabase para recuperarla en otros dispositivos.',
         'Si creas una cuenta con Google o con tu correo, tratamos tu dirección de correo y un identificador de usuario para autenticarte. Este servicio lo presta Supabase, con servidores en la Unión Europea (París).',
-        'Si activas la sincronización, una copia de tus datos se cifra en tu dispositivo (AES-GCM) antes de subirse. La clave se deriva en tu dispositivo, así que no podemos leer el contenido. Solo conocemos datos técnicos como la fecha y el tamaño de la copia.',
+        'La copia automática de la cuenta está protegida mediante permisos que limitan el acceso a su titular y al servicio; no tiene cifrado de extremo a extremo. Las copias antiguas con frase de paso y la sincronización por código mantienen su cifrado AES-GCM en el dispositivo.',
         'Para servir la web se utilizan Vercel (alojamiento) y Cloudflare (DNS, red de entrega y seguridad). Como cualquier servidor web, pueden registrar tu dirección IP y datos técnicos de la conexión.',
       ],
     },
@@ -66,7 +66,7 @@ const PRIVACY_ES: Doc = {
     {
       heading: 'Seguridad',
       text: [
-        'La web se sirve por HTTPS con una política de seguridad de contenido estricta, la sincronización está cifrada de extremo a extremo y las dependencias se revisan periódicamente.',
+        'La web se sirve por HTTPS con una política de seguridad de contenido estricta. La copia automática usa permisos por cuenta y las copias con frase de paso o código mantienen su cifrado de extremo a extremo. Las dependencias se revisan periódicamente.',
       ],
     },
     {
@@ -78,7 +78,7 @@ const PRIVACY_ES: Doc = {
 
 const PRIVACY_EN: Doc = {
   title: 'Privacy policy',
-  updated: 'Last updated: 17 October 2026',
+  updated: 'Last updated: 19 October 2026',
   intro: 'Nivra is a personal organizer designed to keep your data on your own device. This policy explains which data is processed and when.',
   back: 'Back to Nivra',
   other: 'Cookie policy',
@@ -90,9 +90,9 @@ const PRIVACY_EN: Doc = {
     {
       heading: 'What data is stored and where',
       list: [
-        'Your app data (tasks, timetable, exams, notes, vault, money, settings) is stored only in your browser. We do not receive or see it.',
+        'Without a connected account, your app data stays in your browser. Connecting your account also stores a private copy in Supabase to restore it on other devices.',
         'If you create an account with Google or e-mail, we process your e-mail address and a user identifier to authenticate you. This service is provided by Supabase, with servers in the European Union (Paris).',
-        'If you turn on sync, a copy of your data is encrypted on your device (AES-GCM) before it is uploaded. The key is derived on your device, so we cannot read the content. We only know technical details such as the date and size of the copy.',
+        'The automatic account copy is protected by permissions limiting access to its owner and the service; it is not end-to-end encrypted. Legacy passphrase copies and code synchronization retain their on-device AES-GCM encryption.',
         'The site is served through Vercel (hosting) and Cloudflare (DNS, delivery network and security). Like any web server, they may log your IP address and technical connection data.',
       ],
     },
@@ -134,7 +134,7 @@ const PRIVACY_EN: Doc = {
     {
       heading: 'Security',
       text: [
-        'The site is served over HTTPS with a strict content security policy, sync is end-to-end encrypted and dependencies are reviewed regularly.',
+        'The site uses HTTPS and a strict content security policy. Automatic copies use account permissions; passphrase and code copies retain end-to-end encryption. Dependencies are reviewed regularly.',
       ],
     },
     {
@@ -146,7 +146,7 @@ const PRIVACY_EN: Doc = {
 
 const COOKIES_ES: Doc = {
   title: 'Política de cookies',
-  updated: 'Última actualización: 17 de octubre de 2026',
+  updated: 'Última actualización: 19 de octubre de 2026',
   intro: 'Nivra no usa cookies propias, ni de analítica, ni de publicidad. Por eso no verás un aviso de cookies al entrar.',
   back: 'Volver a Nivra',
   other: 'Política de privacidad',
@@ -178,7 +178,7 @@ const COOKIES_ES: Doc = {
 
 const COOKIES_EN: Doc = {
   title: 'Cookie policy',
-  updated: 'Last updated: 17 October 2026',
+  updated: 'Last updated: 19 October 2026',
   intro: 'Nivra uses no first-party, analytics or advertising cookies, so you will not see a cookie banner when you arrive.',
   back: 'Back to Nivra',
   other: 'Privacy policy',

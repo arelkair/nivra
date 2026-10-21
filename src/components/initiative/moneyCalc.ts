@@ -1,5 +1,5 @@
 import { dateKey, weekIndex, type Movement } from '../../lib/store'
-import { locale } from '../../lib/i18n'
+import { formatDate } from '../../lib/i18n'
 
 export type Period = 'semana' | 'mes' | 'año'
 
@@ -14,7 +14,7 @@ export function periodRange(period: Period, offset: number, today = new Date()):
     const year = today.getFullYear() + offset
     const buckets = Array.from({ length: 12 }, (_, m) => ({
       key: `${year}-${two(m + 1)}`,
-      label: new Date(year, m, 1).toLocaleDateString(locale(), { month: 'short' }),
+      label: formatDate(new Date(year, m, 1), { month: 'short' }),
       from: `${year}-${two(m + 1)}-01`,
       to: `${year}-${two(m + 1)}-31`,
     }))
@@ -33,8 +33,8 @@ export function periodRange(period: Period, offset: number, today = new Date()):
   const last = days[days.length - 1]
   const title =
     period === 'semana'
-      ? `${first.getDate()} ${first.toLocaleDateString(locale(), { month: 'short' })} – ${last.getDate()} ${last.toLocaleDateString(locale(), { month: 'short', year: 'numeric' })}`
-      : first.toLocaleDateString(locale(), { month: 'long', year: 'numeric' })
+      ? `${first.getDate()} ${formatDate(first, { month: 'short' })} – ${last.getDate()} ${formatDate(last, { month: 'short', year: 'numeric' })}`
+      : formatDate(first, { month: 'long', year: 'numeric' })
   return { title, from: buckets[0].from, to: buckets[buckets.length - 1].to, buckets, daysTotal: length }
 }
 

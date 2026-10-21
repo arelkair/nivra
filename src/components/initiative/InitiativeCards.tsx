@@ -1,3 +1,4 @@
+import { PageHeading } from './PageHeading'
 import { useEffect, useMemo, useState } from 'react'
 import { dateKey, useStored } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
@@ -87,7 +88,7 @@ export function InitiativeCards({ dark }: { dark: boolean }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-4">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Tarjetas')}</h1>
+        <PageHeading title="Tarjetas" />
         <p className={`text-sm ${s.muted}`}>{totalDue > 0 ? tp('{0} para repasar hoy', totalDue) : t('Todo al día')}</p>
       </div>
 
@@ -331,7 +332,7 @@ function Study({
   if (!current) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-5 py-16 text-center">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight">{t('Sesión terminada')}</h1>
+        <PageHeading title="Sesión terminada" />
         <p className={`text-sm ${s.muted}`}>{tp('Has repasado {0} tarjetas.', done)}</p>
         <button type="button" onClick={onExit} className={`rounded-lg px-5 py-2 text-sm font-medium ${s.primary}`}>
           {t('Volver a los mazos')}

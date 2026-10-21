@@ -19,14 +19,18 @@ import {
   type NivraEvent,
   type Repeat,
   type Subject,
+  type Task,
 } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
-import { locale, t, tp, weekdayLetters } from '../../lib/i18n'
+import { formatDate, t, tp, weekdayLetters } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { DOT, SPECIAL_GRADIENT, skin } from './skin'
+import { CalendarTaskTray } from '../study/TaskBoard'
 
 type Props = {
+  tasks: Task[]
+  setTasks: (update: (prev: Task[]) => Task[]) => void
   items: CalItem[]
   subjects: Subject[]
   setEvents: (update: (prev: NivraEvent[]) => NivraEvent[]) => void
@@ -53,6 +57,8 @@ const parseKey = (key: string) => {
 }
 
 export function InitiativeCalendar({
+  tasks,
+  setTasks,
   items,
   subjects,
   setEvents,
@@ -75,6 +81,7 @@ export function InitiativeCalendar({
   const [selected, setSelected] = useState(todayKey)
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [monday, setMonday] = useState(() => mondayOf(today))
+  const dropOn = (date: string, id: string) => { if (id) setTasks(rows => rows.map(task => task.id === id ? { ...task, date } : task)) }
 
   const anniversaryOf = (key: string) => anniversaries.find((a) => a.md === monthDay(key))
   const isSpecial = (key: string) => specialDays.includes(key) || autoSpecial.includes(key)
@@ -182,6 +189,8 @@ export function InitiativeCalendar({
               key={key}
               type="button"
               onClick={() => select(key)}
+              onDragOver={event => { if (event.dataTransfer.types.includes('application/x-nivra-task')) event.preventDefault() }}
+              onDrop={event => { event.preventDefault(); dropOn(key, event.dataTransfer.getData('application/x-nivra-task')) }}
               aria-label={`${day} ${t(MONTHS[cursor.m])}`}
               aria-current={key === selected}
               className={`relative flex min-h-16 min-w-0 flex-col items-start gap-1 border-r border-b p-1.5 text-left transition-colors sm:min-h-24 sm:p-2 ${s.line} ${
@@ -197,7 +206,7 @@ export function InitiativeCalendar({
               <span className="flex flex-wrap gap-0.5 sm:hidden">
                 {anniversary && <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />}
                 {dayItems.slice(0, 4).map((e) => (
-                  <span key={e.id + e.date} className={`h-1.5 w-1.5 rounded-full ${DOT[e.type]}`} />
+                  <span key={e.id + e.date} className={`h-1.5 w-1.5 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                 ))}
               </span>
               <span className="hidden w-full min-w-0 flex-col gap-0.5 sm:flex">
@@ -209,7 +218,7 @@ export function InitiativeCalendar({
                 )}
                 {dayItems.slice(0, 2).map((e) => (
                   <span key={e.id + e.date} className={`flex items-center gap-1 truncate text-[0.65rem] ${s.muted}`}>
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                     <span className="truncate">{e.title}</span>
                   </span>
                 ))}
@@ -233,6 +242,8 @@ export function InitiativeCalendar({
             key={key}
             type="button"
             onClick={() => select(key)}
+            onDragOver={event => { if (event.dataTransfer.types.includes('application/x-nivra-task')) event.preventDefault() }}
+            onDrop={event => { event.preventDefault(); dropOn(key, event.dataTransfer.getData('application/x-nivra-task')) }}
             aria-current={key === selected}
             className={`flex min-h-24 min-w-0 flex-col gap-2 border-b p-3 text-left transition-colors sm:min-h-72 sm:border-r sm:border-b-0 sm:last:border-r-0 ${s.line} ${
               key === selected ? s.selectedCell : s.hover
@@ -252,7 +263,7 @@ export function InitiativeCalendar({
             )}
             {dayItems.map((e) => (
               <span key={e.id + e.date} className={`flex items-start gap-1.5 text-xs ${s.muted}`}>
-                <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                 <span className="min-w-0 break-words">{e.title}</span>
               </span>
             ))}
@@ -304,7 +315,7 @@ export function InitiativeCalendar({
                   )}
                   {list.map((e) => (
                     <span key={e.id + e.date} className="flex items-center gap-2 text-sm">
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                       <span className="min-w-0 truncate">{e.title}</span>
                     </span>
                   ))}
@@ -318,10 +329,9 @@ export function InitiativeCalendar({
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+      <CalendarTaskTray tasks={tasks} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight first-letter:uppercase sm:text-4xl">
-          {title}
-        </h1>
+        <div><p className={`mb-2 text-xs ${s.muted}`}>{t('Calendario')}</p><h1 className="font-initiative text-3xl font-medium tracking-tight first-letter:uppercase sm:text-4xl">{title}</h1></div>
         <div className="flex flex-wrap items-center gap-2">
           <div className={`flex rounded-lg border p-0.5 ${s.line}`}>
             {(['mes', 'semana', 'agenda'] as View[]).map((v) => (
@@ -464,10 +474,10 @@ function DayPanel({
     <aside className={`flex flex-col gap-4 rounded-2xl border p-5 lg:sticky lg:top-0 ${s.line} ${s.panel}`}>
       <div>
         <p className={`font-mono text-[0.65rem] tracking-widest uppercase ${s.faint}`}>
-          {d.toLocaleDateString(locale(), { weekday: 'long' })}
+          {formatDate(d, { weekday: 'long' })}
         </p>
         <h2 className="font-initiative text-2xl font-medium tracking-tight">
-          {d.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })}
+          {formatDate(d, { day: 'numeric', month: 'long', year: 'numeric' })}
         </h2>
       </div>
 
@@ -524,7 +534,7 @@ function DayPanel({
             const own = e.origin === 'evento'
             return (
               <li key={e.id + e.date} className="flex items-start gap-3 py-2.5">
-                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${DOT[e.type]}`} />
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                 <div className="min-w-0 flex-1">
                   <p className="flex min-w-0 items-center gap-1.5 text-sm">
                     <span className="truncate">{e.title}</span>

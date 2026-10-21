@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { DATA_EVENT, recordStorageChange } from './dataLifecycle'
 import { onSyncApplied, markChanged } from './sync'
-import { locale } from './i18n'
+import { formatDate, locale, t } from './i18n'
+import { notify } from './undo'
+import { reconcileTasks } from './taskPlanning'
 
 export type PageId =
   | 'dashboard'
@@ -248,7 +251,7 @@ export function progress(created: string, target: string, now: Date) {
   return Math.min(1, Math.max(0, (now.getTime() - start) / (end - start)))
 }
 
-export type ItemType = 'festividad' | 'tarea' | 'examen' | 'proyecto'
+export type ItemType = 'festividad' | 'tarea' | 'examen' | 'proyecto' | 'evento'
 
 export type Repeat = 'semanal' | 'mensual' | 'anual'
 
@@ -270,6 +273,10 @@ export type NivraEvent = {
 export type SubTask = { id: string; title: string; done: boolean }
 
 export type Task = {
+  status?: 'todo' | 'doing' | 'done'
+  completedAt?: string
+  repeat?: 'daily' | 'weekly' | 'monthly'
+  series?: string
   id: string
   title: string
   desc?: string
@@ -294,6 +301,7 @@ export type Work = {
 }
 
 export type Reminder = {
+  subject?: string
   id: string
   title: string
   subtitle?: string
@@ -349,6 +357,7 @@ export type Block = {
 export const blockProfile = (b: Block) => b.profile ?? DEFAULT_PROFILE
 
 export const TYPES: Record<ItemType, { label: string; dot: string; chip: string }> = {
+  evento: { label: 'Evento', dot: 'bg-neutral-500', chip: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-500/20 dark:text-neutral-200' },
   festividad: {
     label: 'Festividad',
     dot: 'bg-purple-500',
@@ -420,8 +429,8 @@ export const weekIndex = (d: Date) => (d.getDay() + 6) % 7
 export const monthDay = (date: string) => date.slice(5)
 
 export const shortDate = (date: string) => {
-  const [, m, d] = date.split('-').map(Number)
-  return `${d} ${MONTHS[m - 1].slice(0, 3)}`
+  const [y, m, d] = date.split('-').map(Number)
+  return formatDate(new Date(y, m - 1, d), { day: 'numeric', month: 'short' })
 }
 
 export function monthGrid(year: number, month: number): (number | null)[] {
@@ -574,6 +583,7 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
         desc: t.desc,
         type: 'tarea' as const,
         origin: 'tarea' as const,
+        subject: t.subject,
       })),
     ...works
       .filter((w) => w.date)
@@ -593,6 +603,7 @@ export const eur = (n: number) =>
   new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' }).format(n)
 
 export function useStored<T>(key: string, initial: T) {
+  const initialRef = useRef(initial)
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = localStorage.getItem(key)
@@ -605,15 +616,32 @@ export function useStored<T>(key: string, initial: T) {
     const raw = JSON.stringify(value)
     const previous = localStorage.getItem(key)
     if (previous === raw) return
+    try { recordStorageChange(key, previous, raw) } catch {
+      if (previous !== null) try { setValue(JSON.parse(previous) as T) } catch { /* Keep the saved record. */ }
+      notify(t('No hay espacio para guardar la papelera o el historial. Se conserva el dato original.'))
+      return
+    }
     localStorage.setItem(key, raw)
-    markChanged(key, previous === null)
+    if (key.startsWith('nivra-')) markChanged(key, previous === null)
   }, [key, value])
+
+  useEffect(() => {
+    const refresh = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail !== key) return
+      const raw = localStorage.getItem(key)
+      if (raw !== null) try { setValue(JSON.parse(raw) as T) } catch { /* Keep the current valid value. */ }
+    }
+    addEventListener(DATA_EVENT, refresh)
+    addEventListener('storage', refresh)
+    return () => { removeEventListener(DATA_EVENT, refresh); removeEventListener('storage', refresh) }
+  }, [key])
 
   useEffect(
     () =>
       onSyncApplied(() => {
         const raw = localStorage.getItem(key)
-        if (raw === null || raw === JSON.stringify(value)) return
+        if (raw === null) { setValue(initialRef.current); return }
+        if (raw === JSON.stringify(value)) return
         try {
           setValue(JSON.parse(raw) as T)
         } catch {
@@ -622,7 +650,11 @@ export function useStored<T>(key: string, initial: T) {
     [key, value],
   )
 
-  return [value, setValue] as const
+  const update: typeof setValue = useCallback(action => setValue(previous => {
+    const next = typeof action === 'function' ? (action as (value: T) => T)(previous) : action
+    return key === 'nivra-tasks' ? reconcileTasks(previous as Task[], next as Task[]) as T : next
+  }), [key])
+  return [value, update] as const
 }
 
 if (import.meta.env.DEV) {

@@ -1,3 +1,4 @@
+import { PageHeading } from './PageHeading'
 import { useEffect, useRef, useState } from 'react'
 import { DAYS, DEFAULT_PROFILE, blockProfile, useStored, weekIndex, type Block, type Profile, type Subject } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
@@ -403,7 +404,7 @@ export function InitiativeSchedule({
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Horario')}</h1>
+        <PageHeading title="Horario" />
         <button
           type="button"
           onClick={() => {

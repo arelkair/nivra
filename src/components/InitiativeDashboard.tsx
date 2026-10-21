@@ -1,10 +1,17 @@
 import { Suspense, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { lazyNamed } from '../lib/lazy'
-import { Icon } from './ui'
+import { Icon, Modal } from './ui'
+import { PinGate } from './PinLock'
+import { useLockStatus } from '../lib/useLockStatus'
+import { lockNow, pinConfig } from '../lib/pin'
 const InitiativeSettingsPage = lazyNamed(() => import('./initiative/InitiativeSettingsPage'), 'InitiativeSettingsPage')
 import type { Settings } from '../lib/settings'
 import type { SyncState } from '../lib/sync'
 import { shouldReturnToSync } from '../lib/supabase'
+import { AccountPage, ChangelogPage, EmbeddedPages } from '../pages/Standalone'
+import { StudyHub } from './study/StudyHub'
+import { CaptureBar } from './study/CaptureBar'
+import { useExternalCalendars } from '../lib/externalCalendars'
 import { t } from '../lib/i18n'
 import {
   useStored,
@@ -43,7 +50,7 @@ const InitiativeReminders = lazyNamed(() => import('./initiative/InitiativeRemin
 const InitiativeCountdownsPage = lazyNamed(() => import('./initiative/InitiativeCountdownsPage'), 'InitiativeCountdownsPage')
 import { PAGE_TO_SECTION, SECTIONS, V2_SECTIONS, type Section } from './initiative/sections'
 
-const SIDE_RAIL = 56
+const SIDE_RAIL = 64
 const SIDE_SNAP = 140
 const SIDE_OPEN = 224
 const SIDE_MAX = 320
@@ -64,6 +71,10 @@ const SECTION_SLUG: Record<Section, string> = {
   lab: 'lab',
   boveda: 'vault',
   ajustes: 'settings',
+  account: 'account',
+  login: 'login',
+  changelog: 'changelog',
+  study: 'study',
 }
 
 const SLUG_TO_SECTION: Record<string, Section> = Object.fromEntries(
@@ -248,12 +259,12 @@ export function InitiativeDashboard({
 
   const toggleRail = () => setSide(collapsed ? SIDE_OPEN : SIDE_RAIL)
 
-  const [section, setSectionState] = useState<Section>(() => (shouldReturnToSync() ? 'ajustes' : sectionFromPath()))
+  const [section, setSectionState] = useState<Section>(() => (location.pathname === '/account' || location.pathname === '/login' ? sectionFromPath() : shouldReturnToSync() ? 'account' : sectionFromPath()))
   const trail = useRef<Section[]>([section])
   const cursor = useRef(0)
 
   useEffect(() => {
-    history.replaceState({}, '', sectionPath(trail.current[0]))
+    history.replaceState({}, '', sectionPath(trail.current[0]) + location.search)
   }, [])
 
   useEffect(() => {
@@ -268,6 +279,7 @@ export function InitiativeDashboard({
     return () => removeEventListener('popstate', onPop)
   }, [])
   const [searchOpen, setSearchOpen] = useState(false)
+  const [captureOpen, setCaptureOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [musicOpen, setMusicOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useStored('nivra-initiative-note-open', false)
@@ -278,6 +290,7 @@ export function InitiativeDashboard({
     cursor.current = trail.current.length - 1
     startTransition(() => setSectionState(next))
     history.pushState({}, '', sectionPath(next))
+    dispatchEvent(new Event('nivra-route-change'))
   }, [])
 
   const step = useCallback((delta: number) => {
@@ -286,6 +299,7 @@ export function InitiativeDashboard({
     cursor.current = target
     startTransition(() => setSectionState(trail.current[target]))
     history.pushState({}, '', sectionPath(trail.current[target]))
+    dispatchEvent(new Event('nivra-route-change'))
   }, [])
 
   useEffect(() => {
@@ -294,6 +308,8 @@ export function InitiativeDashboard({
   }, [])
 
   const dark = theme === 'dark'
+  const externalItems = useExternalCalendars()
+  items = useMemo(() => [...items, ...externalItems], [items, externalItems])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
@@ -339,7 +355,8 @@ export function InitiativeDashboard({
     setMigrated((prev) => [...new Set([...prev, ...pending.map((n) => n.id)])])
   }, [notepads, migrated, vaultNotes, setVaultNotes, setMigrated])
 
-  const noteRefs = vaultNotes.map((n) => ({ id: n.id, title: n.title }))
+  const vaultAccess = useLockStatus('vault')
+  const noteRefs = vaultAccess ? vaultNotes.map((n) => ({ id: n.id, title: n.title })) : []
   const createNote = (title: string) => {
     const taken = new Set(vaultNotes.map((n) => norm(n.title)))
     const base = title.trim() || 'Sin título'
@@ -476,12 +493,21 @@ export function InitiativeDashboard({
   return (
     <div
       style={{ '--nv-side': `${railWidth}px` } as React.CSSProperties}
+      onClickCapture={event => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        const anchor = (event.target as HTMLElement).closest('a')
+        if (!anchor || anchor.target || anchor.hasAttribute('download')) return
+        const url = new URL(anchor.href, location.href)
+        const next = SLUG_TO_SECTION[url.pathname.slice(1)]
+        if (url.origin === location.origin && next) { event.preventDefault(); setSection(next) }
+      }}
       className={`relative z-10 flex h-svh flex-col overflow-hidden transition-colors ${
         dark ? 'bg-(--nv-root) text-neutral-100 [color-scheme:dark]' : 'bg-(--nv-root) text-neutral-900'
       }`}
     >
       <aside
-        className={`fixed inset-y-0 left-0 z-20 hidden w-(--nv-side) flex-col gap-1 border-r py-4 md:flex ${collapsed ? 'px-2' : 'px-3'} ${
+        data-collapsed={collapsed}
+        className={`nv-sidebar fixed inset-y-0 left-0 z-20 hidden w-(--nv-side) flex-col gap-1 border-r py-4 md:flex ${collapsed ? 'px-2' : 'px-3'} ${
           dark ? 'border-white/10' : 'border-black/[0.07]'
         }`}
       >
@@ -504,12 +530,12 @@ export function InitiativeDashboard({
           <span className={`mx-auto block h-full w-px transition-colors ${dark ? 'group-hover:bg-white/30' : 'group-hover:bg-black/30'}`} />
         </div>
         )}
-        <span className={`font-initiative mb-4 flex items-center text-lg font-medium tracking-tight ${collapsed ? 'h-10 justify-center text-xl font-semibold' : 'px-2'}`}>
-          {collapsed ? 'I' : 'Initiative'}
-        </span>
-        <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden overscroll-contain pb-2">
+        <button type="button" onClick={toggleRail} aria-expanded={!collapsed} aria-label={t(collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral')} className={`nv-rail-toggle font-initiative mb-3 flex h-10 items-center text-lg font-medium tracking-tight ${collapsed ? 'justify-center' : 'justify-between px-2'}`}>
+          {collapsed ? <Icon name="dashboard" className="h-5 w-5" /> : <><span>Initiative</span><Icon name="left" className="h-4 w-4" /></>}
+        </button>
+        <nav aria-label={t('Apartados')} className={`nv-sidebar-nav flex min-h-0 flex-1 flex-col ${collapsed ? 'gap-2' : 'gap-5'} overflow-y-auto overflow-x-hidden overscroll-contain pb-2`}>
           {groups.map((g) => (
-            <div key={g.title} className="flex flex-col gap-0.5">
+            <div key={g.title} className={`flex flex-col gap-0.5 ${collapsed ? 'nv-rail-group' : ''}`}>
               {!collapsed && (
                 <p className={`nv-label mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
                   {t(g.title)}
@@ -520,7 +546,7 @@ export function InitiativeDashboard({
                   key={s.id}
                   type="button"
                   onClick={() => setSection(s.id)}
-                  aria-current={current === s.id}
+                  aria-current={current === s.id ? 'page' : undefined}
                   aria-label={collapsed ? t(s.label) : undefined}
                   onMouseEnter={collapsed ? (e) => showTip(t(s.label), t(g.title), e.currentTarget) : undefined}
                   onMouseLeave={collapsed ? hideTip : undefined}
@@ -547,6 +573,7 @@ export function InitiativeDashboard({
             </div>
           ))}
         </nav>
+        {pinConfig() && <button type="button" onClick={lockNow} aria-label={t('Bloquear ahora')} title={t('Bloquear ahora')} className={`nv-rail-link flex items-center gap-2 rounded-md p-2 text-xs text-(--minimal-muted) ${collapsed ? 'justify-center' : ''}`}><Icon name="lock" className="h-4 w-4" />{!collapsed && t('Bloquear ahora')}</button>}
       </aside>
 
       {collapsed && tip && (
@@ -562,22 +589,25 @@ export function InitiativeDashboard({
         </div>
       )}
 
-      <header className="relative z-10 flex shrink-0 items-center justify-between gap-2 px-4 py-3 md:justify-end md:py-4 md:pr-8 md:pl-[calc(var(--nv-side)+2rem)]">
-        <span className="font-initiative text-lg font-medium tracking-tight md:hidden">Initiative</span>
-        <span className="flex gap-2">
+      <header className="nv-topbar relative z-10 flex shrink-0 items-center justify-between gap-2 px-4 py-3 md:justify-end md:py-4 md:pr-8 md:pl-[calc(var(--nv-side)+2rem)]">
+        <span className="font-initiative hidden text-lg font-medium tracking-tight sm:inline md:hidden">Initiative</span>
+        <span className="mr-auto hidden min-w-0 items-center gap-2 text-xs text-(--minimal-muted) lg:flex"><span>Initiative</span><span aria-hidden="true">/</span><span className="truncate text-(--minimal-text)">{t(SECTIONS.find(item => item.id === current)?.label ?? (current === 'account' ? 'Cuenta' : current === 'login' ? 'Iniciar sesión' : current === 'changelog' ? 'Novedades' : 'Ajustes'))}</span></span>
+        <span className="ml-auto flex gap-1.5 sm:gap-2">
+        <button type="button" onClick={() => setCaptureOpen(true)} aria-label={t('Captura rápida')} title={t('Captura rápida')} aria-haspopup="dialog" aria-expanded={captureOpen} className="nv-header-link grid h-10 w-10 shrink-0 place-items-center rounded-md border border-(--minimal-line) text-(--minimal-muted) hover:bg-(--surface)"><Icon name="plus" className="h-[18px] w-[18px]" /></button>
+        <a href="/changelog" aria-label={t('Novedades')} title={t('Novedades')} className="nv-header-link grid h-10 w-10 shrink-0 place-items-center rounded-md border border-(--minimal-line) text-(--minimal-muted) hover:bg-(--surface)"><Icon name="bell" className="h-[18px] w-[18px]" /></a>
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
           aria-label={t('Buscar')}
           title={searchHint ? `${t('Buscar')} (${searchHint})` : t('Buscar')}
-          className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors max-md:w-10 max-md:justify-center max-md:px-0 ${
+          className={`flex h-10 items-center gap-2 rounded-md border bg-(--sunken) px-3 text-sm transition-colors sm:w-64 lg:w-80 max-sm:w-10 max-sm:justify-center max-sm:px-0 ${
             dark
               ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
               : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
           }`}
         >
           <Icon name="search" className="h-[18px] w-[18px]" />
-          <span className="hidden md:inline">{t('Buscar')}</span>
+          <span className="hidden flex-1 text-left sm:inline">{t('Buscar en todo')}</span>
           {searchHint && <kbd className="hidden rounded border border-current/20 px-1.5 font-mono text-[0.6rem] opacity-70 lg:inline">{searchHint}</kbd>}
         </button>
         <button
@@ -605,6 +635,7 @@ export function InitiativeDashboard({
         >
           <Icon name="settings" className="h-[18px] w-[18px]" />
         </button>
+        <a href="/account" aria-label={t('Cuenta')} title={t('Cuenta')} className="nv-header-link grid h-10 w-10 shrink-0 place-items-center rounded-md border border-(--minimal-line) text-(--minimal-muted) hover:bg-(--surface)"><Icon name="user" className="h-[18px] w-[18px]" /></a>
         </span>
       </header>
 
@@ -639,6 +670,8 @@ export function InitiativeDashboard({
       {current === 'calendario' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeCalendar
+            tasks={tasks}
+            setTasks={setTasks}
             focusDate={calendarFocus}
             onFocusHandled={() => setCalendarFocus(null)}
             items={items}
@@ -672,7 +705,7 @@ export function InitiativeDashboard({
       )}
 
       {current === 'inicio' && (
-        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:overflow-hidden md:py-4 md:pr-8 md:pb-5 md:pl-[calc(var(--nv-side)+2rem)]">
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-4 md:pr-8 md:pb-5 md:pl-[calc(var(--nv-side)+2rem)]">
           <InitiativeHome
             now={now}
             dark={dark}
@@ -692,6 +725,7 @@ export function InitiativeDashboard({
             profile={activeProfile}
             subs={subs}
             bank={bankBalance !== null ? { balance: bankBalance, movements } : null}
+            bankEnabled={bankEnabled}
             onOpen={setSection}
           />
         </main>
@@ -778,7 +812,7 @@ export function InitiativeDashboard({
 
       {current === 'recordatorios' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
-          <InitiativeReminders reminders={reminders} setReminders={setReminders} works={works} dark={dark} />
+          <InitiativeReminders subjects={subjects} reminders={reminders} setReminders={setReminders} works={works} dark={dark} />
         </main>
       )}
 
@@ -817,9 +851,11 @@ export function InitiativeDashboard({
         </main>
       )}
 
+      {(current === 'account' || current === 'login' || current === 'changelog' || current === 'study') && <main className="nivra-scroll nv-integrated-page relative z-10 flex-1 overflow-y-auto px-4 py-5 pb-24 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]"><EmbeddedPages>{current === 'changelog' ? <ChangelogPage /> : current === 'study' ? <StudyHub tasks={tasks} setTasks={setTasks} grades={grades} subjects={subjects} setSubjects={cfg.setSubjects} blocks={blocks} profile={activeProfile} items={items} name={userName} /> : <AccountPage login={current === 'login'} />}</EmbeddedPages></main>}
+
       {current === 'boveda' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-[calc(var(--nv-side)+2rem)]">
-          <InitiativeVault
+          <PinGate scope="vault"><InitiativeVault
             dark={dark}
             notes={vaultNotes}
             setNotes={setVaultNotes}
@@ -829,7 +865,7 @@ export function InitiativeDashboard({
             onOpenApp={openApp}
             focusId={vaultTarget}
             onFocusHandled={() => setVaultTarget(null)}
-          />
+          /></PinGate>
         </main>
       )}
       </Suspense>
@@ -837,7 +873,7 @@ export function InitiativeDashboard({
       <div className="fixed right-4 bottom-4 z-40 flex gap-2 max-md:right-3 max-md:bottom-[4.75rem]">
         <button
           type="button"
-          onClick={() => setNoteOpen(!noteOpen)}
+          onClick={() => vaultAccess ? setNoteOpen(!noteOpen) : setSection('boveda')}
           aria-label={t('Nota rápida')}
           aria-pressed={noteOpen}
           title={`${t('Nota rápida')} (⇧ N)`}
@@ -876,7 +912,7 @@ export function InitiativeDashboard({
 
       <InitiativeMusic {...music} dark={dark} cfg={cfg} open={musicOpen} onClose={() => setMusicOpen(false)} />
 
-      {noteOpen && (
+      {noteOpen && vaultAccess && (
         <InitiativeNote
           dark={dark}
           notes={vaultNotes}
@@ -889,11 +925,13 @@ export function InitiativeDashboard({
         />
       )}
 
+      {captureOpen && <Modal title={t('Captura rápida')} onClose={() => setCaptureOpen(false)}><CaptureBar autoFocus subjects={subjects} setTasks={setTasks} setWorks={setWorks} /></Modal>}
+
       <InitiativeSearch
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         dark={dark}
-        data={{ tasks, items, works, grades, blocks, subs, wishes, countdowns, reminders, goals, subjects, notes: vaultNotes, bankEnabled, v2: cfg.v2 }}
+        data={{ tasks, items, works, grades, blocks, subs, wishes, countdowns, reminders, goals, subjects, notes: vaultAccess ? vaultNotes : [], bankEnabled, v2: cfg.v2 }}
         commands={commands}
         closeKeys={searchKeys}
         onGo={setSection}

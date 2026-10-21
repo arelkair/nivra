@@ -165,7 +165,8 @@ export function ImageConverter({ s }: { s: Skin }) {
         >
           <Icon name="upload" className={`h-6 w-6 ${s.muted}`} />
           <p className="text-sm font-medium">{t('Arrastra tus imágenes aquí')}</p>
-          <p className={`text-xs ${s.faint}`}>{t('O pega una imagen con Ctrl+V. PNG, JPG, WebP, GIF, BMP, SVG, AVIF, ICO, TIFF, TGA, PPM, PGM y HEIC.')}</p>
+          <p className={`text-xs ${s.faint}`}>{t('O pega una imagen con Ctrl+V. PNG, JPG, WebP, GIF, BMP, SVG, AVIF, ICO, TIFF, TGA, PPM y PGM.')}</p>
+          <p className={`text-xs ${s.faint}`}>{t('HEIC y HEIF siguen desactivados para mantener la política de seguridad del navegador.')}</p>
           <button type="button" onClick={() => picker.current?.click()} className={`mt-1 rounded-lg px-4 py-2 text-sm font-medium ${s.primary}`}>
             {t('Elegir archivos')}
           </button>

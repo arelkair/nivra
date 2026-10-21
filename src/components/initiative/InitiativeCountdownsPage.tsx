@@ -1,7 +1,8 @@
+import { PageHeading } from './PageHeading'
 import { useState } from 'react'
 import { UNITS, countdown, progress, type Countdown, type Work } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
-import { locale, t, tp } from '../../lib/i18n'
+import { formatDate, t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { CountdownForm } from './InitiativeCountdowns'
@@ -118,7 +119,7 @@ export function InitiativeCountdownsPage({ countdowns, setCountdowns, works, now
 
   const when = (c: Countdown) => {
     const target = new Date(c.target)
-    return `${target.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${timeOf(target)}`
+    return `${formatDate(target, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · ${timeOf(target)}`
   }
 
   const actions = (c: Countdown, isPrincipal: boolean) => (
@@ -149,7 +150,7 @@ export function InitiativeCountdownsPage({ countdowns, setCountdowns, works, now
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Cuentas atrás')}</h1>
+        <PageHeading title="Cuentas atrás" />
         <button
           type="button"
           onClick={() => setDraft(draft && !draft.id ? null : freshDraft())}

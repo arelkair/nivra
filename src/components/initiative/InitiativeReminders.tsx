@@ -1,5 +1,6 @@
+import { PageHeading } from './PageHeading'
 import { useState } from 'react'
-import { dateKey, shortDate, type Reminder, type Work } from '../../lib/store'
+import { dateKey, shortDate, type Reminder, type Work, type Subject } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { t, tp } from '../../lib/i18n'
 import { playDrop, playPop } from '../../lib/sound'
@@ -10,6 +11,7 @@ import { skin, type Skin } from './skin'
 type Repeat = NonNullable<Reminder['repeat']>
 
 type Props = {
+  subjects: Subject[]
   reminders: Reminder[]
   setReminders: (update: (prev: Reminder[]) => Reminder[]) => void
   works: Work[]
@@ -50,12 +52,13 @@ const nextDate = (date: string, repeat: Repeat) =>
 
 const stamp = (r: Reminder) => `${r.date}T${r.time ?? '00:00'}`
 
-export function InitiativeReminders({ reminders, setReminders, works, dark }: Props) {
+export function InitiativeReminders({ reminders, setReminders, works, subjects, dark }: Props) {
   const s = skin(dark)
   const now = new Date()
   const todayKey = dateKey(now)
   const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
   const [title, setTitle] = useState('')
+  const [subject, setSubject] = useState('')
   const [date, setDate] = useState(todayKey)
   const [time, setTime] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
@@ -85,7 +88,7 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
     const clean = title.trim()
     if (!clean || !date) return
     playPop()
-    setReminders((prev) => [...prev, { id: crypto.randomUUID(), title: clean, date, time: time || undefined }])
+    setReminders((prev) => [...prev, { id: crypto.randomUUID(), title: clean, subject: subject || undefined, date, time: time || undefined }])
     setTitle('')
     setTime('')
   }
@@ -145,7 +148,7 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Recordatorios')}</h1>
+        <PageHeading title="Recordatorios" />
         <div className="flex items-center gap-4">
           {stats.map((x) => (
             <p key={x.label} className="flex flex-col items-end">
@@ -187,6 +190,7 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
           ))}
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label={t('Fecha')} className={`${s.field} !w-auto !py-1.5 text-xs`} />
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label={t('Hora')} className={`${s.field} !w-auto !py-1.5 text-xs`} />
+          <select value={subject} onChange={e => setSubject(e.target.value)} aria-label={t('Asignatura')} className={`${s.field} !w-auto`}><option value="">{t('Sin asignatura')}</option>{subjects.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
           <span className="flex-1" />
           <button
             type="submit"
@@ -220,10 +224,12 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
               {list.map((r) => {
                 const open = openId === r.id
                 const work = works.find((w) => w.id === r.work)
+                const sub = subjects.find(x => x.id === (r.subject ?? work?.subject))
                 const repeatLabel = r.repeat ? t(REPEATS.find((x) => x.id === r.repeat)?.label ?? '') : ''
                 return (
-                  <li key={r.id} data-nivra-id={r.id} className={open ? s.panel : ''}>
+                  <li key={r.id} data-nivra-id={r.id} className={open ? s.panel : ''} style={sub ? { borderInlineStart: `3px solid ${sub.color}` } : undefined}>
                     <div className={`flex items-center gap-3 px-4 py-3 ${r.done ? 'opacity-50' : ''}`}>
+                      {sub && <span className="max-w-24 truncate text-xs" style={{ color: sub.color }} title={sub.name}>{sub.name}</span>}
                       <button
                         type="button"
                         onClick={() => complete(r)}
@@ -269,6 +275,7 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
                     </div>
                     {open && (
                       <Detail
+                        subjects={subjects}
                         reminder={r}
                         works={works}
                         s={s}
@@ -289,6 +296,7 @@ export function InitiativeReminders({ reminders, setReminders, works, dark }: Pr
 }
 
 function Detail({
+  subjects,
   reminder,
   works,
   s,
@@ -296,6 +304,7 @@ function Detail({
   onSnooze,
   onRemove,
 }: {
+  subjects: Subject[]
   reminder: Reminder
   works: Work[]
   s: Skin
@@ -307,6 +316,7 @@ function Detail({
   return (
     <div className={`flex flex-col gap-4 border-t px-4 py-4 ${s.line}`}>
       <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5"><span className={label}>{t('Asignatura')}</span><select className={s.field} value={reminder.subject ?? ''} onChange={e => onPatch({ subject: e.target.value || undefined })}><option value="">{t('Sin asignatura')}</option>{subjects.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
         <label className="flex flex-col gap-1.5 sm:col-span-2">
           <span className={label}>{t('Título')}</span>
           <input value={reminder.title} onChange={(e) => onPatch({ title: e.target.value })} maxLength={60} className={s.field} />

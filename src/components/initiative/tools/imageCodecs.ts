@@ -22,7 +22,7 @@ export const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 export const INPUT_EXTENSIONS = 'png|jpe?g|jfif|webp|gif|bmp|svg|avif|ico|cur|tiff?|tga|ppm|pgm|pnm|heic|heif'
 
-export const ACCEPT = `image/*,.${INPUT_EXTENSIONS.replace(/\?/g, '').split('|').join(',.')},.jpeg,.tif`
+export const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml,image/avif,image/tiff,.ico,.cur,.tif,.tiff,.tga,.ppm,.pgm,.pnm'
 
 export const isImageFile = (file: File) => file.type.startsWith('image/') || new RegExp(`\\.(${INPUT_EXTENSIONS})$`, 'i').test(file.name)
 
@@ -154,14 +154,7 @@ export async function decodeFile(file: File): Promise<Decoded> {
       return await fromImageData(new ImageData(new Uint8ClampedArray(rgba), pages[0].width, pages[0].height))
     }
     if (ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
-      const heic2any = (await import('heic2any')).default
-      const result = await heic2any({ blob: file, toType: 'image/png' }).catch((error: unknown) => {
-        if (error instanceof EvalError || /Content Security Policy|unsafe-eval/i.test(String((error as Error)?.message))) throw new Error(t('Los archivos HEIC no están disponibles por motivos de seguridad.'))
-        throw error
-      })
-      const blob = Array.isArray(result) ? result[0] : result
-      const bitmap = await createImageBitmap(blob)
-      return { source: bitmap, w: bitmap.width, h: bitmap.height, close: () => bitmap.close() }
+      throw new Error(t('Los archivos HEIC no están disponibles por motivos de seguridad.'))
     }
   } catch (e) {
     throw new Error(e instanceof Error && e.message ? e.message : t('No se puede leer esta imagen.'))

@@ -22,7 +22,7 @@ import {
 } from '../lib/store'
 import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, Segmented, button, input, select } from '../components/ui'
-import { locale, t, tp, weekdayLetters } from '../lib/i18n'
+import { formatDate, t, tp, weekdayLetters } from '../lib/i18n'
 import { playDrop, playPop } from '../lib/sound'
 
 type Props = {
@@ -195,7 +195,7 @@ export function Calendar({
                     own.map((e) => (
                       <span
                         key={e.id}
-                        className={`truncate rounded-md px-1.5 py-0.5 text-[0.65rem] ${TYPES[e.type].chip}`}
+                        className={`truncate rounded-md px-1.5 py-0.5 text-[0.65rem] ${TYPES[e.type].chip}`} style={subjects.find(x => x.id === e.subject) ? { background: subjects.find(x => x.id === e.subject)!.color, color: textOn(subjects.find(x => x.id === e.subject)!.color) } : undefined}
                       >
                         {e.title}
                       </span>
@@ -272,7 +272,7 @@ export function Calendar({
               <span className="flex gap-0.5 sm:hidden">
                 {anniversary && <span className="h-1 w-1 rounded-full bg-yellow-500" />}
                 {dayItems.slice(0, 3).map((e) => (
-                  <span key={e.id} className={`h-1 w-1 rounded-full ${TYPES[e.type].dot}`} />
+                  <span key={e.id} className={`h-1 w-1 rounded-full ${TYPES[e.type].dot}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                 ))}
               </span>
 
@@ -285,7 +285,7 @@ export function Calendar({
                 {dayItems.slice(0, 2).map((e) => (
                   <span
                     key={e.id}
-                    className={`truncate rounded-md px-1.5 py-0.5 text-left text-[0.65rem] leading-4 ${TYPES[e.type].chip}`}
+                    className={`truncate rounded-md px-1.5 py-0.5 text-left text-[0.65rem] leading-4 ${TYPES[e.type].chip}`} style={subjects.find(x => x.id === e.subject) ? { background: subjects.find(x => x.id === e.subject)!.color, color: textOn(subjects.find(x => x.id === e.subject)!.color) } : undefined}
                   >
                     {e.title}
                   </span>
@@ -399,7 +399,7 @@ function DayDialog({
   onDelete,
 }: DialogProps) {
   const [y, m, d] = date.split('-').map(Number)
-  const label = new Date(y, m - 1, d).toLocaleDateString(locale(), {
+  const label = formatDate(new Date(y, m - 1, d), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -480,7 +480,7 @@ function DayDialog({
               key={e.id}
               className="flex items-start gap-3 rounded-xl border border-black/[0.07] px-4 py-3 dark:border-white/[0.08]"
             >
-              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} />
+              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${TYPES[e.type].dot}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
               <div className="min-w-0 flex-1">
                 <p className="flex min-w-0 items-center gap-1.5 truncate text-sm">
                   <span className="truncate">{e.title}</span>

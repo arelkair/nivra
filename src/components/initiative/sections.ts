@@ -16,6 +16,10 @@ export type Section =
   | 'lab'
   | 'ajustes'
   | 'boveda'
+  | 'account'
+  | 'login'
+  | 'changelog'
+  | 'study'
 
 export type SectionInfo = { id: Section; group: string; label: string; short: string; icon: string }
 
@@ -27,6 +31,7 @@ export const SECTIONS: SectionInfo[] = [
   { id: 'examenes', group: 'Estudio', label: 'Exámenes y Proyectos', short: 'Exám.', icon: 'exams' },
   { id: 'notas', group: 'Estudio', label: 'Notas', short: 'Notas', icon: 'grades' },
   { id: 'tarjetas', group: 'Estudio', label: 'Tarjetas', short: 'Tarjetas', icon: 'cards' },
+  { id: 'study', group: 'Estudio', label: 'Mi curso', short: 'Curso', icon: 'grades' },
   { id: 'banco', group: 'Dinero', label: 'Dinero', short: 'Dinero', icon: 'bank' },
   { id: 'deseos', group: 'Dinero', label: 'Lista de Deseos', short: 'Deseos', icon: 'wish' },
   { id: 'suscripciones', group: 'Dinero', label: 'Suscripciones', short: 'Subs', icon: 'subs' },

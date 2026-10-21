@@ -4,6 +4,7 @@ import { notifyWithUndo } from '../lib/undo'
 import { Empty, Icon, Modal, button, card, input, line } from '../components/ui'
 import { t, tp } from '../lib/i18n'
 import { playDrop, playPop } from '../lib/sound'
+import { NoteHistory } from '../components/NoteHistory'
 
 type Props = {
   notepads: Notepad[]
@@ -16,6 +17,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
   const [activeId, setActiveId] = useState<string | null>(notepads[0]?.id ?? null)
   const [renaming, setRenaming] = useState<Notepad | null>(null)
   const [creating, setCreating] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
   const active = notepads.find((n) => n.id === activeId) ?? notepads[0]
@@ -29,6 +31,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-4">
+      {historyOpen && active && <NoteHistory noteId={active.id} source="nivra-notepads" onClose={() => setHistoryOpen(false)} />}
       <div className="flex flex-wrap items-center gap-2">
         {notepads.map((n) => (
           <button
@@ -69,6 +72,7 @@ export function Notepads({ notepads, setNotepads }: Props) {
             {n.title}
           </button>
         ))}
+        {active && <button type="button" onClick={() => setHistoryOpen(true)} aria-label={t('Historial de versiones')} title={t('Historial de versiones')} className="grid h-10 w-10 place-items-center rounded-md border border-(--minimal-line)"><Icon name="history" className="h-4 w-4" /></button>}
         <button
           type="button"
           onClick={() => setCreating(true)}

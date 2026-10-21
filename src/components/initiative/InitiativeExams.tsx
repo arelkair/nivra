@@ -76,9 +76,7 @@ export function InitiativeExams({ works, setWorks, subjects, notes, onCreateNote
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">
-          {t('Exámenes y Proyectos')}
-        </h1>
+        <div><h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Exámenes y Proyectos')}</h1><p className={`mt-2 text-sm ${s.muted}`}>{t('Prepárate con tiempo.')}</p></div>
         <p className={`font-mono text-xs ${s.faint}`}>
           {tp('{0} próximos', works.filter((w) => inTab(w, 'proximos')).length)}
         </p>

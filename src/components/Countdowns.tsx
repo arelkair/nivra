@@ -1,7 +1,7 @@
 import { useEffect, useState, type DragEvent } from 'react'
 import { UNITS, countdown, moveById, progress, type Countdown, type Unit } from '../lib/store'
 import { Empty, Icon, Label, Modal, Switch, button, card, input, line } from './ui'
-import { locale, t } from '../lib/i18n'
+import { formatDate, t } from '../lib/i18n'
 import { playDrop } from '../lib/sound'
 
 type Props = {
@@ -22,7 +22,7 @@ const timeOf = (iso?: string) => {
 }
 
 const shortDateTime = (iso: string) =>
-  `${new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })} ${timeOf(iso)}`
+  `${formatDate(new Date(iso), { day: 'numeric', month: 'short' })} ${timeOf(iso)}`
 
 const DEFAULT_UNITS: Record<Unit, boolean> = {
   years: false,

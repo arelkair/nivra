@@ -1,3 +1,5 @@
+import { HomeLayout } from './HomeLayout'
+import { CourseOverview } from '../study/StudyHub'
 import { useState } from 'react'
 import {
   blockProfile,
@@ -21,7 +23,7 @@ import {
   type Work,
   taskWhen,
 } from '../../lib/store'
-import { locale, t, tp } from '../../lib/i18n'
+import { formatDate, locale, t, tp } from '../../lib/i18n'
 import { playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { daysLeft, relativeDays } from './dates'
@@ -52,6 +54,7 @@ type Props = {
   profile: string
   subs: Subscription[]
   bank: { balance: number; movements: Movement[] } | null
+  bankEnabled: boolean
   onOpen: (section: HomeSection) => void
 }
 
@@ -76,6 +79,7 @@ export function InitiativeHome({
   profile,
   subs,
   bank,
+  bankEnabled,
   onOpen,
 }: Props) {
   const s = skin(dark)
@@ -148,6 +152,7 @@ export function InitiativeHome({
           type="button"
           onClick={() => complete(task.id)}
           aria-label={task.title}
+          style={subject ? { borderColor: subject.color } : undefined}
           className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border transition-colors ${
             dark ? 'border-white/25 hover:border-white/60' : 'border-black/25 hover:border-black/60'
           }`}
@@ -190,7 +195,7 @@ export function InitiativeHome({
   const dayCount = todayAnniversaries.length + todayItems.length + dayTasks.length
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 md:h-full md:gap-4">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 md:gap-4">
       <div className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="flex flex-col gap-1">
           <p className={`text-sm ${s.muted}`}>{userName.trim() ? `${greeting}, ${userName.trim()}.` : `${greeting}.`}</p>
@@ -198,7 +203,7 @@ export function InitiativeHome({
             {now.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </p>
           <p className={`font-mono text-sm ${s.muted}`}>
-            {capitalize(now.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
+            {capitalize(formatDate(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -232,6 +237,7 @@ export function InitiativeHome({
         </div>
       </div>
 
+      <HomeLayout>
       <section
         style={{ animationDelay: '0.08s' }}
         className={`animate-[fade-in_0.6s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3 rounded-2xl border p-4 md:shrink-0 md:p-4 ${s.line} ${s.panel}`}
@@ -269,8 +275,7 @@ export function InitiativeHome({
         )}
       </section>
 
-      <div className="grid gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
-        <div className="flex flex-col gap-4 md:min-h-0">
+
           <Panel grow={2} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
             {dayCount === 0 && empty(t('Hoy no hay nada planeado.'))}
             {todayAnniversaries.map((a) => (
@@ -282,7 +287,7 @@ export function InitiativeHome({
             ))}
             {todayItems.map((e) => (
               <div key={e.id + e.date} className={row}>
-                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find(x => x.id === e.subject)?.color }} />
                 <span className="min-w-0 flex-1 truncate">{e.title}</span>
                 <span className={`shrink-0 font-mono text-[0.7rem] ${s.faint}`}>{t('Todo el día')}</span>
               </div>
@@ -318,9 +323,7 @@ export function InitiativeHome({
           </Panel>
 
           <InitiativeCountdowns countdowns={countdowns} setCountdowns={setCountdowns} now={now} dark={dark} delay={0.2} />
-        </div>
 
-        <div className="flex flex-col gap-4 md:min-h-0">
           <Panel grow={1} title={t('Exámenes y Proyectos')} count={upcomingWorks.length} dark={dark} delay={0.2} onOpen={() => onOpen('examenes')}>
             {upcomingWorks.length === 0
               ? empty(t('Nada por venir.'))
@@ -375,10 +378,10 @@ export function InitiativeHome({
                 ))}
           </Panel>
 
-          {bank && (
+          {bankEnabled && (
             <Panel title={t('Dinero')} dark={dark} delay={0.28} onOpen={() => onOpen('banco')}>
               <div className="flex flex-col gap-1 py-3">
-                <span className={`font-mono text-3xl font-semibold tabular-nums ${bank.balance < 0 ? 'text-red-500' : ''}`}>{eur(bank.balance)}</span>
+                <span className={`font-mono text-3xl font-semibold tabular-nums ${(bank?.balance ?? 0) < 0 ? 'text-red-500' : ''}`}>{bank ? eur(bank.balance) : t('Configurar dinero')}</span>
                 <span className={`font-mono text-xs ${monthNet < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                   {monthNet >= 0 ? '+' : ''}
                   {eur(monthNet)} <span className={s.muted}>{t('este mes')}</span>
@@ -386,8 +389,8 @@ export function InitiativeHome({
               </div>
             </Panel>
           )}
-        </div>
-      </div>
+        <CourseOverview tasks={tasks} grades={grades} />
+      </HomeLayout>
     </div>
   )
 }

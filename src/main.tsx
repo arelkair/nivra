@@ -25,16 +25,23 @@ import '@fontsource/space-grotesk/latin-ext-600.css'
 import '@fontsource-variable/geist'
 import '@fontsource-variable/geist-mono'
 import './index.css'
+import './minimal.css'
 import App from './App.tsx'
 import { Legal } from './pages/Legal'
 import { legalFromPath } from './lib/legal'
 import { preloadSections } from './lib/lazy'
+import { StandalonePage } from './pages/Standalone'
+import { isPublicPage, isStandalone } from './lib/routes'
+import { PinGate } from './components/PinLock'
+import { purgeExpiredTrash } from './lib/dataLifecycle'
 
 const legal = legalFromPath()
 
-createRoot(document.getElementById('root')!).render(<StrictMode>{legal ? <Legal kind={legal} /> : <App />}</StrictMode>)
+purgeExpiredTrash()
+const content = legal ? <Legal kind={legal} /> : isStandalone() ? <StandalonePage /> : <App />
+createRoot(document.getElementById('root')!).render(<StrictMode>{legal || (isStandalone() && isPublicPage()) ? content : <PinGate scope="app">{content}</PinGate>}</StrictMode>)
 
-if (!legal) preloadSections(localStorage.getItem('nivra-initiative') === 'true' ? 'initiative' : 'classic')
+if (!legal && !isStandalone()) preloadSections(localStorage.getItem('nivra-initiative') !== 'false' ? 'initiative' : 'classic')
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   addEventListener('load', () => {

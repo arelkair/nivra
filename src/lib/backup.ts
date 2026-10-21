@@ -118,7 +118,7 @@ export function clearAllData() {
   const keys: string[] = []
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i)
-    if (k && k.startsWith('nivra-')) keys.push(k)
+    if (k && (k.startsWith('nivra-') || k.startsWith('device-nivra-'))) keys.push(k)
   }
   for (const k of keys) localStorage.removeItem(k)
   for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -126,6 +126,7 @@ export function clearAllData() {
     if (k?.startsWith(AUTH_KEY)) localStorage.removeItem(k)
   }
   indexedDB.deleteDatabase('nivra-files')
+  indexedDB.deleteDatabase('nivra-backups')
 }
 
 export async function importJson(fileInput: File) {
