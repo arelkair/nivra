@@ -665,9 +665,14 @@ function App() {
         {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
         <SetupScreen
           delay={cfg.intro ? 2.25 : 0}
-          onDone={(name) => {
-            cfg.setUserName(name)
+          onDone={(name, initiative) => {
             localStorage.setItem(SETUP_KEY, '1')
+            if (initiative) {
+              localStorage.setItem('nivra-name', JSON.stringify(name))
+              switchEnvironment(true)
+              return
+            }
+            cfg.setUserName(name)
             setSetupDone(true)
           }}
         />
@@ -891,15 +896,6 @@ function App() {
                 className={headerButton}
               >
                 <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="h-[18px] w-[18px]" />
-              </button>
-              <button
-                type="button"
-                onClick={() => switchEnvironment(true)}
-                aria-label={t('Cambiar a Initiative')}
-                title={t('Cambiar a Initiative')}
-                className={headerButton}
-              >
-                <Icon name="classic" className="h-[18px] w-[18px]" />
               </button>
               <button
                 type="button"

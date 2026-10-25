@@ -598,6 +598,18 @@ const EN: Record<string, string> = {
   'Privacidad': 'Privacy',
   'Nada sale de tu navegador salvo que actives la sincronización en Ajustes.': 'Nothing leaves your browser unless you turn on sync in Settings.',
   'Volver a Nivra Classic': 'Back to Nivra Classic',
+  Interfaz: 'Interface',
+  Cambiar: 'Switch',
+  'Cambiar a Nivra Classic': 'Switch to Nivra Classic',
+  'Compartir datos con Initiative': 'Share data with Initiative',
+  'Compartir datos con Classic': 'Share data with Classic',
+  'Moderna, con bóveda y laboratorio.': 'Modern, with a vault and a laboratory.',
+  'La original, con bloques personalizables.': 'The original, with customisable blocks.',
+  'Cada interfaz guarda sus propios datos. Puedes cambiar de interfaz o compartir los datos desde Ajustes.':
+    'Each interface keeps its own data. You can switch interface or share the data from Settings.',
+  'Una interfaz distinta con sus propias funciones. La app se recargará.': 'A different interface with its own features. The app will reload.',
+  'Si lo activas, las dos interfaces usan las mismas tareas, calendario y demás datos. Si lo desactivas, cada una vuelve a los suyos. La app se recargará.':
+    'When on, both interfaces use the same tasks, calendar and other data. When off, each one goes back to its own. The app will reload.',
   'Desactiva Initiative. Tus datos se conservan.': 'Turns Initiative off. Your data is kept.',
   'Desactivar {0}': 'Turn off {0}',
   'Ábrelo con «Importar calendario» en Google Calendar o Apple Calendar.': 'Open it with “Import calendar” in Google Calendar or Apple Calendar.',

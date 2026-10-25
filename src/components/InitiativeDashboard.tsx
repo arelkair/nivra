@@ -491,19 +491,6 @@ export function InitiativeDashboard({
         </button>
         <button
           type="button"
-          onClick={onDisable}
-          aria-label={t('Volver a Nivra Classic')}
-          title={t('Volver a Nivra Classic')}
-          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
-            dark
-              ? 'border-white/[0.12] text-neutral-400 hover:bg-white/5 hover:text-white'
-              : 'border-black/[0.1] text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
-          }`}
-        >
-          <Icon name="initiative" className="h-[18px] w-[18px]" />
-        </button>
-        <button
-          type="button"
           onClick={() => setSection('ajustes')}
           aria-current={section === 'ajustes'}
           aria-label={t('Ajustes')}

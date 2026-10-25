@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { deleteSnapshot, listSnapshots, restoreSnapshot, snapshotNow, type Snapshot } from '../../lib/autoBackup'
 import { clearAllData, exportCalendarIcs, exportCsv, exportJson, exportTimetableIcs, importJson } from '../../lib/backup'
-import { LANGS, getLang, setLang, t, tp } from '../../lib/i18n'
+import { LANGS, getLang, setLang, t } from '../../lib/i18n'
 import { askNotificationPermission, notificationPermission, notificationsSupported } from '../../lib/notify'
 import type { Settings } from '../../lib/settings'
 import { SUBJECT_COLORS, hasSubject, reorder, subjectId, type Anniversary, type Block, type CalItem, type Subject } from '../../lib/store'
@@ -12,6 +12,7 @@ import type { SyncUi } from '../syncUi'
 import type { SyncState } from '../../lib/sync'
 import { clearReturnToSync, shouldReturnToSync } from '../../lib/supabase'
 import { ShortcutsEditor } from './ShortcutsPanel'
+import { setSharedData, sharesData } from '../../lib/space'
 import { skin, type Skin } from './skin'
 
 type Props = {
@@ -436,15 +437,15 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
 
           {group === 'acerca' && (
             <section className={panel}>
-              <Row s={s} label={t('Initiative (beta)')} hint={t('Una interfaz alternativa de Nivra. Comparte los mismos datos que Classic.')}>
-                <span />
-              </Row>
               <Row s={s} label={t('Privacidad')} hint={t('Nada sale de tu navegador salvo que actives la sincronización en Ajustes.')}>
                 <span />
               </Row>
-              <Row s={s} label={t('Volver a Nivra Classic')} hint={t('Desactiva Initiative. Tus datos se conservan.')}>
+              <Row s={s} label={t('Compartir datos con Classic')} hint={t('Si lo activas, las dos interfaces usan las mismas tareas, calendario y demás datos. Si lo desactivas, cada una vuelve a los suyos. La app se recargará.')}>
+                <Toggle s={s} on={sharesData} onChange={setSharedData} label={t('Compartir datos con Classic')} />
+              </Row>
+              <Row s={s} label={t('Cambiar a Nivra Classic')} hint={t('Una interfaz distinta con sus propias funciones. La app se recargará.')}>
                 <button type="button" onClick={onDisable} className={s.ghost}>
-                  {tp('Desactivar {0}', 'Initiative')}
+                  {t('Cambiar')}
                 </button>
               </Row>
             </section>

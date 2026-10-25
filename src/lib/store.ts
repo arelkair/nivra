@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { onSyncApplied, markChanged } from './sync'
+import { scopedKey } from './space'
 import { locale } from './i18n'
 
 export type PageId =
@@ -572,7 +573,8 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
 export const eur = (n: number) =>
   new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' }).format(n)
 
-export function useStored<T>(key: string, initial: T) {
+export function useStored<T>(name: string, initial: T) {
+  const key = scopedKey(name)
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = localStorage.getItem(key)

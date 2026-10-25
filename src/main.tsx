@@ -24,6 +24,9 @@ import '@fontsource/space-grotesk/latin-ext-500.css'
 import '@fontsource/space-grotesk/latin-ext-600.css'
 import './index.css'
 import App from './App.tsx'
+import { prepareSpaces } from './lib/space'
+
+prepareSpaces()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

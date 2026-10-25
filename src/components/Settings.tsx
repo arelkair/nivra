@@ -8,6 +8,7 @@ import type { SyncState } from '../lib/sync'
 import { SHAPES, GRADIENTS, saveBackgroundImage, clearBackgroundImage, loadBackgroundImage } from '../lib/background'
 import { playDrop, playPop } from '../lib/sound'
 import { SyncPanel } from './Sync'
+import { setSharedData, sharesData } from '../lib/space'
 import { clearReturnToSync, shouldReturnToSync } from '../lib/supabase'
 import { Collapsible, Icon, Modal, Switch, button, ghost, input, line } from './ui'
 import { LANGS, getLang, setLang, t, tp } from '../lib/i18n'
@@ -209,7 +210,7 @@ export function Settings({
 
         <div>
           <Collapsible
-            title={t('Initiative')}
+            title={t('Interfaz')}
             open={openSection === 'initiative'}
             animar={cfg.animations}
             onToggle={() => alterna('initiative')}
@@ -220,8 +221,14 @@ export function Settings({
                 cfg.setInitiativeEnabled(v)
                 if (v) onActivateInitiative()
               }}
-              label={t('Activar Initiative (beta)')}
-              hint={t('Una UI totalmente renovada y con funciones extra.')}
+              label={t('Cambiar a Initiative')}
+              hint={t('Una interfaz distinta con sus propias funciones. La app se recargará.')}
+            />
+            <Switch
+              checked={sharesData}
+              onChange={setSharedData}
+              label={t('Compartir datos con Initiative')}
+              hint={t('Si lo activas, las dos interfaces usan las mismas tareas, calendario y demás datos. Si lo desactivas, cada una vuelve a los suyos. La app se recargará.')}
             />
           </Collapsible>
         </div>

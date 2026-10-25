@@ -9,9 +9,15 @@ const FEATURES = [
   { icon: 'dashboard', title: 'Privado', desc: 'Todo en tu navegador.' },
 ]
 
-export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void; delay: number }) {
+const INTERFACES = [
+  { id: true, label: 'Initiative', hint: 'Moderna, con bóveda y laboratorio.' },
+  { id: false, label: 'Classic', hint: 'La original, con bloques personalizables.' },
+]
+
+export function SetupScreen({ onDone, delay }: { onDone: (name: string, initiative: boolean) => void; delay: number }) {
   const lang = getLang()
   const [name, setName] = useState('')
+  const [initiative, setInitiative] = useState(true)
 
   return (
     <div className="flex min-h-svh items-center bg-[var(--paper)] px-6 py-16 text-neutral-900 sm:px-10  dark:text-neutral-200">
@@ -52,6 +58,34 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void;
           </div>
         </div>
 
+        <div
+          style={{ animationDelay: `${delay + 0.15}s` }}
+          className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-2"
+        >
+          <span className="text-[0.68rem] font-medium tracking-[0.14em] text-neutral-400 uppercase dark:text-neutral-500">
+            {t('Interfaz')}
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {INTERFACES.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => setInitiative(option.id)}
+                aria-pressed={option.id === initiative}
+                className={`flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+                  option.id === initiative
+                    ? 'border-neutral-900 dark:border-white'
+                    : 'border-black/[0.07] text-neutral-500 hover:bg-black/[0.03] dark:border-white/[0.08] dark:text-neutral-400 dark:hover:bg-white/[0.04]'
+                }`}
+              >
+                <span className="text-sm font-medium">{option.label}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{t(option.hint)}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('Cada interfaz guarda sus propios datos. Puedes cambiar de interfaz o compartir los datos desde Ajustes.')}</p>
+        </div>
+
         <ul className="flex flex-col">
           {FEATURES.map((f, i) => (
             <li
@@ -71,7 +105,7 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string) => void;
         <form
           onSubmit={(ev) => {
             ev.preventDefault()
-            onDone(name.trim())
+            onDone(name.trim(), initiative)
           }}
           style={{ animationDelay: `${delay + 0.55}s` }}
           className="animate-[fade-in_0.7s_cubic-bezier(.16,1,.3,1)_both] flex flex-col gap-3"
