@@ -13,6 +13,7 @@ import type { SyncState } from '../../lib/sync'
 import { clearReturnToSync, shouldReturnToSync } from '../../lib/supabase'
 import { ShortcutsEditor } from './ShortcutsPanel'
 import { setSharedData, sharesData } from '../../lib/space'
+import { DEFAULT_THEME, PALETTE_FIELDS, validColor, type Palette } from '../../lib/appearance'
 import { skin, type Skin } from './skin'
 
 type Props = {
@@ -61,11 +62,11 @@ function Toggle({ s, on, onChange, label }: { s: Skin; on: boolean; onChange: (v
       aria-checked={on}
       aria-label={label}
       onClick={() => onChange(!on)}
-      className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors ${on ? (s.dark ? 'border-white bg-white' : 'border-neutral-900 bg-neutral-900') : `${s.line} ${s.dark ? 'bg-white/[0.06]' : 'bg-black/[0.05]'}`}`}
+      className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors ${on ? 'border-(--minimal-accent) bg-(--minimal-accent)' : `${s.line} ${s.dark ? 'bg-white/[0.06]' : 'bg-black/[0.05]'}`}`}
     >
       <span
         className={`absolute top-0.5 left-0.5 h-[1.15rem] w-[1.15rem] rounded-full transition-transform ${on ? 'translate-x-4' : ''} ${
-          on ? (s.dark ? 'bg-neutral-900' : 'bg-white') : s.dark ? 'bg-neutral-400' : 'bg-neutral-500'
+          on ? 'bg-(--minimal-primary-ink)' : s.dark ? 'bg-neutral-400' : 'bg-neutral-500'
         }`}
       />
     </button>
@@ -80,6 +81,92 @@ function Segmented<T extends string | number>({ s, value, options, onChange, lab
           {o.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+function ThemeEditor({ s, cfg }: { s: Skin; cfg: Settings }) {
+  const theme = cfg.customTheme
+  const setColor = (mode: 'light' | 'dark', key: keyof Palette, value: string) =>
+    cfg.setCustomTheme((prev) => ({ ...prev, [mode]: { ...prev[mode], [key]: value } }))
+  const saved = cfg.savedThemes.some((x) => x.name === theme.name.trim())
+  return (
+    <div className={`flex flex-col gap-4 border-b py-4 ${s.line}`}>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex min-w-0 flex-1 basis-48 flex-col gap-1.5 text-xs">
+          <span className={s.muted}>{t('Nombre del tema')}</span>
+          <input value={theme.name} maxLength={40} onChange={(e) => cfg.setCustomTheme((prev) => ({ ...prev, name: e.target.value }))} className={s.field} />
+        </label>
+        <button
+          type="button"
+          disabled={!theme.name.trim()}
+          onClick={() => {
+            const next = { ...theme, name: theme.name.trim() }
+            cfg.setSavedThemes((prev) => [...prev.filter((x) => x.name !== next.name), next])
+            notify(t('Tema guardado.'))
+          }}
+          className={`${s.ghost} disabled:opacity-40`}
+        >
+          {t('Guardar tema')}
+        </button>
+        <button type="button" onClick={() => cfg.setCustomTheme(DEFAULT_THEME)} className={s.ghost}>
+          {t('Restablecer')}
+        </button>
+      </div>
+      {cfg.savedThemes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {cfg.savedThemes.map((x) => (
+            <button
+              key={x.name}
+              type="button"
+              onClick={() => cfg.setCustomTheme(x)}
+              aria-pressed={x.name === theme.name}
+              className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${s.line} ${x.name === theme.name ? s.active : s.hover}`}
+            >
+              <span className="h-3 w-3 rounded-full" style={{ background: x[s.dark ? 'dark' : 'light'].accent }} />
+              {x.name}
+            </button>
+          ))}
+          {saved && (
+            <button type="button" onClick={() => cfg.setSavedThemes((prev) => prev.filter((x) => x.name !== theme.name.trim()))} className={`text-xs underline underline-offset-4 ${s.muted}`}>
+              {t('Quitar tema guardado')}
+            </button>
+          )}
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(['light', 'dark'] as const).map((mode) => (
+          <fieldset key={mode} className={`flex flex-col gap-2.5 rounded-lg border p-3 ${s.line}`}>
+            <legend className="px-1 text-xs font-medium">{mode === 'light' ? t('Modo claro') : t('Modo oscuro')}</legend>
+            {PALETTE_FIELDS.map(({ key, label }) => (
+              <label key={key} className="flex items-center justify-between gap-3 text-sm">
+                <span>{t(label)}</span>
+                <span className="flex items-center gap-2">
+                  <input
+                    value={theme[mode][key]}
+                    onChange={(e) => setColor(mode, key, e.target.value)}
+                    maxLength={7}
+                    spellCheck={false}
+                    aria-label={`${t(label)} · ${mode === 'light' ? t('Modo claro') : t('Modo oscuro')}`}
+                    className={`w-[5.5rem] rounded-md border bg-transparent px-2 py-1 font-mono text-xs ${validColor(theme[mode][key]) ? s.line : 'border-red-500'}`}
+                  />
+                  <input
+                    type="color"
+                    value={validColor(theme[mode][key]) ? theme[mode][key] : '#000000'}
+                    onChange={(e) => setColor(mode, key, e.target.value)}
+                    aria-label={t(label)}
+                    className="h-7 w-9 cursor-pointer rounded border-0 bg-transparent p-0"
+                  />
+                </span>
+              </label>
+            ))}
+            <div className="mt-1 rounded-md p-3 text-xs" style={{ background: theme[mode].background, color: theme[mode].text }}>
+              <span style={{ color: theme[mode].accent }} className="font-medium">{theme.name || t('Mi tema')}</span>
+              <div className="mt-2 rounded p-2" style={{ background: theme[mode].surface }}>{t('Vista previa')}</div>
+            </div>
+          </fieldset>
+        ))}
+      </div>
     </div>
   )
 }
@@ -198,6 +285,19 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
                   }}
                   label={t('Tema')}
                 />
+              </Row>
+              <Row s={s} label={t('Colores propios')} hint={t('Elige el color destacado, el fondo, los paneles y el texto, por separado para el modo claro y el oscuro.')}>
+                <Toggle s={s} on={cfg.customThemeOn} onChange={cfg.setCustomThemeOn} label={t('Colores propios')} />
+              </Row>
+              {cfg.customThemeOn && <ThemeEditor s={s} cfg={cfg} />}
+              <Row s={s} label={t('Alto contraste')} hint={t('Texto y bordes más marcados.')}>
+                <Toggle s={s} on={cfg.highContrast} onChange={cfg.setHighContrast} label={t('Alto contraste')} />
+              </Row>
+              <Row s={s} label={t('Texto más grande')}>
+                <Toggle s={s} on={cfg.largeText} onChange={cfg.setLargeText} label={t('Texto más grande')} />
+              </Row>
+              <Row s={s} label={t('Fuente para dislexia')} hint={t('Usa OpenDyslexic en toda la interfaz.')}>
+                <Toggle s={s} on={cfg.dyslexiaFont} onChange={cfg.setDyslexiaFont} label={t('Fuente para dislexia')} />
               </Row>
               <Row s={s} label={t('Animaciones')} hint={t('Transiciones suaves al abrir y cerrar cosas.')}>
                 <Toggle s={s} on={cfg.animations} onChange={cfg.setAnimations} label={t('Animaciones')} />

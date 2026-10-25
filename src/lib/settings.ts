@@ -1,5 +1,6 @@
 import { useStored, type Subject } from './store'
 import { DEFAULT_DASHBOARD_SLOTS, type WidgetType } from './dashboardLayout'
+import { DEFAULT_THEME, type CustomTheme } from './appearance'
 
 export function useSettings() {
   const [intro, setIntro] = useStored('nivra-intro', true)
@@ -52,6 +53,12 @@ export function useSettings() {
   const [shortcutsOn, setShortcutsOn] = useStored('nivra-shortcuts', true)
   const [enabledShortcuts, setEnabledShortcuts] = useStored<Record<string, boolean>>('nivra-shortcut-keys', {})
   const [customKeys, setCustomKeys] = useStored<Record<string, string>>('nivra-shortcut-custom', {})
+  const [customTheme, setCustomTheme] = useStored<CustomTheme>('nivra-custom-theme', DEFAULT_THEME)
+  const [customThemeOn, setCustomThemeOn] = useStored('nivra-custom-theme-on', false)
+  const [savedThemes, setSavedThemes] = useStored<CustomTheme[]>('nivra-saved-themes', [])
+  const [highContrast, setHighContrast] = useStored('nivra-high-contrast', false)
+  const [largeText, setLargeText] = useStored('nivra-large-text', false)
+  const [dyslexiaFont, setDyslexiaFont] = useStored('nivra-dyslexia', false)
 
   return {
     intro,
@@ -126,6 +133,18 @@ export function useSettings() {
     setEnabledShortcuts,
     customKeys,
     setCustomKeys,
+    customTheme,
+    setCustomTheme,
+    customThemeOn,
+    setCustomThemeOn,
+    savedThemes,
+    setSavedThemes,
+    highContrast,
+    setHighContrast,
+    largeText,
+    setLargeText,
+    dyslexiaFont,
+    setDyslexiaFont,
   }
 }
 

@@ -148,7 +148,7 @@ export function InitiativeMusic({ dark, cfg, open, onClose, embed, ambientVideoI
         aria-hidden={!open}
         className={
           open
-            ? `fixed right-4 bottom-[4.25rem] z-40 flex max-h-[calc(100svh-6rem)] w-80 max-w-[calc(100vw-2rem)] flex-col gap-3 overflow-y-auto rounded-2xl border p-4 shadow-2xl backdrop-blur-sm max-md:right-3 max-md:bottom-[8.25rem] max-md:left-3 max-md:w-auto max-md:max-w-none ${s.line} ${dark ? 'bg-[#131316]/95 text-neutral-100 [color-scheme:dark]' : 'bg-white/95 text-neutral-900'}`
+            ? `fixed right-4 bottom-[4.25rem] z-40 flex max-h-[calc(100svh-6rem)] w-80 max-w-[calc(100vw-2rem)] flex-col gap-3 overflow-y-auto rounded-2xl border p-4 shadow-2xl backdrop-blur-sm max-md:right-3 max-md:bottom-[8.25rem] max-md:left-3 max-md:w-auto max-md:max-w-none ${s.line} ${dark ? 'bg-(--nv-surface)/95 text-neutral-100 [color-scheme:dark]' : 'bg-white/95 text-neutral-900'}`
             : 'pointer-events-none fixed top-0 -left-[9999px] w-80 opacity-0'
         }
       >

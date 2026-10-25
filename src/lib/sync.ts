@@ -48,6 +48,12 @@ const VISUAL_KEYS = new Set([
   'nivra-toasts',
   'nivra-notifs',
   'nivra-lang',
+  'nivra-custom-theme',
+  'nivra-custom-theme-on',
+  'nivra-saved-themes',
+  'nivra-high-contrast',
+  'nivra-large-text',
+  'nivra-dyslexia',
 ])
 
 export type SyncState = {

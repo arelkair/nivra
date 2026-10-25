@@ -4,6 +4,7 @@ import { InitiativeSettingsPage } from './initiative/InitiativeSettingsPage'
 import type { Settings } from '../lib/settings'
 import type { SyncState } from '../lib/sync'
 import { shouldReturnToSync } from '../lib/supabase'
+import { applyAppearance, clearAppearance } from '../lib/appearance'
 import { t } from '../lib/i18n'
 import {
   useStored,
@@ -239,6 +240,12 @@ export function InitiativeDashboard({
   const dark = theme === 'dark'
 
   useEffect(() => {
+    const root = document.documentElement
+    applyAppearance(root, cfg.customTheme, cfg.customThemeOn, cfg.highContrast, cfg.largeText, cfg.dyslexiaFont)
+    return () => clearAppearance(root)
+  }, [cfg.customTheme, cfg.customThemeOn, cfg.highContrast, cfg.largeText, cfg.dyslexiaFont])
+
+  useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
     return () => {
       let saved = ''
@@ -419,7 +426,7 @@ export function InitiativeDashboard({
   return (
     <div
       className={`relative z-10 flex h-svh flex-col overflow-hidden transition-colors ${
-        dark ? 'bg-[#0a0a0c] text-neutral-100 [color-scheme:dark]' : 'bg-[#f5f4f0] text-neutral-900'
+        dark ? 'bg-(--nv-root) text-neutral-100 [color-scheme:dark]' : 'bg-(--nv-root) text-neutral-900'
       }`}
     >
       <aside
@@ -431,7 +438,7 @@ export function InitiativeDashboard({
         <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pb-2">
           {groups.map((g) => (
             <div key={g.title} className="flex flex-col gap-0.5">
-              <p className={`mb-1 px-3 font-mono text-[0.6rem] tracking-[0.18em] uppercase ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+              <p className="nv-group-label mb-1 px-3">
                 {t(g.title)}
               </p>
               {g.items.map((s) => (
@@ -439,12 +446,10 @@ export function InitiativeDashboard({
                   key={s.id}
                   type="button"
                   onClick={() => setSection(s.id)}
-                  aria-current={current === s.id}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                  aria-current={current === s.id ? 'page' : undefined}
+                  className={`nv-nav flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
                     current === s.id
-                      ? dark
-                        ? 'bg-white/10 font-medium text-white'
-                        : 'bg-black/[0.06] font-medium text-neutral-900'
+                      ? 'font-medium'
                       : dark
                         ? 'text-neutral-400 hover:bg-white/5 hover:text-neutral-100'
                         : 'text-neutral-600 hover:bg-black/[0.04] hover:text-neutral-900'
@@ -507,7 +512,7 @@ export function InitiativeDashboard({
 
       <nav
         className={`nivra-scroll fixed inset-x-0 bottom-0 z-20 flex overflow-x-auto border-t pb-[env(safe-area-inset-bottom)] md:hidden ${
-          dark ? 'border-white/[0.08] bg-[#0a0a0c]/95' : 'border-black/[0.08] bg-[#f5f4f0]/95'
+          dark ? 'border-white/[0.08] bg-(--nv-root)/95' : 'border-black/[0.08] bg-(--nv-root)/95'
         } backdrop-blur`}
       >
         {sections.map((sec) => (
@@ -736,7 +741,7 @@ export function InitiativeDashboard({
                 ? 'border-white bg-white text-neutral-900'
                 : 'border-neutral-900 bg-neutral-900 text-white'
               : dark
-                ? 'border-white/[0.12] bg-[#131316] text-neutral-300 hover:text-white'
+                ? 'border-white/[0.12] bg-(--nv-surface) text-neutral-300 hover:text-white'
                 : 'border-black/[0.1] bg-white text-neutral-600 hover:text-neutral-900'
           }`}
         >
@@ -754,7 +759,7 @@ export function InitiativeDashboard({
                 ? 'border-white bg-white text-neutral-900'
                 : 'border-neutral-900 bg-neutral-900 text-white'
               : dark
-                ? 'border-white/[0.12] bg-[#131316] text-neutral-300 hover:text-white'
+                ? 'border-white/[0.12] bg-(--nv-surface) text-neutral-300 hover:text-white'
                 : 'border-black/[0.1] bg-white text-neutral-600 hover:text-neutral-900'
           }`}
         >

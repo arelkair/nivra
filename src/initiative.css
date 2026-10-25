@@ -1,0 +1,274 @@
+@font-face {
+  font-family: OpenDyslexic;
+  src: url('/fonts/OpenDyslexic-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+:root.initiative-mode {
+  font-size: 106.25%;
+  --paper: #faf9f6;
+  --surface: #ffffff;
+  --sunken: #f0efeb;
+  --nv-root: var(--paper);
+  --nv-surface: var(--surface);
+  --nv-raised: var(--sunken);
+  --minimal-text: #292825;
+  --minimal-muted: #67645d;
+  --minimal-line: #dedcd6;
+  --minimal-accent: #6b5599;
+  --minimal-primary-ink: #ffffff;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --nv-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --nv-ring: color-mix(in oklab, var(--minimal-accent) 70%, transparent);
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+}
+
+:root.initiative-mode.dark {
+  --paper: #202020;
+  --surface: #252525;
+  --sunken: #1b1b1b;
+  --minimal-text: #e1dfda;
+  --minimal-muted: #a6a39d;
+  --minimal-line: #383735;
+  --minimal-accent: #b4a0df;
+  --minimal-primary-ink: #202020;
+}
+
+:root.initiative-mode[data-custom-theme='true'] {
+  --paper: var(--custom-light-background);
+  --surface: var(--custom-light-surface);
+  --sunken: color-mix(in srgb, var(--custom-light-surface) 80%, var(--custom-light-background));
+  --minimal-text: var(--custom-light-text);
+  --minimal-muted: color-mix(in srgb, var(--custom-light-text) 72%, var(--paper));
+  --minimal-accent: var(--custom-light-accent);
+  --minimal-line: color-mix(in srgb, var(--custom-light-text) 18%, var(--paper));
+}
+
+:root.initiative-mode.dark[data-custom-theme='true'] {
+  --paper: var(--custom-dark-background);
+  --surface: var(--custom-dark-surface);
+  --sunken: color-mix(in srgb, var(--custom-dark-surface) 80%, var(--custom-dark-background));
+  --minimal-text: var(--custom-dark-text);
+  --minimal-muted: color-mix(in srgb, var(--custom-dark-text) 72%, var(--paper));
+  --minimal-accent: var(--custom-dark-accent);
+  --minimal-line: color-mix(in srgb, var(--custom-dark-text) 18%, var(--paper));
+}
+
+:root.initiative-mode[data-contrast='high'] {
+  --paper: #ffffff;
+  --surface: #ffffff;
+  --sunken: #eeeeee;
+  --minimal-text: #000000;
+  --minimal-muted: #000000;
+  --minimal-line: #000000;
+  --minimal-accent: #432193;
+}
+
+:root.initiative-mode.dark[data-contrast='high'] {
+  --paper: #000000;
+  --surface: #000000;
+  --sunken: #151515;
+  --minimal-text: #ffffff;
+  --minimal-muted: #ffffff;
+  --minimal-line: #ffffff;
+  --minimal-accent: #dbcaff;
+}
+
+:root.initiative-mode[data-large-text='true'] {
+  font-size: 125%;
+}
+
+.initiative-mode body {
+  color: var(--minimal-text);
+  background: var(--paper);
+  font-feature-settings: 'cv11', 'ss01';
+  letter-spacing: -0.006em;
+}
+
+.initiative-mode body,
+.initiative-mode .font-mono,
+.initiative-mode .font-display,
+.initiative-mode .font-initiative {
+  font-family: var(--font-sans);
+}
+
+.initiative-mode .font-initiative {
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.initiative-mode .tabular-nums,
+.initiative-mode .font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.initiative-mode h1 {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+.initiative-mode h1.font-initiative {
+  font-size: 2rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.initiative-mode ::selection {
+  background: color-mix(in oklab, var(--minimal-accent) 28%, transparent);
+}
+
+.initiative-mode :focus-visible {
+  outline: 2px solid var(--nv-ring);
+  outline-offset: 2px;
+}
+
+.initiative-mode :is(input, textarea, select):focus-visible {
+  outline: none;
+}
+
+.initiative-mode :is(button, input, select, textarea) {
+  accent-color: var(--minimal-accent);
+}
+
+.initiative-mode :where(button, [role='button'], [role='tab'], summary):not(:disabled) {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform, translate, scale, filter;
+  transition-duration: 160ms;
+  transition-timing-function: var(--nv-ease-out);
+}
+
+.initiative-mode .uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+}
+
+.initiative-mode main [class*='animate-[fade-in'] {
+  animation-duration: 140ms !important;
+  animation-delay: 0ms !important;
+  animation-timing-function: var(--nv-ease-out) !important;
+}
+
+.initiative-mode .nv-panel {
+  background: var(--surface);
+  border-color: var(--minimal-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.initiative-mode .nv-field {
+  background: var(--sunken);
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.initiative-mode .nv-field:focus {
+  border-color: var(--minimal-accent);
+}
+
+.initiative-mode .nv-primary {
+  background: var(--minimal-accent);
+  color: var(--minimal-primary-ink);
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.initiative-mode .nv-primary:hover {
+  background: color-mix(in srgb, var(--minimal-accent) 88%, var(--minimal-text));
+}
+
+.initiative-mode .nv-ghost,
+.initiative-mode .nv-iconbtn {
+  border-color: transparent;
+  border-radius: 6px;
+}
+
+.initiative-mode .nv-iconbtn {
+  height: 2.25rem;
+}
+
+.initiative-mode aside {
+  background: var(--sunken);
+  border-color: var(--minimal-line);
+}
+
+.initiative-mode .nv-nav {
+  border-radius: 0.5rem;
+  padding-block: 0.4375rem;
+  font-size: 0.875rem;
+}
+
+.initiative-mode .nv-nav[aria-current='page'] {
+  background: color-mix(in srgb, var(--minimal-accent) 14%, transparent);
+  color: var(--minimal-accent);
+}
+
+.initiative-mode .nv-group-label {
+  margin-top: 0.25rem;
+  color: var(--minimal-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.initiative-mode main .rounded-2xl {
+  border-radius: 8px;
+}
+
+.initiative-mode main .rounded-xl {
+  border-radius: 6px;
+}
+
+.initiative-mode main [role='tablist'] {
+  border-radius: 6px;
+  background: var(--sunken);
+  padding: 4px;
+}
+
+.initiative-mode main [role='tab'][aria-selected='true'] {
+  background: var(--surface);
+  box-shadow: 0 1px 3px #00000010;
+}
+
+.initiative-mode[data-custom-theme='true'] [class*='text-neutral-'],
+.initiative-mode[data-contrast='high'] [class*='text-neutral-'] {
+  color: var(--minimal-text) !important;
+}
+
+.initiative-mode[data-custom-theme='true'] :is([class*='text-neutral-4'], [class*='text-neutral-5'], [class*='text-neutral-6']) {
+  color: var(--minimal-muted) !important;
+}
+
+.initiative-mode[data-contrast='high'] :is(.border, .border-b, .border-t, .border-r) {
+  border-color: var(--minimal-line) !important;
+}
+
+.initiative-mode[data-contrast='high'] .nv-primary {
+  background: var(--minimal-text);
+  color: var(--paper) !important;
+}
+
+.initiative-mode[data-dyslexia='true'] body,
+.initiative-mode[data-dyslexia='true'] body *:not(svg):not(path) {
+  font-family: OpenDyslexic, system-ui, sans-serif !important;
+  letter-spacing: 0.025em;
+  line-height: 1.7;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .initiative-mode button:not(:disabled):active,
+  .initiative-mode [role='button']:active {
+    scale: 0.97;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .initiative-mode button:not(:disabled):active,
+  .initiative-mode [role='button']:active {
+    scale: 1;
+  }
+}

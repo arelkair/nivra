@@ -511,7 +511,7 @@ export function InitiativeSchedule({
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className={`overflow-hidden rounded-2xl border select-none ${s.line} ${dark ? 'bg-white/[0.02]' : 'bg-white shadow-[0_1px_3px_rgba(20,20,10,0.06)]'}`}>
-          <div className={`grid border-b ${s.line} ${dark ? 'bg-white/[0.03]' : 'bg-[#faf9f6]'}`} style={gridStyle}>
+          <div className={`grid border-b ${s.line} ${dark ? 'bg-white/[0.03]' : 'bg-(--nv-raised)'}`} style={gridStyle}>
             <span />
             {days.map((d) => {
               const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + d)

@@ -102,7 +102,7 @@ export function ShortcutsHelp({ cfg, dark, onClose }: { cfg: Settings; dark: boo
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-3">
       <button type="button" aria-label={t('Cerrar')} onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div role="dialog" aria-label={t('Atajos de teclado')} className={`relative flex max-h-[80svh] w-full max-w-md flex-col overflow-hidden rounded-2xl border shadow-2xl ${s.line} ${dark ? 'bg-[#131316] text-neutral-100 [color-scheme:dark]' : 'bg-white text-neutral-900'}`}>
+      <div role="dialog" aria-label={t('Atajos de teclado')} className={`relative flex max-h-[80svh] w-full max-w-md flex-col overflow-hidden rounded-2xl border shadow-2xl ${s.line} ${dark ? 'bg-(--nv-surface) text-neutral-100 [color-scheme:dark]' : 'bg-white text-neutral-900'}`}>
         <div className={`flex items-center justify-between border-b px-5 py-3 ${s.line}`}>
           <p className="text-sm font-medium">{t('Atajos de teclado')}</p>
           <button type="button" onClick={onClose} aria-label={t('Cerrar')} className={`${s.muted} ${s.hoverText}`}>
