@@ -23,6 +23,8 @@ import {
   type BankAccount,
   MAIN_ACCOUNT,
   accountBalances,
+  accountOf,
+  dateKey,
   type NivraEvent,
   type Notepad,
   type Streak,
@@ -259,6 +261,19 @@ export function InitiativeDashboard({
   }, [dark])
   const bankBalance =
     bankEnabled && bankInitial !== null ? Object.values(accountBalances(bankInitial, accounts, movements)).reduce((a, x) => a + x, 0) : null
+  const bankViews = useMemo(() => {
+    if (!bankEnabled || bankInitial === null) return null
+    const balances = accountBalances(bankInitial, accounts, movements)
+    const monthKey = dateKey(new Date()).slice(0, 7)
+    return [{ id: MAIN_ACCOUNT, name: t('Principal') }, ...accounts].map((a) => ({
+      id: a.id,
+      name: a.name,
+      balance: balances[a.id] ?? 0,
+      monthNet: movements
+        .filter((m) => accountOf(m, accounts) === a.id && m.date.startsWith(monthKey))
+        .reduce((x, m) => x + (m.kind === 'ingreso' ? m.amount : -m.amount), 0),
+    }))
+  }, [bankEnabled, bankInitial, accounts, movements])
   const [vaultNotes, setVaultNotes] = useStored<VaultNote[]>('nivra-vault', [])
   const [vaultFolders, setVaultFolders] = useStored<VaultFolder[]>('nivra-vault-folders', [])
   const [migrated, setMigrated] = useStored<string[]>('nivra-vault-migrated', [])
@@ -591,8 +606,7 @@ export function InitiativeDashboard({
             blocks={blocks}
             anniversaries={anniversaries}
             profile={activeProfile}
-            subs={subs}
-            bank={bankBalance !== null ? { balance: bankBalance, movements } : null}
+            bank={bankViews}
             onOpen={setSection}
           />
         </main>

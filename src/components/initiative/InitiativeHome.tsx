@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   blockProfile,
   dateKey,
-  eur,
   itemsOfDay,
   monthDay,
   shortDate,
@@ -13,10 +12,8 @@ import {
   type CalItem,
   type Countdown,
   type Grade,
-  type Movement,
   type Streak,
   type Subject,
-  type Subscription,
   type Task,
   type Work,
   taskWhen,
@@ -25,9 +22,9 @@ import { locale, t, tp } from '../../lib/i18n'
 import { playPop } from '../../lib/sound'
 import { Icon } from '../ui'
 import { daysLeft, relativeDays } from './dates'
-import { nextRenewal } from './moneyCalc'
 import { formatSpan, toMin } from './scheduleLayout'
 import { InitiativeCountdowns } from './InitiativeCountdowns'
+import { InitiativeBankCarousel, type AccountView } from './InitiativeBankCarousel'
 import { Panel } from './panel'
 import { DOT, gradeTone, skin } from './skin'
 
@@ -50,8 +47,7 @@ type Props = {
   blocks: Block[]
   anniversaries: Anniversary[]
   profile: string
-  subs: Subscription[]
-  bank: { balance: number; movements: Movement[] } | null
+  bank: AccountView[] | null
   onOpen: (section: HomeSection) => void
 }
 
@@ -74,7 +70,6 @@ export function InitiativeHome({
   blocks,
   anniversaries,
   profile,
-  subs,
   bank,
   onOpen,
 }: Props) {
@@ -120,16 +115,6 @@ export function InitiativeHome({
     .filter((row) => row.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 4)
-
-  const renewals = subs
-    .filter((x) => !x.paused)
-    .map((x) => ({ sub: x, next: nextRenewal(x.day, now) }))
-    .sort((a, b) => a.next.days - b.next.days)
-
-  const monthKey = todayKey.slice(0, 7)
-  const monthNet = bank
-    ? bank.movements.filter((m) => m.date.startsWith(monthKey)).reduce((a, m) => a + (m.kind === 'ingreso' ? m.amount : -m.amount), 0)
-    : 0
 
   const empty = (text: string) => <p className={`py-3 font-mono text-xs ${s.faint}`}>{text}</p>
   const row = `flex items-center gap-3 border-b py-2.5 text-sm last:border-0 ${s.line}`
@@ -361,31 +346,7 @@ export function InitiativeHome({
             )}
           </Panel>
 
-          <Panel title={t('Suscripciones')} count={renewals.length} dark={dark} delay={0.32} onOpen={() => onOpen('suscripciones')}>
-            {renewals.length === 0
-              ? empty(t('Sin suscripciones.'))
-              : renewals.slice(0, 3).map(({ sub, next }) => (
-                  <div key={sub.id} className={row}>
-                    <span className="min-w-0 flex-1 truncate">{sub.title}</span>
-                    <span className={`shrink-0 text-[0.7rem] ${next.days <= 3 ? 'text-amber-500' : s.faint}`}>
-                      {next.days === 0 ? t('Hoy') : tp('En {0} días', next.days)}
-                    </span>
-                    <span className="shrink-0 text-[0.7rem] tabular-nums text-red-500">−{eur(sub.price)}</span>
-                  </div>
-                ))}
-          </Panel>
-
-          {bank && (
-            <Panel title={t('Dinero')} dark={dark} delay={0.28} onOpen={() => onOpen('banco')}>
-              <div className="flex flex-col gap-1 py-3">
-                <span className={`font-mono text-3xl font-semibold tabular-nums ${bank.balance < 0 ? 'text-red-500' : ''}`}>{eur(bank.balance)}</span>
-                <span className={`font-mono text-xs ${monthNet < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                  {monthNet >= 0 ? '+' : ''}
-                  {eur(monthNet)} <span className={s.muted}>{t('este mes')}</span>
-                </span>
-              </div>
-            </Panel>
-          )}
+          {bank && bank.length > 0 && <InitiativeBankCarousel accounts={bank} dark={dark} delay={0.28} onOpen={() => onOpen('banco')} />}
         </div>
       </div>
     </div>
