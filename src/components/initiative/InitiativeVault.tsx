@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { dateKey } from '../../lib/store'
 import { notify, notifyWithUndo } from '../../lib/undo'
 import { t, tp } from '../../lib/i18n'
@@ -713,8 +713,19 @@ function NotePane({
   const words = wordCount(note.body)
   const path = folderPath(folders, note.folder)
 
-  useEffect(() => {
-    if (mode === 'editar') area.current?.focus()
+  const scroller = useRef<HTMLDivElement>(null)
+  const scrollRatio = useRef(0)
+  const ratioOf = (el: HTMLElement | null) => (el && el.scrollHeight > el.clientHeight ? el.scrollTop / (el.scrollHeight - el.clientHeight) : 0)
+  const switchMode = (next: Mode) => {
+    if (next === mode) return
+    scrollRatio.current = mode === 'editar' ? ratioOf(area.current) : ratioOf(scroller.current)
+    setMode(next)
+  }
+
+  useLayoutEffect(() => {
+    const el = mode === 'editar' ? area.current : scroller.current
+    if (el) el.scrollTop = scrollRatio.current * Math.max(0, el.scrollHeight - el.clientHeight)
+    if (mode === 'editar') area.current?.focus({ preventScroll: true })
   }, [mode])
 
   useEffect(() => {
@@ -941,7 +952,7 @@ function NotePane({
           </div>
           <div className={`flex rounded-lg border p-0.5 ${s.line}`}>
             {(['vista', 'editar'] as const).map((m) => (
-              <button key={m} type="button" onClick={() => setMode(m)} aria-pressed={mode === m} className={`rounded-md px-3 py-1 text-xs transition-colors ${mode === m ? s.active : `${s.muted} ${s.hoverText}`}`}>
+              <button key={m} type="button" onClick={() => switchMode(m)} aria-pressed={mode === m} className={`rounded-md px-3 py-1 text-xs transition-colors ${mode === m ? s.active : `${s.muted} ${s.hoverText}`}`}>
                 {m === 'vista' ? t('Vista') : t('Editar')}
               </button>
             ))}
@@ -1064,7 +1075,7 @@ function NotePane({
           </div>
         )}
 
-        <div className="nivra-scroll relative min-h-40 flex-1 overflow-y-auto">
+        <div ref={scroller} className="nivra-scroll relative min-h-40 flex-1 overflow-y-auto">
           {mode === 'editar' ? (
             <>
               <textarea
