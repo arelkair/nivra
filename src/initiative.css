@@ -170,6 +170,21 @@
   border-color: var(--minimal-accent);
 }
 
+.initiative-mode .nv-lab-tool :is(input:not([type='range'], [type='checkbox'], [type='radio'], [type='color'], [type='file']), select, textarea) {
+  background: var(--sunken);
+  color: var(--minimal-text);
+  border: 1px solid var(--minimal-line);
+  border-radius: 6px;
+}
+
+.initiative-mode .nv-lab-tool :is(input, textarea)::placeholder {
+  color: var(--minimal-muted);
+}
+
+.initiative-mode .nv-lab-tool :is(input, select, textarea):focus {
+  border-color: var(--minimal-accent);
+}
+
 .initiative-mode .nv-primary {
   background: var(--minimal-accent);
   color: var(--minimal-primary-ink);

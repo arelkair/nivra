@@ -726,7 +726,7 @@ export function InitiativeDashboard({
 
       {current === 'lab' && (
         <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
-          <InitiativeLab dark={dark} />
+          <InitiativeLab dark={dark} subjects={subjects} />
         </main>
       )}
 

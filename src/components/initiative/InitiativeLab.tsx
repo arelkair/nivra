@@ -1,10 +1,15 @@
 import { useState, type ReactNode } from 'react'
 import { t } from '../../lib/i18n'
+import type { Subject } from '../../lib/store'
 import { Icon } from '../ui'
 import { CalcTab } from './calc/CalcTab'
 import { BaseMode, EquationsMode, MatrixMode, StatsMode, TableMode } from './calc/modes'
 import { skin, type Skin } from './skin'
-import { Dice, Roulette } from '../lab/Generators'
+import { Coin, Dice, RandomNumber, Roulette } from '../lab/Generators'
+import { Fractions, GcdLcm, Percentages, RuleOfThree } from '../lab/MathTools'
+import { CountdownTimer, DateCalculator, Stopwatch, TimeCalculator } from '../lab/TimeTools'
+import { CurrencyConverter, UnitConverter } from '../lab/Converters'
+import { Flashcards, Quizzes } from '../lab/Study'
 import { Base64Tool } from './tools/Base64Tool'
 import { ImageConverter } from './tools/ImageConverter'
 import { PdfTool } from './tools/PdfTool'
@@ -48,7 +53,13 @@ function Scientific({ s }: { s: Skin }) {
   )
 }
 
-type Tool = { id: string; label: string; hint: string; render: (s: Skin) => ReactNode }
+type Tool = { id: string; label: string; hint: string; render: (s: Skin, subjects: Subject[]) => ReactNode }
+
+function Boxed({ s, children }: { s: Skin; children: ReactNode }) {
+  return <section className={`nv-lab-tool flex flex-col gap-5 rounded-2xl border p-4 sm:p-6 ${s.line} ${s.panel}`}>{children}</section>
+}
+
+const boxed = (node: ReactNode) => (s: Skin) => <Boxed s={s}>{node}</Boxed>
 
 const ZONES: { id: string; title: string; hint: string; tools: Tool[] }[] = [
   {
@@ -56,12 +67,22 @@ const ZONES: { id: string; title: string; hint: string; tools: Tool[] }[] = [
     title: 'Matemáticas',
     hint: 'Cálculo y resolución',
     tools: [
-      {
-        id: 'cientifica',
-        label: 'Calculadora científica',
-        hint: 'Funciones, trigonometría, memoria e historial',
-        render: (s) => <Scientific s={s} />,
-      },
+      { id: 'cientifica', label: 'Calculadora científica', hint: 'Funciones, trigonometría, memoria e historial', render: (s) => <Scientific s={s} /> },
+      { id: 'regla3', label: 'Regla de tres', hint: 'Directa e inversa', render: boxed(<RuleOfThree />) },
+      { id: 'porcentajes', label: 'Porcentajes', hint: 'Descuentos, aumentos, variación', render: boxed(<Percentages />) },
+      { id: 'fracciones', label: 'Fracciones', hint: 'Operar y simplificar', render: boxed(<Fractions />) },
+      { id: 'mcdmcm', label: 'MCD y MCM', hint: 'De varios números', render: boxed(<GcdLcm />) },
+    ],
+  },
+  {
+    id: 'tiempo',
+    title: 'Tiempo',
+    hint: 'Fechas, horas y temporizadores',
+    tools: [
+      { id: 'fechas', label: 'Calculadora de fechas', hint: 'Diferencias y sumas', render: boxed(<DateCalculator />) },
+      { id: 'horas', label: 'Calculadora de horas', hint: 'Sumar y restar duraciones', render: boxed(<TimeCalculator />) },
+      { id: 'temporizador', label: 'Cuenta atrás corta', hint: 'Con alarma configurable', render: boxed(<CountdownTimer />) },
+      { id: 'cronometro', label: 'Cronómetro', hint: 'Con vueltas', render: boxed(<Stopwatch />) },
     ],
   },
   {
@@ -69,24 +90,35 @@ const ZONES: { id: string; title: string; hint: string; tools: Tool[] }[] = [
     title: 'Generadores',
     hint: 'Azar para decidir y jugar',
     tools: [
+      { id: 'ruleta', label: 'Ruleta', hint: 'Con probabilidades a medida', render: boxed(<Roulette />) },
+      { id: 'dados', label: 'Dados', hint: 'De cualquier número de caras', render: boxed(<Dice />) },
+      { id: 'moneda', label: 'Moneda', hint: 'Cara o cruz', render: boxed(<Coin />) },
+      { id: 'aleatorio', label: 'Número aleatorio', hint: 'En el rango que quieras', render: boxed(<RandomNumber />) },
+    ],
+  },
+  {
+    id: 'conversores',
+    title: 'Conversores',
+    hint: 'Unidades y divisas',
+    tools: [
+      { id: 'unidades', label: 'Unidades', hint: 'Longitud, masa, temperatura…', render: boxed(<UnitConverter />) },
+      { id: 'divisas', label: 'Divisas', hint: 'Tasas del BCE', render: boxed(<CurrencyConverter />) },
+    ],
+  },
+  {
+    id: 'estudio',
+    title: 'Estudio',
+    hint: 'Repasar y ponerte a prueba',
+    tools: [
+      { id: 'flashcards', label: 'Flashcards', hint: 'Mazos con repaso espaciado', render: boxed(<Flashcards />) },
       {
-        id: 'ruleta',
-        label: 'Ruleta',
-        hint: 'Con probabilidades a medida',
-        render: (s) => (
-          <section className={`flex flex-col gap-5 rounded-2xl border p-4 sm:p-6 ${s.line} ${s.panel}`}>
-            <Roulette />
-          </section>
-        ),
-      },
-      {
-        id: 'dados',
-        label: 'Dados',
-        hint: 'De cualquier número de caras',
-        render: (s) => (
-          <section className={`flex flex-col gap-5 rounded-2xl border p-4 sm:p-6 ${s.line} ${s.panel}`}>
-            <Dice />
-          </section>
+        id: 'examenes',
+        label: 'Exámenes por asignatura',
+        hint: 'Test con corrección',
+        render: (s, subjects) => (
+          <Boxed s={s}>
+            <Quizzes subjects={subjects} />
+          </Boxed>
         ),
       },
     ],
@@ -96,36 +128,19 @@ const ZONES: { id: string; title: string; hint: string; tools: Tool[] }[] = [
     title: 'Archivos',
     hint: 'Conversión de archivos en tu equipo',
     tools: [
-      {
-        id: 'imagenes',
-        label: 'Conversor de imágenes',
-        hint: '11 formatos, con AVIF, ICO y HEIC de entrada',
-        render: (s) => <ImageConverter s={s} />,
-      },
-      {
-        id: 'pdf',
-        label: 'Herramientas PDF',
-        hint: 'Unir, dividir, rotar y crear PDF',
-        render: (s) => <PdfTool s={s} />,
-      },
+      { id: 'imagenes', label: 'Conversor de imágenes', hint: '11 formatos, con AVIF, ICO y HEIC de entrada', render: (s) => <ImageConverter s={s} /> },
+      { id: 'pdf', label: 'Herramientas PDF', hint: 'Unir, dividir, rotar y crear PDF', render: (s) => <PdfTool s={s} /> },
     ],
   },
   {
     id: 'texto',
     title: 'Texto y datos',
     hint: 'Codificación y formatos',
-    tools: [
-      {
-        id: 'base64',
-        label: 'Base64',
-        hint: 'Texto y archivos, en los dos sentidos',
-        render: (s) => <Base64Tool s={s} />,
-      },
-    ],
+    tools: [{ id: 'base64', label: 'Base64', hint: 'Texto y archivos, en los dos sentidos', render: (s) => <Base64Tool s={s} /> }],
   },
 ]
 
-export function InitiativeLab({ dark }: { dark: boolean }) {
+export function InitiativeLab({ dark, subjects }: { dark: boolean; subjects: Subject[] }) {
   const s = skin(dark)
   const [toolId, setToolId] = useState<string | null>(null)
   const located = ZONES.flatMap((zone) => zone.tools.map((tool) => ({ zone, tool }))).find((x) => x.tool.id === toolId)
@@ -140,7 +155,7 @@ export function InitiativeLab({ dark }: { dark: boolean }) {
           <span>{t(located.zone.title)}</span>
         </button>
         <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t(located.tool.label)}</h1>
-        {located.tool.render(s)}
+        {located.tool.render(s, subjects)}
       </div>
     )
   }
