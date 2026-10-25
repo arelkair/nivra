@@ -556,6 +556,40 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M8 15l4 4 4-4" />
     </>
   ),
+  board: (
+    <>
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <path d="M12 16v4M8 20h8M7 12l3-3 2 2 4-4" />
+    </>
+  ),
+  pointer: <path d="M5 3l14 7-6 2-2 6L5 3z" />,
+  hand: <path d="M8 13V6a1.5 1.5 0 013 0v5V4.5a1.5 1.5 0 013 0V11V6a1.5 1.5 0 013 0v8a6 6 0 01-6 6h-1a6 6 0 01-5-2.7L4.6 14a1.5 1.5 0 012.4-1.8L8 13" />,
+  pen: <path d="M4 20l1-5L15.5 4.5a2.1 2.1 0 013 3L8 18l-4 2zM13.5 6.5l3 3" />,
+  eraser: <path d="M8 20h12M5.5 14.5l8-8a2 2 0 012.8 0l2.2 2.2a2 2 0 010 2.8L11 19H8l-2.5-2.5a1.4 1.4 0 010-2z" />,
+  text: <path d="M5 6V4h14v2M12 4v16M9 20h6" />,
+  square: <rect x="4" y="4" width="16" height="16" rx="1.5" />,
+  circle: <circle cx="12" cy="12" r="8.5" />,
+  triangle: <path d="M12 4l9 16H3L12 4z" />,
+  diamond: <path d="M12 3l9 9-9 9-9-9 9-9z" />,
+  hexagon: <path d="M7.5 4h9l4.5 8-4.5 8h-9L3 12l4.5-8z" />,
+  line: <path d="M5 19L19 5" />,
+  arrow: <path d="M5 19L19 5M10 5h9v9" />,
+  undo: <path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 010 11H11" />,
+  redo: <path d="M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 000 11H13" />,
+  share: (
+    <>
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" />
+    </>
+  ),
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M3 20a6 6 0 0112 0M16 4.5a3.5 3.5 0 010 7M18 14a6 6 0 013 6" />
+    </>
+  ),
 }
 
 export function Icon({ name, className = 'h-[1.15em] w-[1.15em]' }: { name: string; className?: string }) {

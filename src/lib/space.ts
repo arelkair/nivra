@@ -10,6 +10,7 @@ const DATA_KEYS = new Set([
   'nivra-bank-initial',
   'nivra-birthday',
   'nivra-blocks',
+  'nivra-boards',
   'nivra-events',
   'nivra-exam-countdowns',
   'nivra-free-days',

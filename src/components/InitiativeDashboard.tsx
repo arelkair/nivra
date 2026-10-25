@@ -59,6 +59,7 @@ const SECTION_SLUG: Record<Section, string> = {
   cuentas: 'countdowns',
   lab: 'lab',
   boveda: 'vault',
+  pizarra: 'whiteboard',
   ajustes: 'settings',
 }
 
@@ -80,6 +81,8 @@ import { ShortcutsHelp } from './initiative/ShortcutsPanel'
 import { SHORTCUTS, isTyping, keyOf, prettyKey } from '../lib/shortcuts'
 import { InitiativeLab } from './initiative/InitiativeLab'
 import { InitiativeVault } from './initiative/InitiativeVault'
+import { InitiativeBoard } from './initiative/board/InitiativeBoard'
+import { BOARDS_KEY, type Board } from './initiative/board/boardModel'
 import type { AppLink, LinkTarget } from './initiative/vault/appLinks'
 import { htmlToMarkdown } from './initiative/vault/convert'
 import { norm, type VaultFolder, type VaultNote } from './initiative/vault/vaultModel'
@@ -278,6 +281,14 @@ export function InitiativeDashboard({
   const [vaultFolders, setVaultFolders] = useStored<VaultFolder[]>('nivra-vault-folders', [])
   const [migrated, setMigrated] = useStored<string[]>('nivra-vault-migrated', [])
   const [vaultTarget, setVaultTarget] = useState<string | null>(null)
+  const [boards, setBoards] = useStored<Board[]>(BOARDS_KEY, [])
+  const [boardFocus, setBoardFocus] = useState<string | null>(null)
+  const [joinCode, setJoinCode] = useState<string | null>(() => new URLSearchParams(location.hash.slice(1)).get('join'))
+  const clearBoardFocus = useCallback(() => setBoardFocus(null), [])
+  const clearJoinCode = useCallback(() => {
+    setJoinCode(null)
+    history.replaceState(history.state, '', location.pathname)
+  }, [])
   const [calendarFocus, setCalendarFocus] = useState<string | null>(null)
   const [bankFocus, setBankFocus] = useState<string | null>(null)
   const [pendingFocus, setPendingFocus] = useState<string | null>(null)
@@ -325,6 +336,7 @@ export function InitiativeDashboard({
     (link: AppLink) => {
       if (link.section === 'calendario') setCalendarFocus(link.id ?? null)
       else if (link.section === 'banco') setBankFocus(link.id ?? null)
+      else if (link.section === 'pizarra') setBoardFocus(link.id ?? null)
       else setPendingFocus(link.id ?? null)
       setSection(link.section)
     },
@@ -347,11 +359,12 @@ export function InitiativeDashboard({
       ...wishes.map((x) => ({ section: 'deseos' as Section, id: x.id, label: x.title })),
       ...subs.map((x) => ({ section: 'suscripciones' as Section, id: x.id, label: x.title })),
       ...countdowns.map((x) => ({ section: 'cuentas' as Section, id: x.id, label: x.title })),
+      ...boards.map((x) => ({ section: 'pizarra' as Section, id: x.id, label: x.name })),
       ...(bankEnabled && bankInitial !== null
         ? [{ section: 'banco' as Section, id: MAIN_ACCOUNT, label: t('Principal') }, ...accounts.map((x) => ({ section: 'banco' as Section, id: x.id, label: x.name }))]
         : []),
     ].filter((x) => x.label)
-  }, [items, tasks, works, reminders, wishes, subs, countdowns, accounts, bankEnabled, bankInitial])
+  }, [items, tasks, works, reminders, wishes, subs, countdowns, boards, accounts, bankEnabled, bankInitial])
 
   const sections = SECTIONS.filter((x) => x.id !== 'banco' || bankEnabled)
 
@@ -742,6 +755,23 @@ export function InitiativeDashboard({
             onOpenApp={openApp}
             focusId={vaultTarget}
             onFocusHandled={() => setVaultTarget(null)}
+          />
+        </main>
+      )}
+
+      {current === 'pizarra' && (
+        <main className="relative z-10 flex min-h-0 flex-1 flex-col px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+          <InitiativeBoard
+            dark={dark}
+            userName={userName}
+            boards={boards}
+            setBoards={setBoards}
+            notes={noteRefs}
+            onOpenNote={openNote}
+            focus={boardFocus}
+            onFocusHandled={clearBoardFocus}
+            joinCode={joinCode}
+            onJoinHandled={clearJoinCode}
           />
         </main>
       )}
