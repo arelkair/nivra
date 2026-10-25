@@ -569,6 +569,10 @@ export function InitiativeDashboard({
             anniversaries={anniversaries}
             setAnniversaries={setAnniversaries}
             dark={dark}
+            tasks={tasks}
+            setTasks={setTasks}
+            works={works}
+            setWorks={setWorks}
           />
         </main>
       )}

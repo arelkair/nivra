@@ -267,7 +267,7 @@ export function InitiativeHome({
             ))}
             {todayItems.map((e) => (
               <div key={e.id + e.date} className={row}>
-                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} style={{ background: subjects.find((x) => x.id === e.subject)?.color }} />
                 <span className="min-w-0 flex-1 truncate">{e.title}</span>
                 <span className={`shrink-0 font-mono text-[0.7rem] ${s.faint}`}>{t('Todo el día')}</span>
               </div>

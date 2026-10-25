@@ -555,6 +555,7 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
         desc: t.desc,
         type: 'tarea' as const,
         origin: 'tarea' as const,
+        subject: t.subject,
       })),
     ...works
       .filter((w) => w.date)

@@ -19,6 +19,8 @@ import {
   type NivraEvent,
   type Repeat,
   type Subject,
+  type Task,
+  type Work,
 } from '../../lib/store'
 import { notifyWithUndo } from '../../lib/undo'
 import { locale, t, tp, weekdayLetters } from '../../lib/i18n'
@@ -41,9 +43,24 @@ type Props = {
   dark: boolean
   focusDate: string | null
   onFocusHandled: () => void
+  tasks: Task[]
+  setTasks: (update: (prev: Task[]) => Task[]) => void
+  works: Work[]
+  setWorks: (update: (prev: Work[]) => Work[]) => void
 }
 
 type View = 'mes' | 'semana' | 'agenda'
+
+type Undated = { ref: string; kind: 'tarea' | 'examen' | 'proyecto'; title: string; subject?: string }
+
+const DRAG_TYPE = 'application/x-nivra-undated'
+
+const subjectOf = (e: CalItem, subjects: Subject[]) => (e.subject ? subjects.find((x) => x.id === e.subject) : undefined)
+const dotClass = (e: CalItem, subjects: Subject[]) => (subjectOf(e, subjects) ? '' : DOT[e.type])
+const dotStyle = (e: CalItem, subjects: Subject[]) => {
+  const subject = subjectOf(e, subjects)
+  return subject ? { background: subject.color } : undefined
+}
 
 const mondayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - weekIndex(d))
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
@@ -67,8 +84,39 @@ export function InitiativeCalendar({
   dark,
   focusDate,
   onFocusHandled,
+  tasks,
+  setTasks,
+  works,
+  setWorks,
 }: Props) {
   const s = skin(dark)
+  const [dragKey, setDragKey] = useState<string | null>(null)
+  const undated: Undated[] = [
+    ...tasks.filter((x) => !x.done && !x.date && !x.due).map((x) => ({ ref: `tarea:${x.id}`, kind: 'tarea' as const, title: x.title, subject: x.subject })),
+    ...works.filter((x) => !x.date).map((x) => ({ ref: `${x.kind}:${x.id}`, kind: x.kind, title: x.title, subject: x.subject })),
+  ]
+  const assign = (date: string, ref: string) => {
+    const [kind, id] = ref.split(':')
+    if (!id) return
+    playPop()
+    if (kind === 'tarea') setTasks((rows) => rows.map((x) => (x.id === id ? { ...x, date } : x)))
+    else setWorks((rows) => rows.map((x) => (x.id === id ? { ...x, date } : x)))
+  }
+  const dropProps = (key: string) => ({
+    onDragOver: (event: React.DragEvent) => {
+      if (!event.dataTransfer.types.includes(DRAG_TYPE)) return
+      event.preventDefault()
+      setDragKey(key)
+    },
+    onDragLeave: () => setDragKey((k) => (k === key ? null : k)),
+    onDrop: (event: React.DragEvent) => {
+      event.preventDefault()
+      setDragKey(null)
+      assign(key, event.dataTransfer.getData(DRAG_TYPE))
+      select(key)
+    },
+  })
+  const dropRing = (key: string) => (dragKey === key ? 'ring-2 ring-inset ring-(--minimal-accent)' : '')
   const today = new Date()
   const todayKey = dateKey(today)
   const [view, setView] = useState<View>('mes')
@@ -182,9 +230,10 @@ export function InitiativeCalendar({
               key={key}
               type="button"
               onClick={() => select(key)}
+              {...dropProps(key)}
               aria-label={`${day} ${t(MONTHS[cursor.m])}`}
               aria-current={key === selected}
-              className={`relative flex min-h-16 min-w-0 flex-col items-start gap-1 border-r border-b p-1.5 text-left transition-colors sm:min-h-24 sm:p-2 ${s.line} ${
+              className={`relative flex min-h-16 min-w-0 flex-col items-start gap-1 border-r border-b p-1.5 text-left transition-colors sm:min-h-24 sm:p-2 ${s.line} ${dropRing(key)} ${
                 key === selected ? s.selectedCell : s.hover
               }`}
             >
@@ -197,7 +246,7 @@ export function InitiativeCalendar({
               <span className="flex flex-wrap gap-0.5 sm:hidden">
                 {anniversary && <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" />}
                 {dayItems.slice(0, 4).map((e) => (
-                  <span key={e.id + e.date} className={`h-1.5 w-1.5 rounded-full ${DOT[e.type]}`} />
+                  <span key={e.id + e.date} className={`h-1.5 w-1.5 rounded-full ${dotClass(e, subjects)}`} style={dotStyle(e, subjects)} />
                 ))}
               </span>
               <span className="hidden w-full min-w-0 flex-col gap-0.5 sm:flex">
@@ -209,7 +258,7 @@ export function InitiativeCalendar({
                 )}
                 {dayItems.slice(0, 2).map((e) => (
                   <span key={e.id + e.date} className={`flex items-center gap-1 truncate text-[0.65rem] ${s.muted}`}>
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass(e, subjects)}`} style={dotStyle(e, subjects)} />
                     <span className="truncate">{e.title}</span>
                   </span>
                 ))}
@@ -233,8 +282,9 @@ export function InitiativeCalendar({
             key={key}
             type="button"
             onClick={() => select(key)}
+            {...dropProps(key)}
             aria-current={key === selected}
-            className={`flex min-h-24 min-w-0 flex-col gap-2 border-b p-3 text-left transition-colors sm:min-h-72 sm:border-r sm:border-b-0 sm:last:border-r-0 ${s.line} ${
+            className={`flex min-h-24 min-w-0 flex-col gap-2 border-b p-3 text-left transition-colors sm:min-h-72 sm:border-r sm:border-b-0 sm:last:border-r-0 ${s.line} ${dropRing(key)} ${
               key === selected ? s.selectedCell : s.hover
             }`}
           >
@@ -252,7 +302,7 @@ export function InitiativeCalendar({
             )}
             {dayItems.map((e) => (
               <span key={e.id + e.date} className={`flex items-start gap-1.5 text-xs ${s.muted}`}>
-                <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${dotClass(e, subjects)}`} style={dotStyle(e, subjects)} />
                 <span className="min-w-0 break-words">{e.title}</span>
               </span>
             ))}
@@ -304,7 +354,7 @@ export function InitiativeCalendar({
                   )}
                   {list.map((e) => (
                     <span key={e.id + e.date} className="flex items-center gap-2 text-sm">
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[e.type]}`} />
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass(e, subjects)}`} style={dotStyle(e, subjects)} />
                       <span className="min-w-0 truncate">{e.title}</span>
                     </span>
                   ))}
@@ -413,6 +463,42 @@ export function InitiativeCalendar({
           }}
         />
       </div>
+
+      {undated.length > 0 && (
+        <section aria-label={t('Sin fecha')} className={`rounded-2xl border p-4 ${s.line} ${s.panel}`}>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-medium">
+              {t('Sin fecha')} <span className={`ml-1 font-mono text-xs ${s.faint}`}>{undated.length}</span>
+            </h2>
+            <p className={`text-xs ${s.faint}`}>{t('Arrástralas a un día o púlsalas para ponerlas en el día seleccionado.')}</p>
+          </div>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {undated.map((x) => {
+              const subject = subjects.find((y) => y.id === x.subject)
+              return (
+                <li key={x.ref}>
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(event) => {
+                      event.dataTransfer.setData(DRAG_TYPE, x.ref)
+                      event.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragEnd={() => setDragKey(null)}
+                    onClick={() => assign(selected, x.ref)}
+                    title={tp('Poner en {0}', parseKey(selected).toLocaleDateString(locale(), { day: 'numeric', month: 'long' }))}
+                    className={`flex max-w-64 cursor-grab items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors active:cursor-grabbing ${s.line} ${s.hover}`}
+                  >
+                    <span className={`h-2 w-2 shrink-0 ${x.kind === 'proyecto' ? 'rounded-[2px]' : 'rounded-full'} ${subject ? '' : DOT[x.kind]}`} style={subject ? { background: subject.color } : undefined} />
+                    <span className="truncate">{x.title}</span>
+                    <span className={`shrink-0 ${s.faint}`}>{t(x.kind === 'tarea' ? 'Tarea' : x.kind === 'examen' ? 'Examen' : 'Proyecto')}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }
@@ -524,7 +610,7 @@ function DayPanel({
             const own = e.origin === 'evento'
             return (
               <li key={e.id + e.date} className="flex items-start gap-3 py-2.5">
-                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${DOT[e.type]}`} />
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotClass(e, subjects)}`} style={dotStyle(e, subjects)} />
                 <div className="min-w-0 flex-1">
                   <p className="flex min-w-0 items-center gap-1.5 text-sm">
                     <span className="truncate">{e.title}</span>
