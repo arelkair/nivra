@@ -19,12 +19,14 @@
     <title>Nivra</title>
     <script>
       try {
-        var stored = JSON.parse(localStorage.getItem('nivra-theme'))
+        var initiative = JSON.parse(localStorage.getItem('nivra-initiative')) === true
+        var stored = JSON.parse(localStorage.getItem(initiative ? 'nivra-initiative-theme' : 'nivra-theme'))
         var dark =
           stored === 'dark' ||
           (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
         if (dark) document.documentElement.classList.add('dark')
-        document.documentElement.style.backgroundColor = dark ? '#0b0b0c' : '#f2f1ed'
+        if (initiative) document.documentElement.classList.add('initiative-mode')
+        document.documentElement.style.backgroundColor = initiative ? (dark ? '#202020' : '#faf9f6') : dark ? '#0b0b0c' : '#f2f1ed'
         var accent = JSON.parse(localStorage.getItem('nivra-accent'))
         if (accent && accent !== 'basico') document.documentElement.dataset.accent = accent
       } catch (e) {}

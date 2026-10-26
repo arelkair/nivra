@@ -285,6 +285,16 @@ export function InitiativeDashboard({
   const [boardFocus, setBoardFocus] = useState<string | null>(null)
   const [joinCode, setJoinCode] = useState<string | null>(() => new URLSearchParams(location.hash.slice(1)).get('join'))
   const clearBoardFocus = useCallback(() => setBoardFocus(null), [])
+  useEffect(() => {
+    const onHash = () => {
+      const code = new URLSearchParams(location.hash.slice(1)).get('join')
+      if (!code) return
+      setJoinCode(code)
+      setSection('pizarra')
+    }
+    addEventListener('hashchange', onHash)
+    return () => removeEventListener('hashchange', onHash)
+  }, [setSection])
   const clearJoinCode = useCallback(() => {
     setJoinCode(null)
     history.replaceState(history.state, '', location.pathname)

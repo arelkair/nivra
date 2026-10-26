@@ -1507,6 +1507,8 @@ const EN: Record<string, string> = {
   'Alinear a la izquierda': 'Align left',
   'Centrar': 'Center',
   'Alinear a la derecha': 'Align right',
+  'La pizarra compartida se ha eliminado.': 'The shared whiteboard was deleted.',
+  'Esta pizarra ya no está disponible.': 'This whiteboard is no longer available.',
 }
 
 export const tp = (s: string, ...args: (string | number)[]) =>

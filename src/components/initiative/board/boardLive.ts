@@ -14,7 +14,7 @@ type Message =
   | { t: 'ops'; from: string; upsert: Item[]; remove: string[]; settings?: BoardSettings; name?: string }
   | { t: 'perms'; perms: Perms }
   | { t: 'cursor'; from: string; x: number; y: number; selection: string[] }
-  | { t: 'end' }
+  | { t: 'end'; deleted?: boolean }
 
 export type LiveHandlers = {
   onHello: (from: string) => void
@@ -23,7 +23,7 @@ export type LiveHandlers = {
   onPerms: (perms: Perms) => void
   onCursor: (from: string, cursor: RemoteCursor) => void
   onPeers: (peers: Peer[]) => void
-  onEnd: () => void
+  onEnd: (deleted: boolean) => void
   onStatus: (status: 'connecting' | 'live' | 'error') => void
 }
 
@@ -33,7 +33,7 @@ export type LiveSession = {
   sendOps: (upsert: Item[], remove: string[], settings?: BoardSettings, name?: string) => Promise<void>
   sendPerms: (perms: Perms) => Promise<void>
   sendCursor: (x: number, y: number, selection: string[]) => Promise<void>
-  sendEnd: () => Promise<void>
+  sendEnd: (deleted?: boolean) => Promise<void>
   close: () => Promise<void>
 }
 
@@ -123,7 +123,7 @@ export async function openLive(code: string, me: Peer, handlers: LiveHandlers): 
     } else if (msg.t === 'ops') handlers.onOps(msg.from, msg.upsert, msg.remove, msg.settings, msg.name)
     else if (msg.t === 'perms') handlers.onPerms(msg.perms)
     else if (msg.t === 'cursor') handlers.onCursor(msg.from, { x: msg.x, y: msg.y, selection: msg.selection })
-    else if (msg.t === 'end') handlers.onEnd()
+    else if (msg.t === 'end') handlers.onEnd(!!msg.deleted)
   })
 
   channel.on('presence', { event: 'sync' }, async () => {
@@ -170,7 +170,7 @@ export async function openLive(code: string, me: Peer, handlers: LiveHandlers): 
     },
     sendPerms: (perms) => send({ t: 'perms', perms }),
     sendCursor: (x, y, selection) => send({ t: 'cursor', from: me.id, x, y, selection }),
-    sendEnd: () => send({ t: 'end' }),
+    sendEnd: (deleted = false) => send({ t: 'end', deleted }),
     close: async () => {
       await channel.untrack()
       await sb.removeChannel(channel)

@@ -391,8 +391,9 @@ function App() {
     matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
   useEffect(() => {
+    if (cfg.initiativeEnabled) return
     document.documentElement.classList.toggle('dark', theme === 'dark')
-  }, [theme])
+  }, [theme, cfg.initiativeEnabled])
 
   const appliedStretch = useRef<'light' | 'dark' | null>(null)
   useEffect(() => {
@@ -687,7 +688,7 @@ function App() {
 
   return (
     <>
-      {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
+      {cfg.intro && !introDone && !cfg.initiativeEnabled && <Intro onDone={() => setIntroDone(true)} />}
       {initiativeIntro && (
         <InitiativeIntro
           onDone={(useExisting) => {

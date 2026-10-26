@@ -485,7 +485,10 @@ export function BoardCanvas({
   }
 
   const onDouble = (e: React.MouseEvent<SVGSVGElement>) => {
-    const id = (e.target as Element).closest('[data-item]')?.getAttribute('data-item')
+    const id = document
+      .elementsFromPoint(e.clientX, e.clientY)
+      .map((el) => el.closest('[data-item]')?.getAttribute('data-item'))
+      .find(Boolean)
     const it = id ? board.items.find((x) => x.id === id) : undefined
     if (!it) return
     if (it.kind === 'link') onOpenLink(it)

@@ -229,7 +229,7 @@ export function InitiativeSettingsPage({ cfg, dark, onTheme, detected, items, bl
       <h1 className="font-initiative text-3xl font-medium tracking-tight sm:text-4xl">{t('Ajustes')}</h1>
 
       <div className="grid gap-6 md:grid-cols-[13rem_minmax(0,1fr)]">
-        <div role="tablist" aria-orientation="vertical" className="nivra-scroll flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+        <div role="tablist" aria-orientation="vertical" className="nivra-scroll flex gap-1 overflow-x-auto md:flex-col md:self-start md:overflow-visible">
           {GROUPS.map((g) => (
             <button
               key={g.id}

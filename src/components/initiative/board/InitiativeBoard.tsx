@@ -219,6 +219,7 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
   const history = useRef<Record<string, { past: Item[][]; future: Item[][] }>>({})
   const me = useRef<Peer>({ id: crypto.randomUUID(), name: '', color: '', role: 'host' })
   const lastCursor = useRef(0)
+  const snapshotReady = useRef(false)
   const stateRef = useRef({ boards, guest, perms, session, peers })
   stateRef.current = { boards, guest, perms, session, peers }
 
@@ -364,6 +365,7 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
         if (b) sess.live.sendSnapshot(from, b, p).catch(() => undefined)
       },
       onSnapshot: (snap: Pick<Board, 'name' | 'settings' | 'items'>, p: Perms) => {
+        snapshotReady.current = true
         setGuest({ id: 'live', parent: null, created: Date.now(), updated: Date.now(), ...snap })
         setPerms(p)
       },
@@ -381,9 +383,10 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
         setPeers(list)
         setCursors((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => list.some((x) => x.id === id))))
       },
-      onEnd: () => {
-        notify(t('La sesión compartida ha terminado.'))
+      onEnd: (deleted: boolean) => {
+        notify(deleted ? t('La pizarra compartida se ha eliminado.') : t('La sesión compartida ha terminado.'))
         onError()
+        if (deleted) setGuest(null)
       },
       onStatus: (st: 'connecting' | 'live' | 'error') => setStatus(st),
     }),
@@ -434,13 +437,20 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
       me.current = { id: me.current.id, name: userName || t('Invitado'), color: accentColor(), role: 'edit' }
       try {
         const live = await openLive(code, me.current, handlers(endedAsGuest))
+        snapshotReady.current = false
         setSession({ code, role: 'edit', live, boardId: 'live' })
         setGuest({ ...newBoard(t('Conectando…'), null), id: 'live' })
         setShareOpen(false)
         await live.sendHello()
+        const waiting = () => stateRef.current.session?.code === code && !snapshotReady.current
         setTimeout(() => {
-          if (stateRef.current.session?.code === code && stateRef.current.guest?.items.length === 0) stateRef.current.session.live.sendHello().catch(() => undefined)
+          if (waiting()) stateRef.current.session?.live.sendHello().catch(() => undefined)
         }, 2500)
+        setTimeout(() => {
+          if (!waiting()) return
+          notify(t('Esta pizarra ya no está disponible.'))
+          leave(false)
+        }, 8000)
       } catch {
         setStatus('error')
         notify(t('No se pudo conectar. Revisa el código.'))
@@ -463,6 +473,13 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
     if (sess.role === 'host') await sess.live.sendEnd().catch(() => undefined)
     await leave(sess.role !== 'host')
   }
+
+  useEffect(() => {
+    if (session?.role !== 'host' || boards.some((b) => b.id === session.boardId)) return
+    session.live.sendEnd(true).catch(() => undefined)
+    leave(false)
+    setShareOpen(false)
+  }, [session, boards, leave])
 
   const setRole = (id: string, role: 'edit' | 'view') => {
     const next = { ...perms, roles: { ...perms.roles, [id]: role } }
@@ -779,6 +796,11 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
                   )}
                   {selected.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 border-t border-(--minimal-line) pt-3">
+                      {selected.length === 1 && selected[0].kind === 'link' && (
+                        <button type="button" className={`${s.primary} w-full rounded-lg px-3 py-1.5 text-xs`} onClick={() => openLink(selected[0])}>
+                          {t('Abrir enlace')}
+                        </button>
+                      )}
                       <button type="button" className={s.ghost} onClick={() => commit([...board.items.filter((it) => !selection.includes(it.id)), ...selected])}>
                         {t('Traer al frente')}
                       </button>
