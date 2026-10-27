@@ -15,6 +15,7 @@ type Message =
   | { t: 'perms'; perms: Perms }
   | { t: 'cursor'; from: string; x: number; y: number; selection: string[] }
   | { t: 'end'; deleted?: boolean }
+  | { t: 'media'; id: string; part: number; total: number; d: string }
 
 export type LiveHandlers = {
   onHello: (from: string) => void
@@ -24,6 +25,7 @@ export type LiveHandlers = {
   onCursor: (from: string, cursor: RemoteCursor) => void
   onPeers: (peers: Peer[]) => void
   onEnd: (deleted: boolean) => void
+  onMedia: (id: string, data: string) => void
   onStatus: (status: 'connecting' | 'live' | 'error') => void
 }
 
@@ -34,6 +36,7 @@ export type LiveSession = {
   sendPerms: (perms: Perms) => Promise<void>
   sendCursor: (x: number, y: number, selection: string[]) => Promise<void>
   sendEnd: (deleted?: boolean) => Promise<void>
+  sendMedia: (id: string, data: string) => Promise<void>
   close: () => Promise<void>
 }
 
@@ -106,6 +109,7 @@ export async function openLive(code: string, me: Peer, handlers: LiveHandlers): 
   const channel = sb.channel(name, { config: { broadcast: { self: false }, presence: { key: me.id } } })
   const pending = new Map<number, Item[]>()
   let pendingMeta: Meta | null = null
+  const mediaParts = new Map<string, string[]>()
 
   channel.on('broadcast', { event: 'm' }, async ({ payload }) => {
     const msg = await open<Message>(key, payload)
@@ -124,6 +128,15 @@ export async function openLive(code: string, me: Peer, handlers: LiveHandlers): 
     else if (msg.t === 'perms') handlers.onPerms(msg.perms)
     else if (msg.t === 'cursor') handlers.onCursor(msg.from, { x: msg.x, y: msg.y, selection: msg.selection })
     else if (msg.t === 'end') handlers.onEnd(!!msg.deleted)
+    else if (msg.t === 'media') {
+      const parts = mediaParts.get(msg.id) ?? Array.from({ length: msg.total }, () => '')
+      parts[msg.part] = msg.d
+      mediaParts.set(msg.id, parts)
+      if (parts.every(Boolean)) {
+        mediaParts.delete(msg.id)
+        handlers.onMedia(msg.id, parts.join(''))
+      }
+    }
   })
 
   channel.on('presence', { event: 'sync' }, async () => {
@@ -171,6 +184,11 @@ export async function openLive(code: string, me: Peer, handlers: LiveHandlers): 
     sendPerms: (perms) => send({ t: 'perms', perms }),
     sendCursor: (x, y, selection) => send({ t: 'cursor', from: me.id, x, y, selection }),
     sendEnd: (deleted = false) => send({ t: 'end', deleted }),
+    sendMedia: async (id, data) => {
+      const size = 45_000
+      const total = Math.ceil(data.length / size)
+      for (let i = 0; i < total; i++) await send({ t: 'media', id, part: i, total, d: data.slice(i * size, (i + 1) * size) })
+    },
     close: async () => {
       await channel.untrack()
       await sb.removeChannel(channel)

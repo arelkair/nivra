@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { t, tp } from '../../../lib/i18n'
 import { notify, notifyWithUndo } from '../../../lib/undo'
+import { cacheMedia, getMedia, putMedia, saveImage } from '../../../lib/photos'
 import { Icon, Modal } from '../../ui'
 import { skin } from '../skin'
 import { BoardCanvas, type PeerView } from './BoardCanvas'
@@ -219,6 +220,8 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
   const history = useRef<Record<string, { past: Item[][]; future: Item[][] }>>({})
   const me = useRef<Peer>({ id: crypto.randomUUID(), name: '', color: '', role: 'host' })
   const lastCursor = useRef(0)
+  const viewCenter = useRef({ x: 0, y: 0 })
+  const imageInput = useRef<HTMLInputElement>(null)
   const snapshotReady = useRef(false)
   const stateRef = useRef({ boards, guest, perms, session, peers })
   stateRef.current = { boards, guest, perms, session, peers }
@@ -347,10 +350,32 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
     notifyWithUndo(tp('«{0}» eliminada', target.name), () => setBoards(() => snapshot))
   }
 
+  const addImages = async (files: File[], at: { x: number; y: number } | null) => {
+    if (!board || !editable) return
+    const origin = at ?? viewCenter.current
+    try {
+      const saved = await Promise.all(files.slice(0, 10).map((f) => saveImage(f, 1600)))
+      const items: Item[] = saved.map((img, i) => {
+        const scale = Math.min(1, 480 / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        return { id: crypto.randomUUID(), kind: 'image', media: img.id, x: origin.x - w / 2 + i * 24, y: origin.y - h / 2 + i * 24, w, h, rotation: 0, opacity: 1 }
+      })
+      const sess = stateRef.current.session
+      if (sess) for (const img of saved) await sess.live.sendMedia(img.id, img.data).catch(() => undefined)
+      commit([...board.items, ...items])
+      setSelection(items.map((it) => it.id))
+      setTool('select')
+    } catch {
+      notify(t('No se pudo añadir la imagen.'))
+    }
+  }
+
   const saveCopy = () => {
     if (!guest) return
     const copy = { ...newBoard(tp('{0} (copia)', guest.name), null), items: guest.items, settings: guest.settings }
     setBoards((prev) => [...prev, copy])
+    for (const it of guest.items) if (it.kind === 'image') getMedia(it.media).then((data) => (data ? putMedia(it.media, data) : undefined))
     notify(t('Copia guardada en tus pizarras.'))
   }
 
@@ -362,7 +387,17 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
         const { session: sess, boards: list, perms: p } = stateRef.current
         if (!sess || sess.role !== 'host') return
         const b = list.find((x) => x.id === sess.boardId)
-        if (b) sess.live.sendSnapshot(from, b, p).catch(() => undefined)
+        if (!b) return
+        sess.live
+          .sendSnapshot(from, b, p)
+          .then(async () => {
+            for (const it of b.items) {
+              if (it.kind !== 'image') continue
+              const data = await getMedia(it.media)
+              if (data) await sess.live.sendMedia(it.media, data)
+            }
+          })
+          .catch(() => undefined)
       },
       onSnapshot: (snap: Pick<Board, 'name' | 'settings' | 'items'>, p: Perms) => {
         snapshotReady.current = true
@@ -379,6 +414,10 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
       },
       onPerms: (p: Perms) => setPerms(p),
       onCursor: (from: string, c: RemoteCursor) => setCursors((prev) => ({ ...prev, [from]: c })),
+      onMedia: (id: string, data: string) => {
+        if (stateRef.current.session?.role === 'host') putMedia(id, data).catch(() => undefined)
+        else cacheMedia(id, data)
+      },
       onPeers: (list: Peer[]) => {
         setPeers(list)
         setCursors((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => list.some((x) => x.id === id))))
@@ -680,6 +719,21 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
               {editable && (
                 <>
                   <span className="mx-1 h-5 w-px shrink-0 bg-(--minimal-line)" aria-hidden="true" />
+                  <ToolButton label={t('Añadir imagen')} onClick={() => imageInput.current?.click()}>
+                    <Icon name="image" className="h-4 w-4" />
+                  </ToolButton>
+                  <input
+                    ref={imageInput}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    onChange={(e) => {
+                      addImages([...(e.target.files ?? [])], null)
+                      e.target.value = ''
+                    }}
+                  />
+                  <span className="mx-1 h-5 w-px shrink-0 bg-(--minimal-line)" aria-hidden="true" />
                   <ToolButton label={`${t('Deshacer')} (Ctrl Z)`} onClick={() => step('undo')} disabled={!history.current[board.id]?.past.length}>
                     <Icon name="undo" className="h-4 w-4" />
                   </ToolButton>
@@ -707,6 +761,8 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
                 onPointer={onPointer}
                 onOpenLink={openLink}
                 onPlaceLink={setLinkAt}
+                onFiles={addImages}
+                viewCenter={viewCenter}
                 focusId={itemFocus}
                 onFocused={() => setItemFocus(null)}
                 undo={() => step('undo')}
@@ -715,7 +771,7 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
 
               {showStyle && (
                 <div className="nivra-scroll absolute top-3 right-3 z-10 max-h-[calc(100%-1.5rem)] w-60 space-y-4 overflow-y-auto rounded-xl border border-(--minimal-line) bg-(--surface) p-3 shadow-sm max-sm:top-auto max-sm:right-2 max-sm:bottom-14 max-sm:left-2 max-sm:max-h-[38%] max-sm:w-auto">
-                  <Swatches label={showFill ? t('Borde') : t('Color')} value={style.color} onChange={(c) => c && changeStyle({ color: c })} />
+                  {focusKind !== 'image' && <Swatches label={showFill ? t('Borde') : t('Color')} value={style.color} onChange={(c) => c && changeStyle({ color: c })} />}
                   {showFill && <Swatches label={t('Relleno')} value={style.fill} allowNone onChange={(c) => changeStyle({ fill: c })} />}
                   {(showBrush || showFill) && (
                     <div className="flex items-center justify-between gap-2">

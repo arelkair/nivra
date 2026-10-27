@@ -1522,6 +1522,18 @@ const EN: Record<string, string> = {
   'Cuando vuelva este día el año que viene, aquí verás lo que escribiste.': 'When this day comes around next year, you will see what you wrote here.',
   'Hace 1 año': '1 year ago',
   'Hace {0} años': '{0} years ago',
+  'Ver foto': 'View photo',
+  'Quitar foto': 'Remove photo',
+  'Foto en otro dispositivo': 'Photo on another device',
+  'Máximo {0} fotos por día.': 'Up to {0} photos per day.',
+  'No se pudo guardar la foto.': 'Couldn\'t save the photo.',
+  'Guardando…': 'Saving…',
+  'Foto {0}/{1}': 'Photo {0}/{1}',
+  'Foto': 'Photo',
+  'Imagen': 'Image',
+  'Añadir imagen': 'Add image',
+  'No se pudo añadir la imagen.': 'Couldn\'t add the image.',
+  'Imagen en otro dispositivo': 'Image on another device',
 }
 
 export const tp = (s: string, ...args: (string | number)[]) =>

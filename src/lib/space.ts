@@ -17,6 +17,7 @@ const DATA_KEYS = new Set([
   'nivra-goals',
   'nivra-grades',
   'nivra-journal',
+  'nivra-journal-photos',
   'nivra-lab-decks',
   'nivra-lab-quizzes',
   'nivra-lab-roulette',

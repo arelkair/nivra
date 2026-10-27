@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { t } from '../../../lib/i18n'
+import { useMedia } from '../../../lib/photos'
 import { Icon } from '../../ui'
 import {
   arrowHead,
@@ -12,6 +13,7 @@ import {
   shapePoints,
   strokePath,
   type Board,
+  type ImageItem,
   type Item,
   type LineItem,
   type ShapeKind,
@@ -38,6 +40,8 @@ type Props = {
   onPointer: (x: number, y: number) => void
   onOpenLink: (item: Item) => void
   onPlaceLink: (at: { x: number; y: number }) => void
+  onFiles: (files: File[], at: { x: number; y: number } | null) => void
+  viewCenter: { current: { x: number; y: number } }
   focusId: string | null
   onFocused: () => void
   undo: () => void
@@ -93,7 +97,23 @@ function normalizeStroke(item: Item, raw: number[]): Item {
   return { ...item, x: x1, y: y1, w, h, points }
 }
 
+function BoardImage({ it }: { it: ImageItem }) {
+  const { src, missing } = useMedia(it.media)
+  if (src) return <image href={src} width={it.w} height={it.h} preserveAspectRatio="none" />
+  return (
+    <>
+      <rect width={it.w} height={it.h} rx={8} fill="var(--sunken)" stroke="var(--minimal-line)" strokeDasharray="6 4" />
+      {missing && (
+        <text x={it.w / 2} y={it.h / 2} textAnchor="middle" dominantBaseline="middle" fontSize={Math.max(10, Math.min(16, it.w / 14))} fill="var(--minimal-muted)">
+          {t('Imagen en otro dispositivo')}
+        </text>
+      )}
+    </>
+  )
+}
+
 function ItemShape({ it, dark }: { it: Item; dark: boolean }) {
+  if (it.kind === 'image') return <BoardImage it={it} />
   const dash = (on: boolean, width: number) => (on ? `${width * 2.5} ${width * 2}` : undefined)
   if (it.kind === 'stroke') {
     const width = it.brush === 'marker' ? it.width * 2.2 : it.brush === 'highlighter' ? it.width * 4 : it.width
@@ -209,6 +229,8 @@ export function BoardCanvas({
   onPointer,
   onOpenLink,
   onPlaceLink,
+  onFiles,
+  viewCenter,
   focusId,
   onFocused,
   undo,
@@ -226,6 +248,12 @@ export function BoardCanvas({
   const lastLive = useRef(0)
   const viewRef = useRef(view)
   viewRef.current = view
+
+  useEffect(() => {
+    const el = svg.current
+    if (!el) return
+    viewCenter.current = { x: (el.clientWidth / 2 - view.x) / view.zoom, y: (el.clientHeight / 2 - view.y) / view.zoom }
+  }, [view, viewCenter])
 
   const items = useMemo(() => board.items.map((it) => drafts[it.id] ?? it), [board.items, drafts])
   const creating = drag && (drag.mode === 'draw' || drag.mode === 'create') ? drag.item : null
@@ -424,9 +452,18 @@ export function BoardCanvas({
       const right = drag.dx === 0 ? o.w / 2 : Math.max(fixed.x, moving.x)
       const top = drag.dy === 0 ? -o.h / 2 : Math.min(fixed.y, moving.y)
       const bottom = drag.dy === 0 ? o.h / 2 : Math.max(fixed.y, moving.y)
-      const w = Math.max(4, right - left)
-      const h = Math.max(4, bottom - top)
-      const mid = rotate((left + right) / 2, (top + bottom) / 2, o.rotation)
+      let w = Math.max(4, right - left)
+      let h = Math.max(4, bottom - top)
+      let mx = (left + right) / 2
+      let my = (top + bottom) / 2
+      if (o.kind === 'image' && drag.dx !== 0 && drag.dy !== 0) {
+        const ratio = o.w / o.h
+        if (w / h > ratio) w = h * ratio
+        else h = w / ratio
+        mx = fixed.x + (drag.dx * w) / 2
+        my = fixed.y + (drag.dy * h) / 2
+      }
+      const mid = rotate(mx, my, o.rotation)
       let next: Item = { ...o, w, h, x: c.x + mid.x - w / 2, y: c.y + mid.y - h / 2 }
       if (next.kind === 'line' && o.kind === 'line') next = { ...next, flipX: drag.dx !== 0 && moving.x < fixed.x !== (drag.dx < 0) ? !o.flipX : o.flipX, flipY: drag.dy !== 0 && moving.y < fixed.y !== (drag.dy < 0) ? !o.flipY : o.flipY } as LineItem
       if (next.kind === 'text' && o.kind === 'text' && drag.dy !== 0) next = { ...next, size: Math.max(6, Math.round(o.size * (h / o.h))) } as TextItem
@@ -596,6 +633,21 @@ export function BoardCanvas({
       tabIndex={0}
       onKeyDown={onKey}
       onKeyUp={(e) => e.key === ' ' && setSpace(false)}
+      onDragOver={(e) => {
+        if (editable && e.dataTransfer.types.includes('Files')) e.preventDefault()
+      }}
+      onDrop={(e) => {
+        const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'))
+        if (!editable || !files.length) return
+        e.preventDefault()
+        onFiles(files, toWorld(e.clientX, e.clientY))
+      }}
+      onPaste={(e) => {
+        const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'))
+        if (!editable || !files.length || editingId) return
+        e.preventDefault()
+        onFiles(files, null)
+      }}
       className="relative h-full w-full overflow-hidden outline-none"
       style={{ background, touchAction: 'none' }}
       aria-label={t('Lienzo de la pizarra')}

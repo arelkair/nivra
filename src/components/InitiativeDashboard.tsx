@@ -490,7 +490,7 @@ export function InitiativeDashboard({
         }`}
       >
         <span className="font-initiative mb-4 px-2 text-lg font-medium tracking-tight">Initiative</span>
-        <nav className="nivra-scroll flex flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pb-2">
+        <nav className="nv-hide-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pb-2">
           {groups.map((g) => (
             <div key={g.title} className="flex flex-col gap-0.5">
               <p className="nv-group-label mb-1 px-3">

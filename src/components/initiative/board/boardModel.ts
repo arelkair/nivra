@@ -37,7 +37,9 @@ export type TextItem = Base & {
 export type LinkTargetRef = { type: 'note' | 'board'; id: string }
 export type LinkItem = Base & { kind: 'link'; target: LinkTargetRef; label: string; color: string }
 
-export type Item = StrokeItem | ShapeItem | LineItem | TextItem | LinkItem
+export type ImageItem = Base & { kind: 'image'; media: string }
+
+export type Item = StrokeItem | ShapeItem | LineItem | TextItem | LinkItem | ImageItem
 
 export type BoardSettings = { background: string | null; grid: boolean; font: string }
 
