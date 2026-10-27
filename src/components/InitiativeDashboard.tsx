@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Icon } from './ui'
 import { InitiativeSettingsPage } from './initiative/InitiativeSettingsPage'
 import type { Settings } from '../lib/settings'
@@ -60,6 +61,7 @@ const SECTION_SLUG: Record<Section, string> = {
   lab: 'lab',
   boveda: 'vault',
   pizarra: 'whiteboard',
+  diario: 'journal',
   ajustes: 'settings',
 }
 
@@ -82,6 +84,7 @@ import { SHORTCUTS, isTyping, keyOf, prettyKey } from '../lib/shortcuts'
 import { InitiativeLab } from './initiative/InitiativeLab'
 import { InitiativeVault } from './initiative/InitiativeVault'
 import { InitiativeBoard } from './initiative/board/InitiativeBoard'
+import { InitiativeJournal } from './initiative/InitiativeJournal'
 import { BOARDS_KEY, type Board } from './initiative/board/boardModel'
 import type { AppLink, LinkTarget } from './initiative/vault/appLinks'
 import { htmlToMarkdown } from './initiative/vault/convert'
@@ -244,13 +247,27 @@ export function InitiativeDashboard({
 
   const dark = theme === 'dark'
 
+  const switchTheme = useCallback(
+    (next: Parameters<typeof setTheme>[0]) => {
+      const root = document.documentElement
+      const apply = () => {
+        flushSync(() => setTheme(next))
+        setTimeout(() => root.classList.remove('nv-theme-switching'), 400)
+      }
+      root.classList.add('nv-theme-switching')
+      if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(apply)
+      else apply()
+    },
+    [setTheme],
+  )
+
   useEffect(() => {
     const root = document.documentElement
     applyAppearance(root, cfg.customTheme, cfg.customThemeOn, cfg.highContrast, cfg.largeText, cfg.dyslexiaFont)
     return () => clearAppearance(root)
   }, [cfg.customTheme, cfg.customThemeOn, cfg.highContrast, cfg.largeText, cfg.dyslexiaFont])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
     return () => {
       let saved = ''
@@ -378,7 +395,7 @@ export function InitiativeDashboard({
 
   const sections = SECTIONS.filter((x) => x.id !== 'banco' || bankEnabled)
 
-  const toggleTheme = () => setTheme(dark ? 'light' : 'dark')
+  const toggleTheme = () => switchTheme(dark ? 'light' : 'dark')
 
   const commands: Command[] = [
     { id: 'tema', label: t('Cambiar tema'), hint: dark ? t('Pasar a claro') : t('Pasar a oscuro'), run: toggleTheme },
@@ -423,7 +440,7 @@ export function InitiativeDashboard({
       } else if (a.kind === 'atras') step(-1)
       else if (a.kind === 'adelante') step(1)
       else if (a.kind === 'ajustes') setSection('ajustes')
-      else if (a.kind === 'tema') setTheme((v) => (v === 'dark' ? 'light' : 'dark'))
+      else if (a.kind === 'tema') switchTheme((v) => (v === 'dark' ? 'light' : 'dark'))
       else if (a.kind === 'nota') setNoteOpen((v) => !v)
       else if (a.kind === 'musica') setMusicOpen((v) => !v)
       else if (a.kind === 'ayuda') setHelpOpen(true)
@@ -431,7 +448,7 @@ export function InitiativeDashboard({
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, bankEnabled, searchOpen, helpOpen, searchKeys, setSection, step, setTheme, setNoteOpen])
+  }, [cfg.shortcutsOn, cfg.enabledShortcuts, cfg.customKeys, bankEnabled, searchOpen, helpOpen, searchKeys, setSection, step, switchTheme, setNoteOpen])
   const groups = sections.reduce<{ title: string; items: typeof sections }[]>((acc, x) => {
     const last = acc[acc.length - 1]
     if (last && last.title === x.group) last.items.push(x)
@@ -522,7 +539,7 @@ export function InitiativeDashboard({
         </button>
         <button
           type="button"
-          onClick={() => setTheme(dark ? 'light' : 'dark')}
+          onClick={toggleTheme}
           aria-label={dark ? t('Tema claro') : t('Tema oscuro')}
           className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${
             dark
@@ -729,7 +746,7 @@ export function InitiativeDashboard({
           <InitiativeSettingsPage
             cfg={cfg}
             dark={dark}
-            onTheme={setTheme}
+            onTheme={switchTheme}
             detected={subjects.filter((x) => !manualSubjects.some((m) => m.id === x.id))}
             items={items}
             blocks={blocks}
@@ -766,6 +783,12 @@ export function InitiativeDashboard({
             focusId={vaultTarget}
             onFocusHandled={() => setVaultTarget(null)}
           />
+        </main>
+      )}
+
+      {current === 'diario' && (
+        <main className="nivra-scroll relative z-10 flex-1 overflow-y-auto px-4 py-4 pb-24 md:py-6 md:pr-8 md:pb-6 md:pl-64">
+          <InitiativeJournal dark={dark} />
         </main>
       )}
 

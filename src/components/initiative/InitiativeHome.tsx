@@ -254,9 +254,9 @@ export function InitiativeHome({
         )}
       </section>
 
-      <div className="grid gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
-        <div className="flex flex-col gap-4 md:min-h-0">
-          <Panel grow={2} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
+      <div className="grid gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:grid-rows-[repeat(3,minmax(0,1fr))]">
+        <div className="flex flex-col md:min-h-0 md:col-start-1 md:row-start-1">
+          <Panel grow={1} title={t('Tu día')} count={dayCount} dark={dark} delay={0.12} onOpen={() => onOpen('calendario')}>
             {dayCount === 0 && empty(t('Hoy no hay nada planeado.'))}
             {todayAnniversaries.map((a) => (
               <div key={a.id} className={row}>
@@ -274,8 +274,10 @@ export function InitiativeHome({
             ))}
             {dayTasks.map((task) => taskRow(task))}
           </Panel>
+        </div>
 
-          <Panel grow={2} title={t('Tareas')} count={pending.length} dark={dark} delay={0.16} onOpen={() => onOpen('tareas')}>
+        <div className="flex flex-col md:min-h-0 md:col-start-1 md:row-start-2">
+          <Panel grow={1} title={t('Tareas')} count={pending.length} dark={dark} delay={0.16} onOpen={() => onOpen('tareas')}>
             <form
               onSubmit={(ev) => {
                 ev.preventDefault()
@@ -301,11 +303,13 @@ export function InitiativeHome({
             {focus.length === 0 && dayTasks.length === 0 ? empty(t('Sin tareas.')) : focus.slice(0, 5).map((task) => taskRow(task))}
             {focus.length > 5 && <p className={`pb-2 font-mono text-[0.7rem] ${s.faint}`}>+{focus.length - 5}</p>}
           </Panel>
+        </div>
 
+        <div className="flex flex-col md:min-h-0 md:col-start-1 md:row-start-3">
           <InitiativeCountdowns countdowns={countdowns} setCountdowns={setCountdowns} now={now} dark={dark} delay={0.2} />
         </div>
 
-        <div className="flex flex-col gap-4 md:min-h-0">
+        <div className="flex flex-col md:min-h-0 md:col-start-2 md:row-start-1">
           <Panel grow={1} title={t('Exámenes y Proyectos')} count={upcomingWorks.length} dark={dark} delay={0.2} onOpen={() => onOpen('examenes')}>
             {upcomingWorks.length === 0
               ? empty(t('Nada por venir.'))
@@ -321,7 +325,9 @@ export function InitiativeHome({
                   )
                 })}
           </Panel>
+        </div>
 
+        <div className={`flex flex-col md:min-h-0 md:col-start-2 md:row-start-2 ${bank && bank.length > 0 ? '' : 'md:row-span-2'}`}>
           <Panel grow={1} title={t('Notas')} count={grades.length} dark={dark} delay={0.24} onOpen={() => onOpen('notas')}>
             {grades.length === 0 ? (
               empty(t('Sin notas.'))
@@ -345,9 +351,13 @@ export function InitiativeHome({
               </div>
             )}
           </Panel>
-
-          {bank && bank.length > 0 && <InitiativeBankCarousel accounts={bank} dark={dark} delay={0.28} onOpen={() => onOpen('banco')} />}
         </div>
+
+        {bank && bank.length > 0 && (
+          <div className="flex flex-col md:min-h-0 md:col-start-2 md:row-start-3">
+            <InitiativeBankCarousel accounts={bank} dark={dark} delay={0.28} onOpen={() => onOpen('banco')} />
+          </div>
+        )}
       </div>
     </div>
   )

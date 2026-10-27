@@ -16,6 +16,7 @@ export type Section =
   | 'ajustes'
   | 'boveda'
   | 'pizarra'
+  | 'diario'
 
 export type SectionInfo = { id: Section; group: string; label: string; short: string; icon: string }
 
@@ -34,6 +35,7 @@ export const SECTIONS: SectionInfo[] = [
   { id: 'lab', group: 'Utilidades', label: 'Laboratorio', short: 'Lab', icon: 'lab' },
   { id: 'boveda', group: 'Conocimiento', label: 'Bóveda', short: 'Bóveda', icon: 'graph' },
   { id: 'pizarra', group: 'Conocimiento', label: 'Pizarra', short: 'Pizarra', icon: 'board' },
+  { id: 'diario', group: 'Conocimiento', label: 'Diario', short: 'Diario', icon: 'journal' },
 ]
 
 export const PAGE_TO_SECTION: Partial<Record<PageId, Section>> = {

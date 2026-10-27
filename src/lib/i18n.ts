@@ -1509,6 +1509,19 @@ const EN: Record<string, string> = {
   'Alinear a la derecha': 'Align right',
   'La pizarra compartida se ha eliminado.': 'The shared whiteboard was deleted.',
   'Esta pizarra ya no está disponible.': 'This whiteboard is no longer available.',
+  'Diario': 'Journal',
+  '{0} días escritos': '{0} days written',
+  'Día anterior': 'Previous day',
+  'Día siguiente': 'Next day',
+  'Volver a hoy': 'Back to today',
+  'Qué pasó el {0}': 'What happened on {0}',
+  '¿Qué ha pasado hoy?': 'What happened today?',
+  '¿Qué pasó este día?': 'What happened on this day?',
+  '{0}/{1} líneas': '{0}/{1} lines',
+  'El {0} en otros años': '{0} in other years',
+  'Cuando vuelva este día el año que viene, aquí verás lo que escribiste.': 'When this day comes around next year, you will see what you wrote here.',
+  'Hace 1 año': '1 year ago',
+  'Hace {0} años': '{0} years ago',
 }
 
 export const tp = (s: string, ...args: (string | number)[]) =>

@@ -28,7 +28,7 @@ export function InitiativeBankCarousel({ accounts, dark, delay, onOpen }: Props)
   }, [rotating, paused, index])
 
   return (
-    <Panel title={t('Dinero')} count={accounts.length} dark={dark} delay={delay} onOpen={onOpen}>
+    <Panel grow={1} title={t('Dinero')} count={accounts.length} dark={dark} delay={delay} onOpen={onOpen}>
       {account && (
         <div
           key={account.id}

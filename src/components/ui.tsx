@@ -529,6 +529,12 @@ const PATHS: Record<string, ReactNode> = {
   folder: (
     <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
   ),
+  journal: (
+    <>
+      <path d="M6 3.5h11a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5z" />
+      <path d="M8.5 3.5v17M11.5 8h4M11.5 11.5h4" />
+    </>
+  ),
   graph: (
     <>
       <circle cx="6" cy="6" r="2.5" />

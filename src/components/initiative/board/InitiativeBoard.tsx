@@ -841,7 +841,7 @@ export function InitiativeBoard({ dark, userName, boards, setBoards, notes, onOp
             </label>
             <fieldset>
               <legend className="mb-2 text-sm font-medium">{t('Fondo')}</legend>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 p-1">
                 {BACKGROUNDS.map((bg) => (
                   <button
                     key={bg ?? 'theme'}

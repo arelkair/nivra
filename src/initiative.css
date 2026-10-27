@@ -287,3 +287,16 @@
     scale: 1;
   }
 }
+
+.nv-theme-switching,
+.nv-theme-switching *,
+.nv-theme-switching *::before,
+.nv-theme-switching *::after {
+  transition: none !important;
+}
+
+:root.initiative-mode::view-transition-old(root),
+:root.initiative-mode::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}

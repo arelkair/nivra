@@ -59,6 +59,7 @@ export function InitiativeCountdowns({ countdowns, setCountdowns, now, dark, del
 
   return (
     <Panel
+      grow={1}
       title={t('Cuentas atrás')}
       count={countdowns.length}
       dark={dark}
