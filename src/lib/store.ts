@@ -546,17 +546,17 @@ export function calendarItems(events: NivraEvent[], tasks: Task[], works: Work[]
       origin: 'evento' as const,
       repeat: e.repeat,
     })),
-    ...tasks
-      .filter((t) => t.date)
-      .map((t) => ({
+    ...tasks.flatMap((t) =>
+      [...new Set([t.date, t.due].filter((d): d is string => !!d))].map((date) => ({
         id: t.id,
-        date: t.date!,
+        date,
         title: t.title,
         desc: t.desc,
         type: 'tarea' as const,
         origin: 'tarea' as const,
         subject: t.subject,
       })),
+    ),
     ...works
       .filter((w) => w.date)
       .map((w) => ({
