@@ -3,7 +3,7 @@
 A private organizer for your browser. Calendar, timetable, tasks, exams, notes and
 personal finances, with everything stored on your own device.
 
-**[nivra.arelkair.dev](https://nivra.arelkair.dev)**: no account, no tracking.
+No account and no tracking.
 
 ## Why Nivra
 
