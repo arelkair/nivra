@@ -50,8 +50,6 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string, initiati
 
   return (
     <div className="nw nw-page">
-      <div className="nw-grid" aria-hidden />
-      <div className="nw-glow -top-72 -right-48" aria-hidden />
 
       <div className="relative mx-auto flex min-h-svh w-full max-w-6xl flex-col px-5 sm:px-10">
         <header className="nw-rise flex items-center justify-between py-6" style={rise(0)}>
