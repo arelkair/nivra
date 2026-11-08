@@ -665,7 +665,7 @@ function App() {
       <>
         {cfg.intro && !introDone && <Intro onDone={() => setIntroDone(true)} />}
         <SetupScreen
-          delay={cfg.intro ? 2.25 : 0}
+          delay={cfg.intro ? 2.5 : 0}
           onDone={(name, initiative) => {
             localStorage.setItem(SETUP_KEY, '1')
             if (initiative) {

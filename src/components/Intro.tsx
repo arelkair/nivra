@@ -1,32 +1,54 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+
+const LETTERS = ['N', 'i', 'v', 'r', 'a']
+const LOAD_START_MS = 200
+const LOAD_MS = 1800
+export const INTRO_MS = 3000
 
 export function Intro({ onDone }: { onDone: () => void }) {
+  const [percent, setPercent] = useState(0)
+
   useEffect(() => {
-    const ms = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2650
-    const id = setTimeout(onDone, ms)
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const id = setTimeout(onDone, reduced ? 0 : INTRO_MS)
     return () => clearTimeout(id)
   }, [onDone])
 
+  useEffect(() => {
+    let frame = 0
+    const start = performance.now() + LOAD_START_MS
+    const tick = (now: number) => {
+      const p = Math.min(1, Math.max(0, (now - start) / LOAD_MS))
+      setPercent(Math.round((p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2) * 100))
+      if (p < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
   return (
-    <div
-      className="animate-[intro-exit_0.9s_cubic-bezier(.76,0,.24,1)_1.75s_forwards] fixed inset-0 z-20 grid place-items-center overflow-hidden bg-neutral-950 text-stone-50"
-    >
-      <div
-        aria-hidden
-        className="animate-[drift_9s_ease-in-out_infinite_alternate] absolute top-[12%] left-[10%] aspect-square w-[min(20vw,260px)] rounded-full border border-neutral-700 opacity-70"
-      />
-      <div
-        aria-hidden
-        className="animate-[drift_11s_ease-in-out_-3s_infinite_alternate-reverse] absolute right-[13%] bottom-[14%] aspect-square w-[min(13vw,180px)] rotate-45 rounded-3xl border border-neutral-700 opacity-70"
-      />
+    <div className="nw nw-intro" role="status" aria-label="Nivra">
+      <div className="nw-grid" aria-hidden />
+      <div className="nw-glow" aria-hidden />
 
-      <p className="overflow-hidden px-1 pb-2 text-[clamp(3.5rem,12vw,9rem)] leading-none">
-        <span className="font-display animate-[word-enter_0.9s_cubic-bezier(.16,1,.3,1)_both] block font-semibold tracking-tight">
-          Nivra
-        </span>
-      </p>
+      <div className="relative flex flex-col items-center" aria-hidden>
+        <div className="nw-word">
+          {LETTERS.map((letter, i) => (
+            <span key={i} className="nw-letter" style={{ '--i': i } as React.CSSProperties}>
+              {letter}
+            </span>
+          ))}
+          <span className="nw-dot" />
+        </div>
+        <span className="nw-rule w-full" />
+        <span className="nw-tag">INITIATIVE</span>
+      </div>
 
-      <div className="animate-[load-line_1.55s_cubic-bezier(.65,0,.35,1)_0.25s_both] absolute bottom-0 left-0 h-1 w-full origin-left bg-stone-50" />
+      <div className="nw-meta" aria-hidden>
+        <span>nivra</span>
+        <span>{String(percent).padStart(3, '0')}</span>
+      </div>
+      <div className="nw-bar" aria-hidden />
     </div>
   )
 }

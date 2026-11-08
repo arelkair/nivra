@@ -30,6 +30,19 @@ export function setLang(next: Lang) {
 }
 
 const EN: Record<string, string> = {
+  'Privado por diseño': 'Private by design',
+  'Empecemos': 'Let\'s get started',
+  'Dos pasos y ya estás dentro. Sin registro.': 'Two steps and you are in. No sign-up.',
+  'Al continuar, aceptas que Nivra guarde tus datos solo en este dispositivo. Consulta la': 'By continuing, you agree that Nivra stores your data only on this device. Read the',
+  'política de privacidad': 'privacy policy',
+  'y la': 'and the',
+  'política de cookies': 'cookie policy',
+  'Política de privacidad': 'Privacy policy',
+  'Política de cookies': 'Cookie policy',
+  'Código abierto bajo licencia AGPL-3.0.': 'Open source under the AGPL-3.0 licence.',
+  'Rastreadores': 'Trackers',
+  'En tu dispositivo': 'On your device',
+  'Información legal': 'Legal information',
   'Color de texto': 'Text colour',
   'Color del texto': 'Text colour',
   'Color del recuadro del texto': 'Text box colour',
