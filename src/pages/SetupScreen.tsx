@@ -50,12 +50,10 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string, initiati
 
   return (
     <div className="nw nw-page">
-
       <div className="relative mx-auto flex min-h-svh w-full max-w-6xl flex-col px-5 sm:px-10">
         <header className="nw-rise flex items-center justify-between py-6" style={rise(0)}>
           <span className="flex items-center gap-2 text-lg font-semibold tracking-tight">
             Nivra
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--nw-accent)]" aria-hidden />
           </span>
           <div className="nw-seg" role="group" aria-label={t('Idioma')}>
             {LANGS.map((l) => (
@@ -74,12 +72,8 @@ export function SetupScreen({ onDone, delay }: { onDone: (name: string, initiati
         <main className="grid flex-1 items-center gap-12 py-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20 lg:py-12">
           <section className="flex flex-col gap-8">
             <div className="flex flex-col gap-5">
-              <span className="nw-pill nw-rise self-start" style={rise(1)}>
-                <b />
-                {t('Privado por diseño')}
-              </span>
               <h1 className="nw-title nw-rise" style={rise(2)}>
-                Nivra<i aria-hidden />
+                Nivra
               </h1>
               <p className="nw-rise max-w-md text-lg leading-relaxed text-[var(--nw-muted)]" style={rise(3)}>
                 {t('Bienvenido a Nivra, tu espacio privado de organización.')}

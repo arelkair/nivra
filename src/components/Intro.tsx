@@ -18,7 +18,6 @@ export function Intro({ onDone }: { onDone: () => void }) {
             {letter}
           </span>
         ))}
-        <span className="nw-dot" />
       </div>
       <div className="nw-bar" aria-hidden />
     </div>
