@@ -221,3 +221,7 @@ React 19, TypeScript, Tailwind CSS 4 and Vite. Supabase (Auth and Postgres) for
 the optional sync, with `@supabase/supabase-js` loaded only on demand. Arbitrary-precision maths with
 `decimal.js`, PDF editing with `pdf-lib`, and lazily loaded codecs (`gifenc`,
 `utif`, `heic2any`, `@jsquash/avif`) for the image converter.
+
+## License
+
+Nivra is released under the [GNU Affero General Public License v3.0](LICENSE).
